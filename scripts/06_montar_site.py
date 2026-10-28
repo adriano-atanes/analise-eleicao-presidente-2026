@@ -33,7 +33,8 @@ def main():
     shutil.copytree(PORTAL / "dados", SITE / "dados")
     (SITE / "index.html").write_text(CABECALHO + (PORTAL / "index.html").read_text() + "\n</body>\n</html>\n")
     (SITE / ".nojekyll").touch()
-    shutil.copy(RAIZ / "relatorio" / "relatorio_eleicao_presidente_2026.pdf", SITE / "relatorio_eleicao_presidente_2026.pdf")
+    for pdf in ("relatorio_eleicao_presidente_2026.pdf", "analise_estatistica_2026.pdf"):
+        shutil.copy(RAIZ / "relatorio" / pdf, SITE / pdf)
     print(f"site montado em {SITE}")
 
 
