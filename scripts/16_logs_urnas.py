@@ -56,7 +56,8 @@ def analisar(texto, dia, uf):
     linhas = texto[ini:].split("\n")
     r = {"urnas": set(), "modelo": None, "ligada_n": 0, "contingencia": False, "t_ligada": None, "t_zeresima": None, "t_pronta": None,
          "t_primeiro_voto": None, "t_ultimo_voto": None, "t_encerramento": None, "t_bu": None, "votos_log": 0, "hab": collections.Counter(),
-         "hab_manual_pedido": 0, "hab_por_mesario": 0, "alertas": 0, "erros": 0, "bateria": 0, "votos_apos_17h": 0, "duracoes": []}
+         "hab_manual_pedido": 0, "hab_por_mesario": 0, "alertas": 0, "erros": 0, "erros_rotina": 0, "voto_nao_registrado": 0, "ligadas_apos_pronta": 0,
+         "t_contingencia": None, "bateria": 0, "votos_apos_17h": 0, "duracoes": []}
     msgs = collections.Counter()
     t_hab = None
     fim_local = (17 + FUSO.get(uf, 0)) * 3600
@@ -70,12 +71,18 @@ def analisar(texto, dia, uf):
         if nivel in ("ALERTA", "ERRO"):
             r["alertas" if nivel == "ALERTA" else "erros"] += 1
             msgs[(nivel, NUM.sub("#", msg)[:140])] += 1
+            if nivel == "ERRO" and msg.startswith("Problema ao desmontar a MR"):
+                r["erros_rotina"] += 1  # ocorre em quase toda urna ao retirar a mídia de resultado
+            if "NÃO foi registrado" in msg:
+                r["voto_nao_registrado"] += 1
         if nivel == "EXTERNO":
             continue  # trecho do log de outra urna anexado (contingência)
         r["urnas"].add(urna)
         if msg.startswith("Urna ligada em"):
             r["ligada_n"] += 1
             r["t_ligada"] = r["t_ligada"] or hora
+            if r["t_pronta"] is not None and r["t_encerramento"] is None:
+                r["ligadas_apos_pronta"] += 1  # urna religada durante a votação
         elif msg == "O voto do eleitor foi computado":
             r["votos_log"] += 1
             r["t_primeiro_voto"] = r["t_primeiro_voto"] or hora
@@ -106,6 +113,7 @@ def analisar(texto, dia, uf):
             r["t_bu"] = hora
         elif "contingência" in msg.lower():
             r["contingencia"] = True
+            r["t_contingencia"] = r["t_contingencia"] or hora
         elif "desconectada da rede" in msg or "operando com bateria" in msg.lower():
             r["bateria"] += 1
         elif r["modelo"] is None:
@@ -135,7 +143,7 @@ def baixar_em_blocos(url, tamanho=1 << 20):
 def processar(tarefa):
     turno, uf = tarefa
     destino = SAIDA / f"{turno}_{uf}.parquet"
-    if destino.exists():
+    if destino.exists() and "erros_rotina" in pd.read_parquet(destino, columns=None).columns:
         return f"{turno}_{uf}: já processado"
     url = URL.format(t=turno, uf=uf)
     for tentativa in range(3):
@@ -180,7 +188,7 @@ def main():
     ufs = sys.argv[1:] or UFS
     # estados grandes primeiro, para equilibrar os processos
     tarefas = sorted([(t, uf) for t in (1, 2) for uf in ufs], key=lambda x: x[1] not in ("SP", "MG", "RJ", "BA", "RS", "PR"))
-    with Pool(4) as pool:
+    with Pool(3) as pool:
         for msg in pool.imap_unordered(processar, tarefas):
             print(time.strftime("%H:%M:%S"), msg, flush=True)
 

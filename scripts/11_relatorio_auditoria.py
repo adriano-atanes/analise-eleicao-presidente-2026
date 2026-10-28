@@ -90,6 +90,68 @@ def g_barras_hist(CP, chave, tend, sufixo, titulo):
     return fig
 
 
+def parte_logs(LG):
+    """Parte do relatório com os logs de todas as urnas."""
+    T1, T2 = LG["turnos"]["1"], LG["turnos"]["2"]
+    n_ufs = len(LG["ufs_processadas"])
+    out = [P("PARTE 3", "olho"), P("Logs das urnas", "h1"),
+           P("Cada urna grava, com horário, tudo o que acontece no dia: zerésima, abertura, habilitação de cada eleitor, troca de urna, erros e "
+             f"encerramento. Foram lidos os logs de {n0(T1['secoes_com_log'])} seções no 1º turno e {n0(T2['secoes_com_log'])} no 2º, publicados pelo TSE "
+             "nos arquivos transmitidos para totalização." + ("" if n_ufs >= 28 else f" <b>Cobertura parcial: {n_ufs} de 28 unidades.</b>"), "lead")]
+    lin = lambda rot, f, d=None: [rot, f(T1), f(T2)]
+    tab = [["Indicador", "1º turno", "2º turno"],
+           lin("Seções com log", lambda t: n0(t["secoes_com_log"])),
+           lin("Urnas trocadas (contingência)", lambda t: f"{n0(t['contingencia'])} ({p1(t['contingencia_pct'], 2)})"),
+           lin("   antes da abertura · durante a votação", lambda t: f"{n0(t['contingencia_antes_abertura'])} · {n0(t['contingencia_durante'])}"),
+           lin("Urna pronta no horário (8h de Brasília)", lambda t: p1(t["abertura_no_horario_pct"])),
+           lin("   atraso de mais de 15 min · de mais de 1 h", lambda t: f"{n0(t['abertura_atraso_15'])} · {n0(t['abertura_atraso_60'])}"),
+           lin("Zerésima registrada antes da abertura", lambda t: f"{p1(t['zeresima_ok_pct'], 2)} ({n0(t['zeresima_problema'])} sem)"),
+           lin("Encerramento antes das 17h", lambda t: n0(t["encerramento_antes_17h"])),
+           lin("Seções com eleitores na fila após as 17h", lambda t: f"{n0(t['secoes_votos_apos_17h'])} ({n0(t['votos_apos_17h'])} votos)"),
+           lin("Habilitação por biometria · manual", lambda t: f"{p1(t['hab_biometrica_pct'])} · {p1(t['hab_manual_pct'])}"),
+           lin("Votos no log iguais ao boletim (sem troca de urna)", lambda t: "—" if t["log_igual_boletim_pct"] is None else f"{p1(t['log_igual_boletim_pct'], 2)} ({n0(t['log_diferente_boletim'])} diferentes)"),
+           lin("Erros fora da rotina · seções com erro", lambda t: f"{n0(t['erros_relevantes'])} · {n0(t['secoes_erros_relevantes'])}"),
+           lin("Votos não registrados por erro · seções", lambda t: f"{n0(t['voto_nao_registrado'])} · {n0(t['secoes_voto_nao_registrado'])}"),
+           lin("Seções com reinício durante a votação", lambda t: f"{n0(t['secoes_reiniciadas'])} ({n0(t['reinicios'])} reinícios)"),
+           lin("Tempo típico de votação por eleitor", lambda t: "—" if t["tempo_votacao_mediano_s"] is None else f"{t['tempo_votacao_mediano_s']:.0f} s")]
+    out += [tabela(tab, [86 * mm, 44 * mm, 44 * mm], numericas=(1, 2)),
+            P("Horários convertidos para Brasília (votação das 8h às 17h). \"Erros fora da rotina\" exclui \"Problema ao desmontar a MR\", registrado em quase toda urna "
+              "ao retirar a mídia de resultado. O tempo de votação é menor no 2º turno porque há menos cargos.", "nota"), Spacer(1, 6)]
+    X = LG["cruzamentos"]
+    cz = [["Ocorrência (2º turno)", f"Seções atípicas ({n0(X['atipicas']['secoes'])})", f"Demais seções ({n0(X['demais']['secoes'])})"]]
+    for k, rot in [("contingencia_pct", "Troca de urna"), ("erros_relevantes_pct", "Erro fora da rotina"), ("reinicio_pct", "Reinício durante a votação"),
+                   ("hab_manual_pct", "Habilitação manual (dos votos)"), ("voto_nao_registrado_pct", "Voto não registrado")]:
+        cz.append([rot, p1(X["atipicas"][k], 2), p1(X["demais"][k], 2)])
+    RE = {"contingencia": "Troca de urna", "reinicio": "Reinício durante a votação", "erro_relevante": "Erro fora da rotina", "dmanual_10pp": "Habilitação manual 10 p.p. maior que no 1º turno"}
+    ef = [["Ocorrência no 2º turno", "Diferença na variação de Lula", "Erro-padrão", "Leitura"]]
+    for k, e in X["efeito_na_variacao_lula"].items():
+        sem = abs(e["efeito_pp"]) < 2 * e["erro_padrao"]
+        ef.append([RE.get(k, k), pp(e["efeito_pp"]), dec(e["erro_padrao"]), situacao({"status": "dentro" if sem else "acima", "status_texto": ""})
+                   .replace("Dentro do histórico", "Sem associação").replace("Acima do histórico", "Associação estatística")])
+    out += [KeepTogether([P("Ocorrências nas seções atípicas × nas demais", "h2"), tabela(cz, [80 * mm, 47 * mm, 47 * mm], numericas=(1, 2))]), Spacer(1, 4),
+            KeepTogether([P("As ocorrências se associam à variação do voto?", "h2"),
+                          P(f"Diferença na variação de Lula entre os turnos (média: {pp(X['variacao_lula_media_pp'])}) nas seções com cada ocorrência, comparadas com as "
+                            "demais seções do mesmo município.", "corpo"),
+                          tabela(ef, [70 * mm, 40 * mm, 24 * mm, 40 * mm], numericas=(1, 2)),
+                          P(f"Correlação, dentro do município, entre o aumento da habilitação manual e o aumento do comparecimento: {dec(X['corr_dmanual_dcomp'], 3)}.", "nota")]),
+            Spacer(1, 4)]
+    for t in ("1", "2"):
+        msgs = [m for m in LG["mensagens"][t] if m[0] == "ERRO"][:12]
+        tm = [["Mensagem de erro", "Ocorrências", "Estados"]] + [[Paragraph(m[1][:160], R.estilo("msg", fontSize=7.2, leading=9)), n0(m[2]), m[3]] for m in msgs]
+        out += [KeepTogether([P(f"Mensagens de erro mais frequentes · {t}º turno", "h2"), tabela(tm, [134 * mm, 22 * mm, 18 * mm], numericas=(1, 2))]), Spacer(1, 4)]
+    uf = [["UF", "Seções", "Trocas 1º", "Trocas 2º", "No horário 2º", "Biometria 2º", "Erro relev. 2º", "Voto não reg. 2º", "Log = BU 2º"]]
+    for k, u in sorted(LG["por_uf"].items(), key=lambda x: -x[1].get("2", x[1].get("1", {})).get("secoes_com_log", 0)):
+        a, b = u.get("1", {}), u.get("2", {})
+        uf.append(["Exterior" if k == "ZZ" else k, n0(b.get("secoes_com_log", 0)), n0(a.get("contingencia", 0)), n0(b.get("contingencia", 0)),
+                   p1(b["abertura_no_horario_pct"]) if b.get("abertura_no_horario_pct") is not None else "—", p1(b.get("hab_biometrica_pct", 0)),
+                   n0(b.get("secoes_erros_relevantes", 0)), n0(b.get("voto_nao_registrado", 0)),
+                   p1(b["log_igual_boletim_pct"], 2) if b.get("log_igual_boletim_pct") is not None else "—"])
+    out += [P("Por estado", "h2"), tabela(uf, [16 * mm, 20 * mm, 17 * mm, 17 * mm, 21 * mm, 21 * mm, 21 * mm, 22 * mm, 19 * mm], numericas=range(1, 9)),
+            P("A lista completa de seções com troca de urna, voto não registrado, erros ou reinícios está no portal (Auditoria → Logs das urnas), com o log de cada seção.", "nota"),
+            PageBreak()]
+    return out
+
+
 def main():
     A = json.load(open(PORTAL_DADOS / "auditoria.json"))
     CP = json.load(open(PORTAL_DADOS / "comportamento.json"))
@@ -243,8 +305,13 @@ def main():
     story += corpo[inicio:]
     story += [PageBreak()]
 
-    # parte 3: indicadores por estado
-    story += [P("PARTE 3", "olho"), P("Indicadores por estado", "h1"),
+    # parte 3: logs das urnas (16_logs_urnas.py e 17_analise_logs.py)
+    arq_logs = PORTAL_DADOS / "logs.json"
+    if arq_logs.exists():
+        story += parte_logs(json.load(open(arq_logs)))
+
+    # parte 4: indicadores por estado
+    story += [P("PARTE 4", "olho"), P("Indicadores por estado", "h1"),
               P("Os mesmos testes, estado por estado. Em cada linha: dispersão dos resíduos (desvio-padrão, em p.p. do eleitorado), seções muito acima do previsto, "
                 f"ganhos acima das fontes (10 votos ou mais), seções com 100% de comparecimento e o qui-quadrado do último dígito no 2º turno (acima de {dec(CHI2_P01)} "
                 "indicaria desvio a 1%).", "lead")]
@@ -262,7 +329,7 @@ def main():
 
     # parte 3: seções atípicas
     cont = {m: sum(1 for l in linhas_sus if m in l[col["motivos"]]) for m in MOTIVOS}
-    story += [P("PARTE 4", "olho"), P("Seções atípicas para conferência", "h1"),
+    story += [P("PARTE 5", "olho"), P("Seções atípicas para conferência", "h1"),
               P(f"{n0(len(linhas_sus))} seções se destacam em pelo menos um teste. <b>Atípica quer dizer fora do padrão estatístico</b>: são as seções a conferir primeiro, comparando o "
                 "boletim publicado com o boletim impresso (ou o QR code) e com os arquivos da urna. Ordenadas por estado, município, zona e seção.", "lead")]
     leg = [["Código", "Motivo", "Seções"]] + [[f"<b>{cod}</b>", txt, n0(cont[m])] for m, (cod, txt) in MOTIVOS.items()]
@@ -281,7 +348,7 @@ def main():
               PageBreak()]
 
     # parte 4: roteiro
-    story += [P("PARTE 5", "olho"), P("Roteiro de verificação além da estatística", "h1"),
+    story += [P("PARTE 6", "olho"), P("Roteiro de verificação além da estatística", "h1"),
               P("A estatística aponta onde olhar; a confirmação de qualquer inconsistência depende de documentos. Para as seções do anexo, ou para uma amostra aleatória "
                 "de seções como controle:", "lead")]
     passos = [

@@ -275,7 +275,7 @@ const eixo = () => ({ axisLine: { lineStyle: { color: T.axis } }, axisTick: { sh
 const D = { resumo: null, uf: {}, secoes: {} };
 async function json(url) { const r = await fetch(url); if (!r.ok) throw new Error(url + ": " + r.status); return r.json(); }
 async function carregarUF(uf) { return (D.uf[uf] ||= await json(`dados/uf/${uf}.json`)); }
-async function carregarAuditoria() { D.comp ||= await json("dados/comportamento.json"); D.ins ||= await json("dados/insights.json"); D.ideo ||= await json("dados/ideologia.json"); return (D.aud ||= await json("dados/auditoria.json")); }
+async function carregarAuditoria() { D.comp ||= await json("dados/comportamento.json"); D.ins ||= await json("dados/insights.json"); D.logs ||= await json("dados/logs.json").catch(() => null); D.ideo ||= await json("dados/ideologia.json"); return (D.aud ||= await json("dados/auditoria.json")); }
 async function carregarSecoes(uf) { return (D.secoes[uf] ||= await json(`dados/secoes/${uf}.json`)); }
 
 // ---------- componentes ----------
@@ -696,6 +696,7 @@ async function visaoMunicipio(app, uf, cod) {
   });
   const corpo = app.querySelector("#sec-corpo");
   corpo.innerHTML = `<div id="mapa-locais"></div><div class="grade2"><div class="grafico" data-g="disp" style="height:420px"></div><div id="ficha" class="ficha"><p class="nota">Selecione uma seção no gráfico ou na tabela.</p></div></div>
+    <div id="ficha-log" class="ficha" hidden></div>
     <h3>Locais de votação</h3><div id="tab-locais"></div>
     <h3>Seções</h3><div id="tab-secoes"></div>`;
   secSel = null;
@@ -734,6 +735,7 @@ async function visaoMunicipio(app, uf, cod) {
       <tr><td>Abstenção</td><td class="n">${n0(a.t1[9])}</td><td class="n">${n0(a.t2[4])}</td><td class="n">${sinal(a.t2[4] - a.t1[9])}</td></tr>
       <tr><td>Aptos</td><td class="n">${n0(a.aptos1)}</td><td class="n">${n0(a.aptos2)}</td><td class="n"></td></tr></tbody></table></div>
       <p class="nota">Na seção, Lula passou de ${p1(a.lula1)} para ${p1(a.lula2)} dos válidos e Flávio de ${p1(a.fla1)} para ${p1(a.fla2)}. O voto é secreto: o boletim mostra só os totais, não quem trocou de opção.</p>`;
+    const fl = corpo.querySelector("#ficha-log"); fl.hidden = false; painelLogSecao(fl, uf, cod, s);
   }
 
   // locais
@@ -860,6 +862,7 @@ async function visaoAuditoria(app) {
     <div class="seg" role="group" aria-label="Turno" id="seg-curva"><button aria-pressed="false" data-t="1">1º turno</button><button aria-pressed="true" data-t="2">2º turno</button></div></div>
     <div class="grafico" data-g="curva" style="height:320px"></div><div class="grafico" data-g="curva-ne" style="height:200px"></div><p class="aviso" id="curva-nota"></p></section>
 
+  ${D.logs ? secaoLogs(app, D.logs) : ""}
   <div class="filtro-uf"><label for="sel-uf"><b>Recorte dos testes abaixo:</b></label>
     <select id="sel-uf"><option value="">Brasil</option>${Object.entries(R.ufs).map(([uf, u]) => `<option value="${uf}">${esc(u.nome)}</option>`).join("")}</select>
     <span class="nota" id="uf-info"></span></div>
@@ -1038,6 +1041,7 @@ async function visaoAuditoria(app) {
   });
 
   desenharCurva(app, D.ins);
+  if (D.logs) desenharLogs(app, D.logs);
   // recortes por estado
   const elFp1 = app.querySelector('[data-g="fp1"]'), elFp2 = app.querySelector('[data-g="fp2"]'), elRes = app.querySelector('[data-g="res"]');
   const elDig = app.querySelector('[data-g="dig"]'), elDc = app.querySelector('[data-g="dcomp"]');
@@ -1395,6 +1399,130 @@ function desenharCurva(app, I) {
       : "Depois dos primeiros 2% das seções, a liderança não mudou durante a apuração.";
   };
   seg.addEventListener("click", (e) => { const b = e.target.closest("button"); if (!b) return; b.parentElement.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", x === b)); turno = b.dataset.t; desenhar(); });
+  desenhar();
+}
+
+// ---------- logs das urnas ----------
+async function carregarLogsSecao(uf) { D.logsec ||= {}; return (D.logsec[uf] ||= await json(`dados/logs_secoes/${uf}.json`).catch(() => null)); }
+async function painelLogSecao(el, uf, cod, s) {
+  el.innerHTML = `<p class="nota">Carregando o log da urna…</p>`;
+  const L = await carregarLogsSecao(uf);
+  if (!L) { el.innerHTML = `<p class="nota">Log da urna ainda não processado para este estado.</p>`; return; }
+  const C = Object.fromEntries(L.colunas.map((c, i) => [c, i]));
+  const rows = L.linhas.filter((r) => r[C.mun] === cod && r[C.zona] === s.zona && r[C.secao] === s.secao).sort((a, b) => a[C.turno] - b[C.turno]);
+  if (!rows.length) { el.innerHTML = `<p class="nota">Sem log para esta seção.</p>`; return; }
+  const v = (r, k) => r[C[k]];
+  const comp = (t) => (t === 1 ? s.a.comp1 : s.a.comp2);
+  const lin = (rot, f) => `<tr><td>${rot}</td>${rows.map((r) => `<td class="n">${f(r) ?? "—"}</td>`).join("")}</tr>`;
+  el.innerHTML = `<div><span class="olho">Log da urna · TSE</span><h3>O que a urna registrou no dia</h3></div>
+    <div class="tabela-wrap"><table><thead><tr><th style="cursor:default"></th>${rows.map((r) => `<th class="n" style="cursor:default">${v(r, "turno")}º turno</th>`).join("")}</tr></thead><tbody style="cursor:default">
+    ${lin("Urna (nº de série) · modelo", (r) => `<span class="mono">${esc(v(r, "urnas") || "—")}</span> · ${esc(v(r, "modelo") || "—")}`)}
+    ${lin("Troca de urna (contingência)", (r) => (v(r, "contingencia") ? `<b style="color:var(--up)">sim, às ${v(r, "t_contingencia")}</b>` : "não"))}
+    ${lin("Zerésima impressa", (r) => v(r, "t_zeresima"))}
+    ${lin("Urna pronta para votos", (r) => v(r, "t_pronta"))}
+    ${lin("Primeiro e último voto", (r) => `${v(r, "t_primeiro_voto") || "—"} · ${v(r, "t_ultimo_voto") || "—"}`)}
+    ${lin("Encerramento", (r) => v(r, "t_encerramento"))}
+    ${lin("Votos no log × comparecimento no boletim", (r) => { const ok = v(r, "votos_log") === comp(v(r, "turno")); return `${n0(v(r, "votos_log"))} × ${n0(comp(v(r, "turno")))} ${ok ? "✓" : v(r, "contingencia") ? "(urna trocada)" : "<b style=\"color:var(--up)\">≠</b>"}`; })}
+    ${lin("Habilitação por biometria", (r) => p1((100 * v(r, "hab_biometrica")) / Math.max(1, v(r, "votos_log")), 0) + ` · ${n0(v(r, "hab_manual"))} manuais`)}
+    ${lin("Votos depois das 17h (fila)", (r) => n0(v(r, "votos_apos_17h")))}
+    ${lin("Tempo típico de votação", (r) => (v(r, "tempo_mediano_s") == null ? "—" : v(r, "tempo_mediano_s") + " s"))}
+    ${lin("Reinícios durante a votação", (r) => n0(v(r, "ligadas_apos_pronta")))}
+    ${lin("Erros (fora a rotina) · alertas", (r) => `${n0(v(r, "erros_relevantes"))} · ${n0(v(r, "alertas"))}`)}
+    ${lin("Votos não registrados (erro)", (r) => (v(r, "voto_nao_registrado") ? `<b style="color:var(--up)">${v(r, "voto_nao_registrado")}</b>` : "0"))}
+    </tbody></table></div><p class="nota">Horários locais da urna. Fonte: log da urna publicado pelo TSE (arquivos transmitidos para totalização).</p>`;
+}
+
+function secaoLogs(app, LG) {
+  const T1 = LG.turnos["1"], T2 = LG.turnos["2"];
+  const todas = Object.keys(D.resumo.ufs).length;
+  const parcial = LG.ufs_processadas.length < todas;
+  app.insertAdjacentHTML("beforeend", "");
+  const html = `<section class="bloco" id="logs"><div class="bloco-cab"><div><span class="olho">Logs das urnas · ${n0(T1.secoes_com_log + T2.secoes_com_log)} logs</span><h2>O que as urnas registraram no dia da eleição</h2>
+    <p class="lead">Cada urna grava, com horário, tudo o que acontece: zerésima, abertura, habilitação de cada eleitor, troca de urna, erros e encerramento. Os indicadores abaixo vêm dos logs de todas as seções publicados pelo TSE.${parcial ? ` <b>Processamento em andamento: ${LG.ufs_processadas.length} de ${todas} unidades (${esc(LG.ufs_processadas.join(", "))}).</b>` : ""}</p></div>
+    <div class="seg" role="group" aria-label="Turno" id="seg-log"><button aria-pressed="false" data-t="1">1º turno</button><button aria-pressed="true" data-t="2">2º turno</button></div></div>
+    <div id="log-kpis"></div>
+    <div class="grade2"><div class="grafico" data-g="log-ab" style="height:260px"></div><div class="grafico" data-g="log-enc" style="height:260px"></div></div>
+    <div class="grafico" data-g="log-cont" style="height:220px"></div>
+    <h3>Ocorrências nas seções atípicas da auditoria × nas demais (2º turno)</h3><div id="log-cruz"></div>
+    <h3>As ocorrências do log se associam à variação do voto?</h3><div id="log-efeito"></div>
+    <h3>Mensagens de erro e alerta</h3><p class="nota">Todas as mensagens de nível ERRO ou ALERTA no dia da eleição, com o número de ocorrências e de estados. "Problema ao desmontar a MR" aparece em praticamente todas as urnas ao retirar a mídia de resultado.</p><div id="log-msgs"></div>
+    <h3>Por estado</h3><div id="log-uf"></div>
+    <h3>Seções para conferência</h3><p class="nota">Troca de urna, voto não registrado, 3 ou mais erros fora da rotina, encerramento antes das 17h ou 2 ou mais reinícios durante a votação. Clique para abrir o boletim e o log da seção.</p><div id="log-ocorr"></div>
+  </section>`;
+  return html;
+}
+function desenharLogs(app, LG) {
+  let turno = "2";
+  const desenhar = () => {
+    const R = LG.turnos[turno];
+    app.querySelector("#log-kpis").innerHTML = `<div class="kpis">
+      <div class="kpi"><span class="rot">Urnas trocadas (contingência)</span><span class="val">${n0(R.contingencia)}</span><span class="sub">${p1(R.contingencia_pct, 2)} das seções · ${n0(R.contingencia_durante)} durante a votação</span></div>
+      <div class="kpi"><span class="rot">Urna pronta no horário</span><span class="val">${p1(R.abertura_no_horario_pct)}</span><span class="sub">${n0(R.abertura_atraso_15)} com mais de 15 min de atraso</span></div>
+      <div class="kpi"><span class="rot">Encerramento antes das 17h</span><span class="val">${n0(R.encerramento_antes_17h)}</span><span class="sub">${n0(R.secoes_votos_apos_17h)} seções com eleitores na fila após as 17h</span></div>
+      <div class="kpi"><span class="rot">Habilitação por biometria</span><span class="val">${p1(R.hab_biometrica_pct)}</span><span class="sub">${p1(R.hab_manual_pct)} manual</span></div>
+      <div class="kpi"><span class="rot">Votos no log = boletim</span><span class="val">${R.log_igual_boletim_pct == null ? "—" : p1(R.log_igual_boletim_pct, 2)}</span><span class="sub">${n0(R.log_diferente_boletim || 0)} seções diferentes (sem troca de urna)</span></div>
+      <div class="kpi"><span class="rot">Votos não registrados (erro)</span><span class="val">${n0(R.voto_nao_registrado)}</span><span class="sub">em ${n0(R.secoes_voto_nao_registrado)} seções · ${n0(R.secoes_erros_relevantes)} seções com erros fora da rotina</span></div>
+      <div class="kpi"><span class="rot">Reinícios durante a votação</span><span class="val">${n0(R.secoes_reiniciadas)}</span><span class="sub">seções · ${n0(R.reinicios)} reinícios</span></div>
+      <div class="kpi"><span class="rot">Zerésima antes da abertura</span><span class="val">${p1(R.zeresima_ok_pct, 2)}</span><span class="sub">${n0(R.zeresima_problema)} seções sem zerésima registrada antes de abrir</span></div>
+    </div>`;
+    const hist = (el, dados, bordas0, passo, titulo, eixoNome, cor) => trocarGrafico(el, () => novoGrafico(el, {
+      title: { text: titulo, left: 0, top: 0, textStyle: { color: T.ink, fontSize: 13, fontWeight: 600 } },
+      grid: { left: 8, right: 8, top: 34, bottom: 30, containLabel: true },
+      tooltip: { trigger: "axis", axisPointer: { type: "shadow" }, formatter: (ps) => `${ps[0].name} min<br><b>${n0(ps[0].value)}</b> seções` },
+      xAxis: { type: "category", data: dados.map((_, i) => bordas0 + i * passo), name: eixoNome, nameLocation: "middle", nameGap: 24, nameTextStyle: { color: T.muted }, ...eixo(), axisLabel: { color: T.muted, interval: 5 } },
+      yAxis: { type: "log", min: 1, ...eixo(), axisLabel: { color: T.muted, formatter: (x) => mi(x) } },
+      series: [{ type: "bar", barCategoryGap: "6%", data: dados.map((v) => (v > 0 ? v : null)), itemStyle: { color: T[cor], borderRadius: [2, 2, 0, 0] } }],
+    }));
+    hist(app.querySelector('[data-g="log-ab"]'), R.hist_abertura, -30, 5, "Urna pronta para votos, em relação às 8h", "minutos (escala log de seções)", "accent");
+    hist(app.querySelector('[data-g="log-enc"]'), R.hist_encerramento, -30, 5, "Encerramento, em relação às 17h", "minutos (escala log de seções)", "ink2");
+    const elC = app.querySelector('[data-g="log-cont"]');
+    trocarGrafico(elC, () => novoGrafico(elC, {
+      title: { text: "Trocas de urna por hora (horário de Brasília)", left: 0, top: 0, textStyle: { color: T.ink, fontSize: 13, fontWeight: 600 } },
+      grid: { left: 8, right: 8, top: 34, bottom: 8, containLabel: true },
+      tooltip: { trigger: "axis", axisPointer: { type: "shadow" }, formatter: (ps) => `${ps[0].name}h<br><b>${n0(ps[0].value)}</b> trocas` },
+      xAxis: { type: "category", data: R.contingencia_hora.map((_, i) => i + "h"), ...eixo(), splitLine: { show: false } },
+      yAxis: { type: "value", ...eixo(), axisLabel: { color: T.muted } },
+      series: [{ type: "bar", data: R.contingencia_hora, itemStyle: { color: T.up, borderRadius: [3, 3, 0, 0] } }],
+    }));
+    const msgs = LG.mensagens[turno].map(([nivel, msg, n, ufs], i) => ({ id: i, nivel, msg, n, ufs }));
+    tabela(app.querySelector("#log-msgs"), { porPagina: 15, linhas: msgs, busca: { id: "busca-msg", placeholder: "Filtrar mensagens (ex.: ERRO, biometria, impressora)", campo: (l) => l.nivel + " " + l.msg },
+      colunas: [{ t: "Nível", v: (l) => l.nivel, f: (l) => (l.nivel === "ERRO" ? `<b style="color:var(--up)">ERRO</b>` : esc(l.nivel)) },
+        { t: "Mensagem", v: (l) => l.msg, f: (l) => `<span style="white-space:normal;display:inline-block;min-width:320px;max-width:680px">${esc(l.msg)}</span>` },
+        { t: "Ocorrências", n: 1, v: (l) => l.n, f: (l) => n0(l.n), ordemPadrao: 1 }, { t: "Estados", n: 1, v: (l) => l.ufs, f: (l) => String(l.ufs) }] });
+    tabela(app.querySelector("#log-uf"), { porPagina: 30, linhas: Object.entries(LG.por_uf).filter(([, u]) => u[turno]).map(([uf, u]) => ({ id: uf, uf, nome: u.nome, ...u[turno] })),
+      aoClicar: (l) => (location.hash = "uf-" + l.uf),
+      colunas: [{ t: "Estado", v: (l) => l.nome }, { t: "Seções", n: 1, v: (l) => l.secoes_com_log, f: (l) => n0(l.secoes_com_log), ordemPadrao: 1 },
+        { t: "Urnas trocadas", n: 1, v: (l) => l.contingencia, f: (l) => `${n0(l.contingencia)} <span class="nota">(${p1(l.contingencia_pct, 2)})</span>` },
+        { t: "Pronta no horário", n: 1, v: (l) => l.abertura_no_horario_pct, f: (l) => p1(l.abertura_no_horario_pct) },
+        { t: "Atraso > 15 min", n: 1, v: (l) => l.abertura_atraso_15, f: (l) => n0(l.abertura_atraso_15) },
+        { t: "Encerr. antes 17h", n: 1, v: (l) => l.encerramento_antes_17h, f: (l) => n0(l.encerramento_antes_17h) },
+        { t: "Biometria", n: 1, v: (l) => l.hab_biometrica_pct, f: (l) => p1(l.hab_biometrica_pct) },
+        { t: "Seções c/ erro relevante", n: 1, v: (l) => l.secoes_erros_relevantes, f: (l) => n0(l.secoes_erros_relevantes) },
+        { t: "Votos não registrados", n: 1, v: (l) => l.voto_nao_registrado, f: (l) => n0(l.voto_nao_registrado) },
+        { t: "Reinícios", n: 1, v: (l) => l.secoes_reiniciadas, f: (l) => n0(l.secoes_reiniciadas) },
+        { t: "Tempo de votação", n: 1, v: (l) => l.tempo_votacao_mediano_s, f: (l) => (l.tempo_votacao_mediano_s == null ? "—" : l.tempo_votacao_mediano_s + " s") },
+        { t: "Log = boletim", n: 1, v: (l) => l.log_igual_boletim_pct, f: (l) => (l.log_igual_boletim_pct == null ? "—" : p1(l.log_igual_boletim_pct, 2)) }] });
+    const OC = Object.fromEntries(LG.ocorrencias.colunas.map((c, i) => [c, i]));
+    const oc = LG.ocorrencias.linhas.filter((r) => String(r[OC.turno]) === turno).map((r, i) => ({ id: i, r }));
+    const tipo = (r) => [r[OC.contingencia] ? `troca de urna às ${r[OC.t_contingencia]}` : "", r[OC.voto_nao_registrado] ? `${r[OC.voto_nao_registrado]} voto(s) não registrado(s)` : "",
+      r[OC.erros_relevantes] >= 3 ? `${r[OC.erros_relevantes]} erros` : "", r[OC.reinicios] >= 2 ? `${r[OC.reinicios]} reinícios` : ""].filter(Boolean).map((t) => `<span class="chip">${t}</span>`).join("");
+    tabela(app.querySelector("#log-ocorr"), { porPagina: 20, linhas: oc, busca: { id: "busca-ocorr", placeholder: "Filtrar por município ou estado", campo: (l) => l.r[OC.nome] + " " + l.r[OC.uf] },
+      aoClicar: (l) => { alvoSecao = { uf: l.r[OC.uf], cod: l.r[OC.mun], zona: l.r[OC.zona], secao: l.r[OC.secao] }; location.hash = `mun-${l.r[OC.uf]}-${l.r[OC.mun]}`; },
+      colunas: [{ t: "UF", v: (l) => l.r[OC.uf] }, { t: "Município", v: (l) => l.r[OC.nome] }, { t: "Zona", v: (l) => l.r[OC.zona], f: (l) => `<span class="mono">${z4(l.r[OC.zona])}</span>` },
+        { t: "Seção", v: (l) => l.r[OC.secao], f: (l) => `<span class="mono">${z4(l.r[OC.secao])}</span>` }, { t: "Ocorrência", v: (l) => tipo(l.r), f: (l) => tipo(l.r) },
+        { t: "Pronta", v: (l) => l.r[OC.t_pronta] || "" }, { t: "Encerramento", v: (l) => l.r[OC.t_encerramento] || "" },
+        { t: "Votos no log", n: 1, v: (l) => l.r[OC.votos_log], f: (l) => n0(l.r[OC.votos_log]), ordemPadrao: 1 }, { t: "Urna", v: (l) => l.r[OC.modelo] || "" }] });
+  };
+  const X = LG.cruzamentos;
+  const linhaC = (rot, k, d = 2) => `<tr><td>${rot}</td><td class="n">${p1(X.atipicas[k], d)}</td><td class="n">${p1(X.demais[k], d)}</td></tr>`;
+  app.querySelector("#log-cruz").innerHTML = `<div class="tabela-wrap"><table><thead><tr><th style="cursor:default">Ocorrência</th><th class="n" style="cursor:default">Seções atípicas (${n0(X.atipicas.secoes)})</th><th class="n" style="cursor:default">Demais seções (${n0(X.demais.secoes)})</th></tr></thead><tbody style="cursor:default">
+    ${linhaC("Troca de urna", "contingencia_pct")}${linhaC("Erro fora da rotina", "erros_relevantes_pct")}${linhaC("Reinício durante a votação", "reinicio_pct")}${linhaC("Habilitação manual (dos votos)", "hab_manual_pct", 1)}${linhaC("Voto não registrado", "voto_nao_registrado_pct")}</tbody></table></div>`;
+  const E = X.efeito_na_variacao_lula, RE = { contingencia: "Seção com troca de urna", reinicio: "Seção com reinício durante a votação", erro_relevante: "Seção com erro fora da rotina", dmanual_10pp: "Habilitação manual 10 p.p. maior que no 1º turno" };
+  app.querySelector("#log-efeito").innerHTML = `<p class="nota">Diferença na variação de Lula entre os turnos (média nacional: ${pp(X.variacao_lula_media_pp)}) nas seções com cada ocorrência, comparadas com as demais seções do mesmo município. Um efeito pequeno e dentro de 2 erros-padrão indica que a ocorrência não se associa a mudança de voto.</p>
+    <div class="tabela-wrap"><table><thead><tr><th style="cursor:default">Ocorrência no 2º turno</th><th class="n" style="cursor:default">Diferença na variação de Lula</th><th class="n" style="cursor:default">Erro-padrão</th><th style="cursor:default">Leitura</th></tr></thead><tbody style="cursor:default">
+    ${Object.entries(E).map(([k, e]) => `<tr><td>${RE[k] || k}</td><td class="n">${pp(e.efeito_pp, 2)}</td><td class="n">${e.erro_padrao.toFixed(2).replace(".", ",")}</td><td>${Math.abs(e.efeito_pp) < 2 * e.erro_padrao ? status("ok", "Sem associação") : status("atencao", "Associação estatística")}</td></tr>`).join("")}
+    </tbody></table></div><p class="nota">Correlação entre o aumento da habilitação manual e o aumento do comparecimento, dentro do município: ${X.corr_dmanual_dcomp.toFixed(3).replace(".", ",")}.</p>`;
+  app.querySelector("#seg-log").addEventListener("click", (e) => { const b = e.target.closest("button"); if (!b) return; b.parentElement.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", x === b)); turno = b.dataset.t; desenhar(); });
   desenhar();
 }
 
