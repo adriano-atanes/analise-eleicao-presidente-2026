@@ -1,7 +1,12 @@
-"""Totais nacionais de Presidente, 1º e 2º turno, nas eleições de 2002 a 2022 (TSE).
+"""Resultados de Presidente, 1º e 2º turno, nas eleições de 2002 a 2022 (TSE).
 
 Baixa votacao_candidato_munzona_<ano>.zip e detalhe_votacao_munzona_<ano>.zip, lê só as linhas
-de Presidente e grava dados/processados/historico.json. Os ZIPs são apagados depois de lidos.
+de Presidente e grava:
+  - dados/processados/historico.json: totais nacionais por candidato
+  - dados/processados/historico_municipios.parquet: por município e turno, votos dos dois
+    primeiros colocados nacionais no 1º turno ("lider" e "segundo"), demais válidos, brancos,
+    nulos, aptos e comparecimento
+Os ZIPs são apagados depois de lidos.
 """
 import io
 import json
@@ -34,12 +39,29 @@ def ler_zip(pasta, ano, colunas):
     return pd.concat(partes)
 
 
+def por_municipio(ano, c, d, ano_d):
+    lider, segundo = (str(x[2]) for x in ano_d["1"]["candidatos"][:2])
+    c = c.assign(papel=c.NR_CANDIDATO.map({lider: "lider", segundo: "segundo"}).fillna("outros"))
+    v = c.pivot_table(index=["SG_UF", "CD_MUNICIPIO", "NR_TURNO"], columns="papel", values="QT_VOTOS_NOMINAIS", aggfunc="sum", fill_value=0)
+    nulos = "QT_TOTAL_VOTOS_NULOS" if "QT_TOTAL_VOTOS_NULOS" in d else "QT_VOTOS_NULOS"
+    dd = d.groupby(["SG_UF", "CD_MUNICIPIO", "NR_TURNO"])[["QT_APTOS", "QT_COMPARECIMENTO", "QT_VOTOS_BRANCOS", nulos]].sum()
+    dd.columns = ["aptos", "comparecimento", "brancos", "nulos"]
+    m = v.join(dd, how="outer").fillna(0).reset_index()
+    m.insert(0, "ano", ano)
+    m["CD_MUNICIPIO"] = m.CD_MUNICIPIO.astype(int)
+    m["NR_TURNO"] = m.NR_TURNO.astype(int)
+    if "outros" not in m:
+        m["outros"] = 0
+    return m
+
+
 def main():
-    saida = {}
+    saida, municipios = {}, []
     for ano in ANOS:
-        c = ler_zip("votacao_candidato_munzona", ano, {"NR_TURNO", "CD_CARGO", "NR_CANDIDATO", "NM_URNA_CANDIDATO", "SG_PARTIDO", "QT_VOTOS_NOMINAIS"})
+        c = ler_zip("votacao_candidato_munzona", ano, {"NR_TURNO", "CD_CARGO", "NR_CANDIDATO", "NM_URNA_CANDIDATO", "SG_PARTIDO", "QT_VOTOS_NOMINAIS",
+                                                       "SG_UF", "CD_MUNICIPIO"})
         c["QT_VOTOS_NOMINAIS"] = c.QT_VOTOS_NOMINAIS.astype(int)
-        d = ler_zip("detalhe_votacao_munzona", ano, {"NR_TURNO", "CD_CARGO", "QT_APTOS", "QT_COMPARECIMENTO", "QT_ABSTENCOES",
+        d = ler_zip("detalhe_votacao_munzona", ano, {"NR_TURNO", "CD_CARGO", "SG_UF", "CD_MUNICIPIO", "QT_APTOS", "QT_COMPARECIMENTO", "QT_ABSTENCOES",
                                                      "QT_VOTOS_BRANCOS", "QT_VOTOS_NULOS", "QT_TOTAL_VOTOS_NULOS"})
         num = [x for x in d.columns if x.startswith("QT_")]
         d[num] = d[num].astype(int)
@@ -56,8 +78,10 @@ def main():
                         "brancos": int(dt.QT_VOTOS_BRANCOS),
                         "nulos": int(dt.get("QT_TOTAL_VOTOS_NULOS", dt.get("QT_VOTOS_NULOS", 0)))}
         saida[ano] = ano_d
+        municipios.append(por_municipio(ano, c, d, ano_d))
         top = ano_d["1"]["candidatos"][:2]
         print(ano, "1º:", top, "2º:", ano_d.get("2", {}).get("candidatos", [])[:2], flush=True)
+    pd.concat(municipios).to_parquet(PROCESSADOS / "historico_municipios.parquet", index=False)
     with open(PROCESSADOS / "historico.json", "w") as f:
         json.dump(saida, f, ensure_ascii=False, indent=1)
 

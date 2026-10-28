@@ -77,7 +77,7 @@ button, input, select { font: inherit; color: inherit; }
 .teste p { margin: 0; font-size: 13.5px; color: var(--ink-2); }
 .chip { display: inline-block; font-size: 11.5px; padding: 1px 7px; border-radius: 4px; background: var(--surface-2); border: 1px solid var(--line); margin: 1px 3px 1px 0; white-space: nowrap; }
 .filtro-uf { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; position: sticky; top: calc(env(safe-area-inset-top, 0px) + 58px); z-index: 4; background: var(--bg); padding-block: 8px; border-bottom: 1px solid var(--line); }
-.filtro-uf select { padding: 6px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); }
+.filtro-uf select, #sel-ano-mun { padding: 6px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); }
 .passos { margin: 0; padding-left: 20px; display: grid; gap: 6px; color: var(--ink-2); max-width: 82ch; }
 .trilha { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 14px; color: var(--ink-2); flex: 1 1 260px; min-width: 0; }
 .trilha a { color: var(--ink-2); text-decoration: none; padding: 2px 6px; border-radius: 4px; }
@@ -273,7 +273,7 @@ const eixo = () => ({ axisLine: { lineStyle: { color: T.axis } }, axisTick: { sh
 const D = { resumo: null, uf: {}, secoes: {} };
 async function json(url) { const r = await fetch(url); if (!r.ok) throw new Error(url + ": " + r.status); return r.json(); }
 async function carregarUF(uf) { return (D.uf[uf] ||= await json(`dados/uf/${uf}.json`)); }
-async function carregarAuditoria() { return (D.aud ||= await json("dados/auditoria.json")); }
+async function carregarAuditoria() { D.comp ||= await json("dados/comportamento.json"); return (D.aud ||= await json("dados/auditoria.json")); }
 async function carregarSecoes(uf) { return (D.secoes[uf] ||= await json(`dados/secoes/${uf}.json`)); }
 
 // ---------- componentes ----------
@@ -793,7 +793,7 @@ function trocarGrafico(el, fn) { const c = echarts.getInstanceByDom(el); if (c) 
 
 async function visaoAuditoria(app) {
   app.innerHTML = `<p class="carregando">Carregando dados da auditoria…</p>`;
-  const A = await carregarAuditoria();
+  const A = await carregarAuditoria(), CP = D.comp;
   if (location.hash !== "#auditoria") return;
   const R = D.resumo, c = A.contabilidade, hist = A.historico, h22 = hist.find((x) => x.ano === 2022), h26 = hist[hist.length - 1];
   const K = A.brasil.k;
@@ -802,13 +802,13 @@ async function visaoAuditoria(app) {
   const urnaMax = Math.max(...Object.values(A.urnas.dentro_do_municipio).map((v) => Math.abs(v.efeito_pp)));
   app.innerHTML = `<div class="cabeca"><span class="olho">Auditoria estatística · 1º e 2º turno</span>
     <h1>Auditoria de dados e comportamento eleitoral</h1>
-    <p class="lead">Flávio liderou o 1º turno por ${n0(c.vantagem_flavio_1)} votos e Lula venceu o 2º. É a primeira virada numa eleição presidencial desde 1989. Esta página verifica a consistência dos boletins e o comportamento do eleitorado entre os turnos, com testes estatísticos aplicados às ${n0(R.secoes)} seções, e lista as seções atípicas para conferência. Todos os números vêm dos boletins de urna publicados pelo TSE.</p></div>
+    <p class="lead">Flávio liderou o 1º turno por ${n0(c.vantagem_flavio_1)} votos e Lula venceu o 2º. É a primeira virada numa eleição presidencial desde 1989. Esta página compara o comportamento do eleitorado em 2026 com o das seis eleições anteriores (2002 a 2022), verifica a consistência dos boletins das ${n0(R.secoes)} seções e lista as seções atípicas para conferência. Todos os números vêm dos boletins de urna publicados pelo TSE.</p></div>
   <section class="bloco"><div class="bloco-cab"><div><span class="olho">Resultado dos testes · Brasil</span><h2>O que cada teste procurou e o que encontrou</h2>
     <p class="lead">Cada teste compara os dados com o comportamento esperado para contagens de votos. Um resultado fora do esperado não é conclusão; indica onde aprofundar a conferência.</p></div></div>
     <div class="testes">
       <div class="teste"><h3>Integridade dos boletins ${status("ok", "Consistente")}</h3><p>Em ${n0(R.secoes)} seções, ${A.integridade.comparecimento_maior_que_aptos} com mais votantes que eleitores e ${A.integridade.soma_votos_diferente_do_comparecimento_t2} com votos que não somam o comparecimento.</p></div>
       <div class="teste"><h3>Contabilidade da virada ${status("ok", "Fecha exatamente")}</h3><p>Os ${mi(c.ganho_total)} votos ganhos pelos finalistas são, voto a voto, a soma dos eliminados, da queda de brancos e nulos e do aumento do comparecimento.</p></div>
-      <div class="teste"><h3>Histórico de 2º turnos ${status("ok", "Dentro do padrão")}</h3><p>Lula captou ${p1(h26.parcela, 0)} dos votos novos; o 2º colocado captou ${p1(h22.parcela, 0)} em 2022. O inédito foi a diferença de 1º turno: ${p1(h26.gap_pp)}, contra ${p1(menorAnterior)} na menor anterior.</p></div>
+      <div class="teste"><h3>Comportamento em 2002–2022 ${status("ok", `${CP.indicadores.filter((i) => ["dentro", "tendencia"].includes(i.status)).length} de ${CP.indicadores.filter((i) => i.status !== "inedito").length} no padrão`)}</h3><p>Viradas em estados e municípios, brancos e nulos e a previsibilidade do 2º turno ficaram dentro da faixa de 2002 a 2022; a captação de votos novos ficou na tendência. O inédito foi a diferença de 1º turno: ${p1(h26.gap_pp)}, contra ${p1(menorAnterior)} na menor anterior.</p></div>
       <div class="teste"><h3>Aumento do comparecimento ${status("atencao", "Incomum")}</h3><p>${sinal(c.fontes_liquidas["aumento do comparecimento"])} eleitores no 2º turno; de 2002 a 2018 o comparecimento sempre caiu. O aumento foi espalhado pelas seções, sem concentração atípica (ver abaixo).</p></div>
       <div class="teste"><h3>Votos que o 1º turno não explica ${status("ok", "Consistente")}</h3><p>Seções muito acima do previsto: ${n0(K.res_lula_acima10)} para Lula e ${n0(K.res_fla_acima10)} para Flávio, contra ${n0(K.res_lula_abaixo10)} e ${n0(K.res_fla_abaixo10)} muito abaixo. A cauda não favorece ninguém.</p></div>
       <div class="teste"><h3>Ganhos acima das fontes ${status("ok", "Irrelevante")}</h3><p>${n0(K.limite_lula_10)} seções com ganho de Lula 10 ou mais votos acima de tudo o que poderia vir sem tirar eleitores de Flávio (${n0(K.limite_fla_10)} no caso inverso). Excesso total: ${n0(K.limite_lula_votos)} votos.</p></div>
@@ -817,6 +817,20 @@ async function visaoAuditoria(app) {
       <div class="teste"><h3>Modelo de urna ${status("ok", "Sem efeito")}</h3><p>Dentro do mesmo município, a variação de Lula difere no máximo ${p1(urnaMax, 2).replace("%", "")} ponto entre urnas de 2013, 2015, 2020 e 2022.</p></div>
       <div class="teste"><h3>Relação com o 1º turno ${status("ok", "Coerente")}</h3><p>A composição do 1º turno explica ${p1(100 * A.eliminados.r2, 0)} da variação de Lula entre municípios; ele cresceu mais onde Augusto Cury foi forte.</p></div>
     </div></section>
+
+  <section class="bloco" id="comportamento"><div class="bloco-cab"><div><span class="olho">Comportamento do eleitorado · TSE 2002–2026</span><h2>2026 comparado com as seis eleições anteriores</h2>
+    <p class="lead">Cada indicador mede como o voto mudou do 1º para o 2º turno, com os dados oficiais do TSE de cada ano, no Brasil e nos municípios. O valor de 2026 é comparado com a faixa de 2002 a 2022 e, quando a série tem tendência clara, com a projeção dela. "2º colocado" é quem ficou em segundo no 1º turno nacional de cada ano.</p></div></div>
+    <div id="tab-comp"></div>
+    <div class="grade2"><div style="display:grid;gap:6px"><h3>Variação do comparecimento entre os turnos</h3><p class="nota">Pontos percentuais dos aptos. Losango: tendência de 2010 a 2022 projetada para 2026.</p><div class="grafico" data-g="hcomp" style="height:260px"></div></div>
+      <div style="display:grid;gap:6px"><h3>Votos novos captados pelo 2º colocado</h3><p class="nota">Em 2006 o 2º colocado perdeu votos. Losango: tendência de 2002 a 2022 projetada para 2026.</p><div class="grafico" data-g="hcap" style="height:260px"></div></div></div>
+    <h3>O resultado de 2026 com o comportamento de cada eleição anterior</h3>
+    <p class="nota">Captação: os ${mi(CP.pool_2026)} votos novos de 2026 divididos entre os finalistas na proporção daquele ano. Comparecimento: aumento ou queda do comparecimento igual ao daquele ano, com os eleitores a mais ou a menos votando como os eleitores adicionais de 2026 (${p1(100 * CP.inclinacoes.lula, 0)} Lula, ${p1(100 * CP.inclinacoes.flavio, 0)} Flávio). São cenários aproximados.</p>
+    <div id="tab-cen"></div>
+    <h3>Comparecimento, brancos e nulos por estado</h3><p class="nota">Variação de 2026 comparada com a faixa do próprio estado de 2002 a 2022. Clique num estado para abrir o resultado dele.</p><div id="tab-uf-comp"></div>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between"><h3>Variação do 2º colocado nos municípios</h3>
+      <label class="nota">Comparar 2026 com <select id="sel-ano-mun">${CP.anos.filter((a) => a < 2026).map((a) => `<option value="${a}" ${a === 2022 ? "selected" : ""}>${a}</option>`).join("")}</select></label></div>
+    <div class="grafico" data-g="hmun" style="height:300px"></div>
+  </section>
 
   <section class="bloco"><div class="bloco-cab"><div><span class="olho">Histórico · TSE 2002–2022</span><h2>A conversão de votos foi fora do comum?</h2>
     <p class="lead">Barra cinza: parcela dos votos novos do 2º turno que o 2º colocado precisava captar para virar. Barra escura: parcela que ele captou. Desde 2010 o 2º colocado sempre ficou com a maioria; até 2022, a vantagem do líder era grande demais.</p></div></div>
@@ -871,6 +885,62 @@ async function visaoAuditoria(app) {
       </ol>
       <p>Código e dados desta análise: <a href="https://github.com/adriano-atanes/analise-eleicao-presidente-2026" target="_blank" rel="noopener">github.com/adriano-atanes/analise-eleicao-presidente-2026</a>. Relatórios em PDF: <a href="auditoria_eleicao_2026.pdf" target="_blank" rel="noopener">relatório de auditoria</a> (testes, indicadores por estado e lista completa das seções atípicas), <a href="analise_estatistica_2026.pdf" target="_blank" rel="noopener">análise estatística</a> e <a href="relatorio_eleicao_presidente_2026.pdf" target="_blank" rel="noopener">relatório dos resultados</a>.</p>
     </div></section>`;
+
+  // comportamento comparado com 2002–2022
+  {
+    const anos = CP.anos, anosAnt = anos.filter((a) => a < 2026);
+    const fmtInd = (i, v) => (v == null ? "—" : i.id === "virada" ? (v ? "sim" : "não") : i.id === "estados_virada" ? String(v)
+      : i.id === "r2_previsao" ? v.toFixed(3).replace(".", ",") : (v > 0 && ["dcomp_pp", "dbn_pp"].includes(i.id) ? "+" : "") + v.toFixed(1).replace(".", ",") + (i.unidade.startsWith("%") ? "%" : ""));
+    const ST = { dentro: ["ok", "Dentro do histórico"], tendencia: ["ok", "Na tendência"], acima: ["atencao", "Acima do histórico"], inedito: ["atencao", null] };
+    app.querySelector("#tab-comp").innerHTML = `<div class="tabela-wrap"><table><thead><tr><th style="cursor:default">Indicador</th>${anos.map((a) => `<th class="n" style="cursor:default">${a}</th>`).join("")}<th style="cursor:default">Situação de 2026</th></tr></thead>
+      <tbody style="cursor:default">${CP.indicadores.map((i) => `<tr><td style="white-space:normal;min-width:260px"><b>${esc(i.nome)}</b>${i.unidade ? ` <span class="nota">(${esc(i.unidade)})</span>` : ""}<br><span class="nota">${esc(i.leitura)}</span></td>
+        ${anosAnt.map((a) => `<td class="n">${fmtInd(i, i.serie[a])}</td>`).join("")}<td class="n"><b>${fmtInd(i, i.valor_2026)}</b></td>
+        <td>${status(ST[i.status][0], ST[i.status][1] || i.status_texto)}</td></tr>`).join("")}</tbody></table></div>`;
+    const N = CP.nacional, td = CP.tendencias;
+    const barras = (el, chave, tend, sufixo, nomeTend) => novoGrafico(el, {
+      grid: { left: 8, right: 8, top: 24, bottom: 8, containLabel: true },
+      tooltip: { trigger: "item", formatter: (p) => (p.seriesType === "scatter" ? `${nomeTend}<br><b>${p1(p.value[1], 1).replace("%", sufixo)}</b> (± ${tend.erro.toFixed(1).replace(".", ",")})` : `<b>${p.name}</b>: ${p1(p.value, 1).replace("%", sufixo)}`) },
+      xAxis: { type: "category", data: anos.map(String), ...eixo(), splitLine: { show: false } },
+      yAxis: { type: "value", ...eixo(), axisLabel: { color: T.muted, formatter: (v) => v + sufixo } },
+      series: [
+        { type: "bar", barWidth: "55%", data: anos.map((a) => ({ value: +N[a][chave].toFixed(2), itemStyle: { color: a === 2026 ? T.accent : T.ink2, borderRadius: 3 } })),
+          label: { show: true, position: "top", color: T.ink, fontSize: 11, formatter: (p) => p.value.toFixed(1).replace(".", ",") + sufixo } },
+        { type: "scatter", symbol: "diamond", symbolSize: 13, itemStyle: { color: T.cury, borderColor: T.surface, borderWidth: 1 }, data: [[String(2026), +tend.previsto_2026.toFixed(2)]], z: 5 },
+      ],
+    });
+    barras(app.querySelector('[data-g="hcomp"]'), "dcomp_pp", td.dcomp_pp_recente, " p.p.", "Tendência 2010–2022 prevista para 2026");
+    barras(app.querySelector('[data-g="hcap"]'), "captacao_segundo", td.captacao_segundo, "%", "Tendência 2002–2022 prevista para 2026");
+    const venc = (m) => (m == null ? "—" : m > 0 ? `<span style="color:var(--lula)"><b>Lula</b></span> por ${n0(m)}` : `<span style="color:var(--flavio)"><b>Flávio</b></span> por ${n0(-m)}`);
+    app.querySelector("#tab-cen").innerHTML = `<div class="tabela-wrap"><table><thead><tr><th style="cursor:default">Comportamento de</th><th class="n" style="cursor:default">Captação do 2º colocado</th><th style="cursor:default">Resultado de 2026 com essa captação</th><th class="n" style="cursor:default">Variação do comparecimento</th><th style="cursor:default">Resultado de 2026 com esse comparecimento</th></tr></thead><tbody style="cursor:default">
+      ${CP.cenario_captacao.map((cc, k) => { const cm = CP.cenario_comparecimento[k];
+        return `<tr><td>${cc.ano}</td><td class="n">${cc.captacao > 0 ? p1(cc.captacao) : "perdeu votos"}</td><td>${cc.margem_segundo == null ? "—" : venc(cc.margem_segundo)}</td><td class="n">${pp(cm.dcomp_pp)}</td><td>${venc(cm.margem_segundo)}</td></tr>`; }).join("")}
+      <tr><td><b>2026 (real)</b></td><td class="n"><b>${p1(N[2026].captacao_segundo)}</b></td><td>${venc(CP.margem_real)}</td><td class="n"><b>${pp(N[2026].dcomp_pp)}</b></td><td>${venc(CP.margem_real)}</td></tr></tbody></table></div>`;
+    const PE = CP.por_estado;
+    tabela(app.querySelector("#tab-uf-comp"), { porPagina: 30, linhas: Object.entries(PE).map(([uf, e]) => ({ id: uf, uf, ...e })),
+      aoClicar: (l) => { location.hash = "uf-" + l.uf; },
+      colunas: [{ t: "Estado", v: (l) => l.nome },
+        { t: "Δ comparec. 2026", n: 1, v: (l) => l.dcomp_pp.valor, f: (l) => pp(l.dcomp_pp.valor), ordemPadrao: 1 },
+        { t: "Faixa 2002–2022", n: 1, v: (l) => l.dcomp_pp.max, f: (l) => `${pp(l.dcomp_pp.min)} a ${pp(l.dcomp_pp.max)}` },
+        { t: "Comparecimento", v: (l) => (l.dcomp_pp.acima ? 2 : l.dcomp_pp.abaixo ? 0 : 1), f: (l) => (l.dcomp_pp.dentro ? status("ok", "Dentro") : status("atencao", l.dcomp_pp.acima ? "Acima" : "Abaixo")) },
+        { t: "Δ brancos+nulos 2026", n: 1, v: (l) => l.dbn_pp.valor, f: (l) => pp(l.dbn_pp.valor) },
+        { t: "Faixa 2002–2022", n: 1, v: (l) => l.dbn_pp.max, f: (l) => `${pp(l.dbn_pp.min)} a ${pp(l.dbn_pp.max)}` },
+        { t: "Brancos e nulos", v: (l) => (l.dbn_pp.dentro ? 1 : 2), f: (l) => (l.dbn_pp.dentro ? status("ok", "Dentro") : status("atencao", l.dbn_pp.acima ? "Acima" : "Abaixo")) },
+        { t: "Viradas 2002–2022", n: 1, v: (l) => l.viradas_hist, f: (l) => String(l.viradas_hist) },
+        { t: "Virada em 2026", v: (l) => (l.virou_2026 ? 1 : 0), f: (l) => (l.virou_2026 ? "sim" : "não") }] });
+    const elMun = app.querySelector('[data-g="hmun"]'), selAno = app.querySelector("#sel-ano-mun");
+    const desenharMun = () => trocarGrafico(elMun, () => { const a = +selAno.value, B2 = CP.bordas.dseg;
+      const pct = (h) => { const t = h.reduce((x, y) => x + y, 0); return h.map((v) => +((100 * v) / t).toFixed(2)); };
+      return novoGrafico(elMun, {
+        legend: { top: 0, left: 0, textStyle: { color: T.ink2 } }, grid: { left: 8, right: 16, top: 34, bottom: 30, containLabel: true },
+        tooltip: { trigger: "axis", formatter: (ps) => `Variação de ${B2[ps[0].dataIndex]} a ${B2[ps[0].dataIndex] + 1} p.p.<br>` + ps.map((p) => `${p.marker}${p.seriesName}: <b>${p1(p.value, 1)}</b> dos municípios`).join("<br>") },
+        xAxis: { type: "category", data: B2.slice(0, -1).map((v) => (v > 0 ? "+" : "") + v), name: "variação do 2º colocado entre os turnos (p.p. dos votos nos finalistas)", nameLocation: "middle", nameGap: 26, nameTextStyle: { color: T.muted }, ...eixo(), axisLabel: { color: T.muted, interval: 4 } },
+        yAxis: { type: "value", ...eixo(), axisLabel: { color: T.muted, formatter: "{value}%" } },
+        series: [[`${a} (${CP.nacional[a].segundo})`, CP.municipal[a].hist_dseg, T.ink2], ["2026 (Lula)", CP.municipal[2026].hist_dseg, T.lula]].map(([nome, h, cor]) => ({
+          name: nome, type: "line", step: "middle", symbol: "none", lineStyle: { width: 2, color: cor }, itemStyle: { color: cor }, data: pct(h) })),
+      }); });
+    selAno.addEventListener("change", desenharMun);
+    desenharMun();
+  }
 
   // histórico
   novoGrafico(app.querySelector('[data-g="hist"]'), {

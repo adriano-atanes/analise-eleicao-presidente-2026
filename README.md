@@ -20,10 +20,11 @@ python 03_migracao.py          # matriz de migração Brasil/estados/municípios
 python 03b_sensibilidade.py    # mesma estimativa com zonas eleitorais, para comparação
 python 04_gerar_portal.py      # JSONs do portal → portal/dados/
 python 05_relatorio_pdf.py     # relatório em PDF → relatorio/relatorio_eleicao_presidente_2026.pdf
-python 07_historico.py         # totais de Presidente 2002–2022 (TSE) → dados/processados/historico.json
+python 07_historico.py         # Presidente 2002–2022 (TSE), Brasil e municípios → dados/processados/historico*.{json,parquet}
 python 08_consistencia.py           # testes de consistência por seção → dados/processados/consistencia.json
 python 09_relatorio_estatistico.py  # análise estatística da virada → relatorio/analise_estatistica_2026.pdf
 python 10_dados_auditoria.py   # dados da visão Auditoria do portal → portal/dados/auditoria.json
+python 12_comportamento_historico.py  # comportamento 2026 × 2002–2022 → portal/dados/comportamento.json
 python 11_relatorio_auditoria.py    # relatório de auditoria → relatorio/auditoria_eleicao_2026.pdf
 ```
 
