@@ -4,8 +4,10 @@ portal/index.html é escrito sem o esqueleto HTML (doctype, <head>, reset), que 
 de artifacts acrescenta. Aqui o esqueleto é acrescentado e os dados são copiados ao lado.
 """
 import shutil
+from pathlib import Path
 
-from comum import RAIZ
+# só biblioteca padrão: o site pode ser montado sem instalar nada
+RAIZ = Path(__file__).resolve().parent.parent
 
 PORTAL = RAIZ / "portal"
 SITE = RAIZ / "site"

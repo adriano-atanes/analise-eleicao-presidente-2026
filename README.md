@@ -26,7 +26,19 @@ python 09_relatorio_estatistico.py  # análise estatística da virada → relato
 python 10_dados_auditoria.py   # dados da visão Auditoria do portal → portal/dados/auditoria.json
 ```
 
-Para abrir o portal localmente: `python scripts/06_montar_site.py && python -m http.server -d site` e acesse <http://localhost:8000>.
+## Rodar o portal localmente
+
+Os dados do portal já estão no repositório; não é preciso baixar nada do TSE nem instalar pacotes (só Python 3).
+
+```bash
+git clone https://github.com/adriano-atanes/analise-eleicao-presidente-2026.git
+cd analise-eleicao-presidente-2026
+python3 scripts/06_montar_site.py        # monta o site em site/
+python3 -m http.server 8000 -d site      # serve o site
+```
+
+Abra <http://localhost:8000> (auditoria em <http://localhost:8000/#auditoria>). No Windows, use `python` no lugar de `python3`.
+O portal precisa ser servido por HTTP: abrir o `index.html` direto pelo navegador (`file://`) não carrega os dados.
 
 ## GitHub Pages
 
