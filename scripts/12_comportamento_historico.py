@@ -224,6 +224,25 @@ def main():
              "dentro", "Dentro do histórico", "Diferença típica entre o 2º turno real e o previsto em cada município, próxima da menor da série."),
     ]
 
+    # eleitores dos eliminados por campo ideológico (13_ideologia_migracao.py), se já calculado
+    arq_ideo = PROCESSADOS / "ideologia.json"
+    if arq_ideo.exists():
+        ideo = json.load(open(arq_ideo))
+        G = lambda a, g: ideo["anos"][str(a)]["grupos"][g]["pt_entre_finalistas"]
+        dir_hist = {a: G(a, "direita") for a in (2018, 2022)}
+        cen_hist = {a: G(a, "centro") for a in (2010, 2014, 2018, 2022)}
+        cd = ideo["cenarios_direita"]["lista"]
+        ind.insert(4, item("direita_pt", "Eleitores dos eliminados de direita que votaram no PT", "% dos que escolheram um finalista", dir_hist,
+                           G(2026, "direita"), "acima", "Acima do histórico",
+                           f"Em 2018 e 2022, anos com o PT contra a direita no 2º turno, {f1(dir_hist[2018])}% e {f1(dir_hist[2022])}% foram para o PT; em 2026, "
+                           f"{f1(G(2026, 'direita'))}% (estimativa por zona; por seção, {f1(100 * ideo['secoes_2026']['grupos']['direita']['pct_pt'] / (ideo['secoes_2026']['grupos']['direita']['pct_pt'] + ideo['secoes_2026']['grupos']['direita']['pct_outro']))}%). "
+                           f"Com o comportamento de 2018 ou 2022, Lula ainda venceria por {f1(cd[0]['margem_pt'] / 1e6)} e {f1(cd[1]['margem_pt'] / 1e6)} milhões."))
+        ind.insert(5, item("centro_pt", "Eleitores dos eliminados de centro que votaram no PT", "% dos que escolheram um finalista", cen_hist,
+                           G(2026, "centro"), "acima" if G(2026, "centro") > max(cen_hist.values()) else "dentro",
+                           "Acima do histórico" if G(2026, "centro") > max(cen_hist.values()) else "Dentro do histórico",
+                           f"Centro: Marina (2010, 2014), Meirelles e Marina (2018), Tebet (2022) e Augusto Cury (2026). Por seção, 2026 fica em "
+                           f"{f1(100 * ideo['secoes_2026']['grupos']['centro']['pct_pt'] / (ideo['secoes_2026']['grupos']['centro']['pct_pt'] + ideo['secoes_2026']['grupos']['centro']['pct_outro']))}%."))
+
     saida = {"anos": [int(a) for a in anos], "indicadores": ind, "tendencias": tend, "nacional": nacional, "municipal": mun, "estados": estados, "comparacao": comp,
              "por_estado": por_estado, "cenario_captacao": cen_cap, "cenario_comparecimento": cen_comp,
              "inclinacoes": {"lula": a_l, "flavio": a_f}, "margem_real": margem_real, "pool_2026": float(pool),

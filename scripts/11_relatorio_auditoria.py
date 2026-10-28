@@ -93,6 +93,9 @@ def g_barras_hist(CP, chave, tend, sufixo, titulo):
 def main():
     A = json.load(open(PORTAL_DADOS / "auditoria.json"))
     CP = json.load(open(PORTAL_DADOS / "comportamento.json"))
+    ID = json.load(open(PORTAL_DADOS / "ideologia.json"))
+    IA, cdir = ID["anos"], ID["cenarios_direita"]
+    gd = lambda a, g: IA[str(a)]["grupos"][g]
     inds = CP["indicadores"]
     n_dentro = sum(i["status"] in ("dentro", "tendencia") for i in inds)
     n_aval = sum(i["status"] != "inedito" for i in inds)
@@ -121,8 +124,12 @@ def main():
                       "do 2º turno a partir do 1º. <b>Consistência.</b> Todos os testes de consistência dos boletins deram resultado dentro do esperado. "
                       "<b>A virada</b> se explica pela menor diferença de 1º turno da história "
                       f"({p1(h26['gap_pp'])} dos válidos, contra {p1(menor_ant)} na menor anterior) e por uma captação de votos novos ({p1(h26['parcela'], 0)}) "
-                      f"na tendência das eleições anteriores (2022: {p1(h22['parcela'], 0)}). O indicador fora do padrão histórico é o aumento do comparecimento "
-                      f"({sinal(c['fontes_liquidas']['aumento do comparecimento'])} eleitores), espalhado pelas seções e sem concentração atípica. "
+                      f"na tendência das eleições anteriores (2022: {p1(h22['parcela'], 0)}). <b>Fora do histórico</b> ficaram o aumento do comparecimento "
+                      f"({sinal(c['fontes_liquidas']['aumento do comparecimento'])} eleitores, espalhado pelas seções) e a parcela de eleitores dos eliminados de "
+                      f"direita que votou em Lula ({p1(gd(2026, 'direita')['pt_entre_finalistas'], 0)}, contra {p1(gd(2018, 'direita')['pt_entre_finalistas'], 0)} em 2018 e "
+                      f"{p1(gd(2022, 'direita')['pt_entre_finalistas'], 0)} em 2022). Nenhum dos dois decidiu o resultado: com o comparecimento ou o comportamento da "
+                      f"direita de qualquer eleição anterior, Lula também venceria. Só {p1(gd(2026, 'composicao_ganho_pt')['direita'], 0)} do crescimento de Lula veio "
+                      "de eleitores da direita. "
                       f"As {n0(len(linhas_sus))} seções atípicas listadas no anexo somam efeito desprezível sobre a margem e são o ponto de partida para conferência documental."),
              Spacer(1, 8), P("Comportamento comparado com 2002–2022", "h1")]
     resumo_comp = [["Indicador", "Faixa 2002–2022", "2026", "Situação"]]
@@ -183,6 +190,50 @@ def main():
               tabela(est, [16 * mm, 19 * mm, 27 * mm, 18 * mm, 21 * mm, 27 * mm, 17 * mm, 15 * mm, 14 * mm], numericas=(1, 2, 4, 5, 7)),
               P("O comparecimento subiu acima da faixa histórica em quase todos os estados, um movimento nacional e não concentrado. Brancos e nulos ficaram "
                 "dentro da faixa na maioria dos estados.", "nota"), PageBreak()]
+
+    # eleitores de cada campo ideológico
+    comp_pt = [["Origem do crescimento do PT", "2018 (Haddad)", "2022 (Lula)", "2026 (Lula)"]]
+    for k, nome in [("direita", "Eliminados de direita"), ("centro", "Eliminados de centro"), ("esquerda", "Eliminados de esquerda"),
+                    ("BN", "Brancos e nulos no 1º turno"), ("Abst", "Não votaram no 1º turno")]:
+        comp_pt.append([nome] + [p1(max(0, gd(a, "composicao_ganho_pt")[k])) for a in (2018, 2022, 2026)])
+    camp = [["Eleitores dos eliminados", "Ano", "Votos no 1º turno", "→ PT", "→ outro finalista", "→ branco/nulo", "→ não votou", "PT entre os finalistas"]]
+    for g, rot, anos_g in [("direita", "Direita", (2018, 2022, 2026)), ("centro", "Centro", (2010, 2014, 2018, 2022, 2026))]:
+        for a in anos_g:
+            x = gd(a, g)
+            camp.append([rot, f"<b>{a}</b>" if a == 2026 else a, mi(x["votos"]), p1(x["pct_pt"]), p1(x["pct_outro"]), p1(x["pct_bn"]), p1(x["pct_abst"]),
+                         f"<b>{p1(x['pt_entre_finalistas'])}</b>"])
+    venc2 = lambda m: f'<font color="#e34948"><b>Lula</b></font> por {n0(m)}' if m > 0 else f'<font color="#2a78d6"><b>Flávio</b></font> por {n0(-m)}'
+    cen_d = [["Eleitores de direita de 2026 votando…", "→ PT", "→ Flávio", "Resultado"],
+             ["como estimado para 2026", p1(IA["2026"]["pct"][4][0]), p1(IA["2026"]["pct"][4][1]), venc2(cdir["margem_real_estimada"])]]
+    cen_d += [[c_["cenario"], p1(c_["pct_pt"]), p1(c_["pct_outro"]), venc2(c_["margem_pt"])] for c_ in cdir["lista"]]
+    cls = [["Ano", "Candidatos eliminados por campo"]]
+    for a, d in ID["classificacao"].items():
+        por = {}
+        for n, (nome, part, campo) in d.items():
+            if campo in ("esquerda", "centro", "direita"):
+                por.setdefault(campo, []).append(f"{nome} ({part})")
+        cls.append([a, "<br/>".join(f"<b>{k.capitalize()}:</b> {', '.join(v)}" for k, v in por.items())])
+    story += [P("Os votos que Lula ganhou vieram da direita?", "h2"),
+              P(f"Lula ficou com {p1(CP['nacional']['2026']['captacao_segundo'], 0)} dos {mi(CP['pool_2026'])} votos novos do 2º turno, cerca de 3 em cada 4. "
+                "Esses votos novos não vieram só dos candidatos de direita eliminados: vieram também de quem votou branco ou nulo, de quem não tinha votado e "
+                "dos eleitores de Augusto Cury, de centro. A tabela mostra a composição estimada do crescimento do candidato do PT nas três eleições em que "
+                "ele enfrentou a direita no 2º turno.", "corpo"),
+              tabela(comp_pt, [74 * mm, 33 * mm, 33 * mm, 34 * mm], numericas=(1, 2, 3)), Spacer(1, 6),
+              P("Para onde foram os eleitores dos eliminados de direita e de centro", "h2"),
+              P("Estimativa por zona eleitoral, igual em todos os anos para permitir a comparação (2026 por seção: direita "
+                f"{p1(100 * ID['secoes_2026']['grupos']['direita']['pct_pt'] / (ID['secoes_2026']['grupos']['direita']['pct_pt'] + ID['secoes_2026']['grupos']['direita']['pct_outro']))} "
+                "para o PT entre os finalistas). A comparação da direita usa só os anos em que o PT enfrentou a direita no 2º turno.", "corpo"),
+              tabela(camp, [30 * mm, 13 * mm, 24 * mm, 17 * mm, 25 * mm, 22 * mm, 19 * mm, 24 * mm], numericas=range(1, 8)),
+              P("Em 2026, a parcela dos eleitores de direita e de centro que foi para o PT ficou acima do observado antes. Os candidatos de direita de 2026 "
+                "disputavam o mesmo campo de Flávio, e a estimativa é menos estável para os eleitores de Renan Santos.", "nota"), Spacer(1, 4),
+              KeepTogether([P("O resultado com os eleitores de direita votando de outro jeito", "h2"),
+                            tabela(cen_d, [80 * mm, 22 * mm, 22 * mm, 50 * mm], numericas=(1, 2)),
+                            P("Com o comportamento da direita de 2018 ou de 2022, Lula também venceria. Mesmo que todos os eleitores de direita que votaram num "
+                              "finalista tivessem escolhido Flávio, Lula venceria; Flávio só venceria se praticamente todos os eleitores de direita, inclusive os que "
+                              "votaram branco, nulo ou não votaram, tivessem ido para ele.", "corpo")]),
+              Spacer(1, 4), KeepTogether([P("Classificação usada (critério do analista, pelo partido)", "h2"),
+                                          tabela(cls, [14 * mm, 160 * mm])]),
+              PageBreak()]
 
     # parte 2: testes completos (relatório estatístico sem a capa)
     corpo = E.montar()

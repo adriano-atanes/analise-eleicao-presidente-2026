@@ -24,6 +24,7 @@ python 07_historico.py         # Presidente 2002–2022 (TSE), Brasil e municíp
 python 08_consistencia.py           # testes de consistência por seção → dados/processados/consistencia.json
 python 09_relatorio_estatistico.py  # análise estatística da virada → relatorio/analise_estatistica_2026.pdf
 python 10_dados_auditoria.py   # dados da visão Auditoria do portal → portal/dados/auditoria.json
+python 13_ideologia_migracao.py       # eleitores dos eliminados por campo ideológico, 2002–2026 → portal/dados/ideologia.json
 python 12_comportamento_historico.py  # comportamento 2026 × 2002–2022 → portal/dados/comportamento.json
 python 11_relatorio_auditoria.py    # relatório de auditoria → relatorio/auditoria_eleicao_2026.pdf
 ```

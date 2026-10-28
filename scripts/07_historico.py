@@ -55,13 +55,28 @@ def por_municipio(ano, c, d, ano_d):
     return m
 
 
+def por_zona(ano, c, d):
+    """Votos de cada candidato e totais por zona eleitoral (unidade da migração histórica)."""
+    chave = ["SG_UF", "CD_MUNICIPIO", "NR_ZONA", "NR_TURNO"]
+    zc = c.groupby(chave + ["NR_CANDIDATO"]).QT_VOTOS_NOMINAIS.sum().reset_index()
+    nulos = "QT_TOTAL_VOTOS_NULOS" if "QT_TOTAL_VOTOS_NULOS" in d else "QT_VOTOS_NULOS"
+    zd = d.groupby(chave)[["QT_APTOS", "QT_COMPARECIMENTO", "QT_ABSTENCOES", "QT_VOTOS_BRANCOS", nulos]].sum().reset_index()
+    zd.columns = chave + ["aptos", "comparecimento", "abstencoes", "brancos", "nulos"]
+    for z in (zc, zd):
+        z.insert(0, "ano", ano)
+        for k in ("CD_MUNICIPIO", "NR_ZONA", "NR_TURNO"):
+            z[k] = z[k].astype(int)
+    zc["NR_CANDIDATO"] = zc.NR_CANDIDATO.astype(int)
+    return zc, zd
+
+
 def main():
-    saida, municipios = {}, []
+    saida, municipios, zonas_cand, zonas_det = {}, [], [], []
     for ano in ANOS:
         c = ler_zip("votacao_candidato_munzona", ano, {"NR_TURNO", "CD_CARGO", "NR_CANDIDATO", "NM_URNA_CANDIDATO", "SG_PARTIDO", "QT_VOTOS_NOMINAIS",
-                                                       "SG_UF", "CD_MUNICIPIO"})
+                                                       "SG_UF", "CD_MUNICIPIO", "NR_ZONA"})
         c["QT_VOTOS_NOMINAIS"] = c.QT_VOTOS_NOMINAIS.astype(int)
-        d = ler_zip("detalhe_votacao_munzona", ano, {"NR_TURNO", "CD_CARGO", "SG_UF", "CD_MUNICIPIO", "QT_APTOS", "QT_COMPARECIMENTO", "QT_ABSTENCOES",
+        d = ler_zip("detalhe_votacao_munzona", ano, {"NR_TURNO", "CD_CARGO", "SG_UF", "CD_MUNICIPIO", "NR_ZONA", "QT_APTOS", "QT_COMPARECIMENTO", "QT_ABSTENCOES",
                                                      "QT_VOTOS_BRANCOS", "QT_VOTOS_NULOS", "QT_TOTAL_VOTOS_NULOS"})
         num = [x for x in d.columns if x.startswith("QT_")]
         d[num] = d[num].astype(int)
@@ -79,9 +94,14 @@ def main():
                         "nulos": int(dt.get("QT_TOTAL_VOTOS_NULOS", dt.get("QT_VOTOS_NULOS", 0)))}
         saida[ano] = ano_d
         municipios.append(por_municipio(ano, c, d, ano_d))
+        zc, zd = por_zona(ano, c, d)
+        zonas_cand.append(zc)
+        zonas_det.append(zd)
         top = ano_d["1"]["candidatos"][:2]
         print(ano, "1º:", top, "2º:", ano_d.get("2", {}).get("candidatos", [])[:2], flush=True)
     pd.concat(municipios).to_parquet(PROCESSADOS / "historico_municipios.parquet", index=False)
+    pd.concat(zonas_cand).to_parquet(PROCESSADOS / "historico_zonas_candidatos.parquet", index=False)
+    pd.concat(zonas_det).to_parquet(PROCESSADOS / "historico_zonas_detalhe.parquet", index=False)
     with open(PROCESSADOS / "historico.json", "w") as f:
         json.dump(saida, f, ensure_ascii=False, indent=1)
 

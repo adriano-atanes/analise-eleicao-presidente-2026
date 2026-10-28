@@ -273,7 +273,7 @@ const eixo = () => ({ axisLine: { lineStyle: { color: T.axis } }, axisTick: { sh
 const D = { resumo: null, uf: {}, secoes: {} };
 async function json(url) { const r = await fetch(url); if (!r.ok) throw new Error(url + ": " + r.status); return r.json(); }
 async function carregarUF(uf) { return (D.uf[uf] ||= await json(`dados/uf/${uf}.json`)); }
-async function carregarAuditoria() { D.comp ||= await json("dados/comportamento.json"); return (D.aud ||= await json("dados/auditoria.json")); }
+async function carregarAuditoria() { D.comp ||= await json("dados/comportamento.json"); D.ideo ||= await json("dados/ideologia.json"); return (D.aud ||= await json("dados/auditoria.json")); }
 async function carregarSecoes(uf) { return (D.secoes[uf] ||= await json(`dados/secoes/${uf}.json`)); }
 
 // ---------- componentes ----------
@@ -793,7 +793,7 @@ function trocarGrafico(el, fn) { const c = echarts.getInstanceByDom(el); if (c) 
 
 async function visaoAuditoria(app) {
   app.innerHTML = `<p class="carregando">Carregando dados da auditoria…</p>`;
-  const A = await carregarAuditoria(), CP = D.comp;
+  const A = await carregarAuditoria(), CP = D.comp, ID = D.ideo;
   if (location.hash !== "#auditoria") return;
   const R = D.resumo, c = A.contabilidade, hist = A.historico, h22 = hist.find((x) => x.ano === 2022), h26 = hist[hist.length - 1];
   const K = A.brasil.k;
@@ -830,6 +830,15 @@ async function visaoAuditoria(app) {
     <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between"><h3>Variação do 2º colocado nos municípios</h3>
       <label class="nota">Comparar 2026 com <select id="sel-ano-mun">${CP.anos.filter((a) => a < 2026).map((a) => `<option value="${a}" ${a === 2022 ? "selected" : ""}>${a}</option>`).join("")}</select></label></div>
     <div class="grafico" data-g="hmun" style="height:300px"></div>
+  </section>
+
+  <section class="bloco" id="campos"><div class="bloco-cab"><div><span class="olho">Eleitores de cada campo · TSE 2002–2026</span><h2>Os votos que Lula ganhou vieram da direita?</h2>
+    <p class="lead">Lula ficou com ${p1(CP.nacional[2026].captacao_segundo, 0)} dos ${mi(CP.pool_2026)} votos novos do 2º turno, cerca de 3 em cada 4. Esses votos novos não vieram só dos candidatos de direita eliminados: vieram também de quem votou branco ou nulo, de quem não tinha votado e dos eleitores de Augusto Cury, de centro. Pela estimativa de migração, só ${p1(ID.anos[2026].grupos.composicao_ganho_pt.direita, 0)} do crescimento de Lula veio de eleitores da direita.</p></div></div>
+    <div class="grade2"><div style="display:grid;gap:6px"><h3>De onde veio o crescimento do candidato do PT</h3><p class="nota">Composição estimada dos votos que o PT ganhou entre os turnos.</p><div class="grafico" data-g="ideo-comp" style="height:240px"></div></div>
+      <div style="display:grid;gap:6px"><h3>Eleitores dos eliminados que foram para o PT</h3><p class="nota">Entre os que votaram num finalista, por campo do candidato eliminado. Centro: anos com mais de 1 milhão de votos no campo. Direita: anos em que o PT enfrentou a direita no 2º turno.</p><div class="grafico" data-g="ideo" style="height:240px"></div></div></div>
+    <p class="aviso">Em 2026, ${p1(ID.anos[2026].grupos.direita.pt_entre_finalistas, 0)} dos eleitores dos eliminados de direita que votaram num finalista escolheram Lula, contra ${p1(ID.anos[2018].grupos.direita.pt_entre_finalistas, 0)} em 2018 e ${p1(ID.anos[2022].grupos.direita.pt_entre_finalistas, 0)} em 2022. É um comportamento acima do histórico. Os candidatos de direita de 2026 (Renan Santos, Ronaldo Caiado, Zema) disputavam o mesmo campo de Flávio, e a estimativa é menos estável para os eleitores de Renan Santos. O teste abaixo mostra que esse comportamento não decidiu o resultado.</p>
+    <h3>O resultado com os eleitores de direita votando de outro jeito</h3><div id="tab-ideo-cen"></div>
+    <details><summary class="nota" style="cursor:pointer">Classificação dos candidatos eliminados por campo (critério do analista, pelo partido)</summary><div id="tab-ideo-cls"></div></details>
   </section>
 
   <section class="bloco"><div class="bloco-cab"><div><span class="olho">Histórico · TSE 2002–2022</span><h2>A conversão de votos foi fora do comum?</h2>
@@ -940,6 +949,45 @@ async function visaoAuditoria(app) {
       }); });
     selAno.addEventListener("change", desenharMun);
     desenharMun();
+  }
+
+  // eleitores por campo ideológico
+  {
+    const IA = ID.anos, anosI = Object.keys(IA).map(Number);
+    const comp26 = IA[2026].grupos.composicao_ganho_pt, cd = ID.cenarios_direita;
+    const elG = app.querySelector('[data-g="ideo"]');
+    novoGrafico(elG, {
+      legend: { top: 0, left: 0, textStyle: { color: T.ink2 } }, grid: { left: 8, right: 8, top: 34, bottom: 8, containLabel: true },
+      tooltip: { trigger: "axis", axisPointer: { type: "shadow" }, formatter: (ps) => `<b>${ps[0].name}</b> · ${esc(IA[ps[0].name].pt)} (PT) × ${esc(IA[ps[0].name].outro)}<br>` +
+        ps.filter((p) => p.value != null).map((p) => `${p.marker}${p.seriesName}: <b>${p1(p.value)}</b> foi para o PT`).join("<br>") },
+      xAxis: { type: "category", data: anosI.map(String), ...eixo(), splitLine: { show: false } },
+      yAxis: { type: "value", max: 100, ...eixo(), axisLabel: { color: T.muted, formatter: "{value}%" } },
+      series: [["Eliminados de direita", "direita", T.flavio], ["Eliminados de centro", "centro", T.cury]].map(([nome, g, cor]) => ({
+        name: nome, type: "bar", barGap: "15%", itemStyle: { color: cor, borderRadius: [3, 3, 0, 0] },
+        label: { show: true, position: "top", color: T.ink, fontSize: 11, formatter: (p) => (p.value == null ? "" : p1(p.value, 0)) },
+        data: anosI.map((a) => { const v = IA[a].grupos[g].pt_entre_finalistas;
+          // direita: só anos em que o adversário do PT no 2º turno era de direita (2018, 2022, 2026)
+          return v == null || IA[a].grupos[g].votos < 1e6 || (g === "direita" && a < 2018) ? null : +v.toFixed(1); }) })),
+    });
+    const ORD = [["direita", "Eliminados de direita", T.flavio], ["centro", "Eliminados de centro", T.cury], ["esquerda", "Eliminados de esquerda", T.renan],
+      ["BN", "Brancos e nulos no 1º turno", T.nulo], ["Abst", "Não votaram no 1º turno", T.abst]];
+    novoGrafico(app.querySelector('[data-g="ideo-comp"]'), {
+      legend: { top: 0, left: 0, textStyle: { color: T.ink2 } }, grid: { left: 8, right: 16, top: 56, bottom: 8, containLabel: true },
+      tooltip: { trigger: "item", formatter: (p) => `${esc(p.seriesName)}: <b>${p1(p.value)}</b> do crescimento do PT em ${p.name}` },
+      xAxis: { type: "value", max: 100, ...eixo(), axisLabel: { color: T.muted, formatter: "{value}%" } },
+      yAxis: { type: "category", data: ["2018", "2022", "2026"].reverse(), ...eixo(), splitLine: { show: false } },
+      series: ORD.map(([k, nome, cor]) => ({ name: nome, type: "bar", stack: "t", barWidth: 22, itemStyle: { color: cor, borderColor: T.surface, borderWidth: 1 },
+        label: { show: true, color: k === "BN" || k === "Abst" ? T.surface : "#fff", fontSize: 11, formatter: (p) => (p.value >= 6 ? p1(p.value, 0) : "") },
+        data: ["2026", "2022", "2018"].map((a) => +Math.max(0, IA[a].grupos.composicao_ganho_pt[k] || 0).toFixed(1)) })),
+    });
+    const venc = (m) => (m > 0 ? `<span style="color:var(--lula)"><b>Lula</b></span> por ${n0(m)}` : `<span style="color:var(--flavio)"><b>Flávio</b></span> por ${n0(-m)}`);
+    app.querySelector("#tab-ideo-cen").innerHTML = `<div class="tabela-wrap"><table><thead><tr><th style="cursor:default">Eleitores de direita de 2026 (${mi(cd.eleitores_direita)}) votando…</th><th class="n" style="cursor:default">PT</th><th class="n" style="cursor:default">Outro finalista</th><th style="cursor:default">Resultado</th></tr></thead><tbody style="cursor:default">
+      <tr><td><b>como estimado para 2026</b></td><td class="n">${p1(IA[2026].pct[4][0])}</td><td class="n">${p1(IA[2026].pct[4][1])}</td><td>${venc(cd.margem_real_estimada)}</td></tr>
+      ${cd.lista.map((c) => `<tr><td>${esc(c.cenario)}</td><td class="n">${p1(c.pct_pt)}</td><td class="n">${p1(c.pct_outro)}</td><td>${venc(c.margem_pt)}</td></tr>`).join("")}</tbody></table></div>`;
+    const cls = [];
+    Object.entries(ID.classificacao).forEach(([a, d]) => Object.entries(d).forEach(([n, [nome, part, campo]]) => { if (!["PT", "outro"].includes(campo)) cls.push({ id: `${a}-${n}`, a: +a, nome, part, campo }); }));
+    tabela(app.querySelector("#tab-ideo-cls"), { porPagina: 15, linhas: cls, colunas: [{ t: "Ano", v: (l) => l.a, ordemPadrao: 1 }, { t: "Candidato", v: (l) => l.nome },
+      { t: "Partido", v: (l) => l.part }, { t: "Campo", v: (l) => l.campo }] });
   }
 
   // histórico
