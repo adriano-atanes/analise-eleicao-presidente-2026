@@ -1,0 +1,536 @@
+{
+ "2002": {
+  "1": {
+   "candidatos": [
+    [
+     "Lula",
+     "PT",
+     13,
+     39455233
+    ],
+    [
+     "José Serra",
+     "PSDB",
+     45,
+     19705445
+    ],
+    [
+     "Garotinho",
+     "PSB",
+     40,
+     15180097
+    ],
+    [
+     "Ciro",
+     "PPS",
+     23,
+     10170882
+    ],
+    [
+     "Zé Maria",
+     "PSTU",
+     16,
+     402236
+    ],
+    [
+     "Rui Costa Pimenta",
+     "PCO",
+     29,
+     38619
+    ]
+   ],
+   "aptos": 115253816,
+   "comparecimento": 94805583,
+   "abstencoes": 20448233,
+   "brancos": 2873753,
+   "nulos": 6976685
+  },
+  "2": {
+   "candidatos": [
+    [
+     "Lula",
+     "PT",
+     13,
+     52793364
+    ],
+    [
+     "José Serra",
+     "PSDB",
+     45,
+     33370739
+    ]
+   ],
+   "aptos": 115253816,
+   "comparecimento": 91664259,
+   "abstencoes": 23589188,
+   "brancos": 1727760,
+   "nulos": 3772138
+  }
+ },
+ "2006": {
+  "1": {
+   "candidatos": [
+    [
+     "Lula",
+     "PT",
+     13,
+     46662365
+    ],
+    [
+     "Geraldo Alckmin",
+     "PSDB",
+     45,
+     39968369
+    ],
+    [
+     "Heloísa Helena",
+     "PSOL",
+     50,
+     6575393
+    ],
+    [
+     "Cristovam Buarque",
+     "PDT",
+     12,
+     2538844
+    ],
+    [
+     "Ana Maria Rangel",
+     "PRP",
+     44,
+     126404
+    ],
+    [
+     "José Maria Eymael",
+     "PSDC",
+     27,
+     63294
+    ],
+    [
+     "Luciano Bivar",
+     "PSL",
+     17,
+     62064
+    ]
+   ],
+   "aptos": 125913235,
+   "comparecimento": 104820459,
+   "abstencoes": 21092675,
+   "brancos": 2866205,
+   "nulos": 5938645
+  },
+  "2": {
+   "candidatos": [
+    [
+     "Lula",
+     "PT",
+     13,
+     58295042
+    ],
+    [
+     "Geraldo Alckmin",
+     "PSDB",
+     45,
+     37543178
+    ]
+   ],
+   "aptos": 125913235,
+   "comparecimento": 101998221,
+   "abstencoes": 23914714,
+   "brancos": 1351448,
+   "nulos": 4789677
+  }
+ },
+ "2010": {
+  "1": {
+   "candidatos": [
+    [
+     "Dilma",
+     "PT",
+     13,
+     47651434
+    ],
+    [
+     "José Serra",
+     "PSDB",
+     45,
+     33132283
+    ],
+    [
+     "Marina Silva",
+     "PV",
+     43,
+     19636359
+    ],
+    [
+     "Plínio",
+     "PSOL",
+     50,
+     886816
+    ],
+    [
+     "Eymael",
+     "PSDC",
+     27,
+     89350
+    ],
+    [
+     "Zé Maria",
+     "PSTU",
+     16,
+     84609
+    ],
+    [
+     "Levy Fidelix",
+     "PRTB",
+     28,
+     57960
+    ],
+    [
+     "Ivan Pinheiro",
+     "PCB",
+     21,
+     39136
+    ],
+    [
+     "Rui Costa Pimenta",
+     "PCO",
+     29,
+     12206
+    ]
+   ],
+   "aptos": 135804433,
+   "comparecimento": 111193747,
+   "abstencoes": 24610296,
+   "brancos": 3479340,
+   "nulos": 6124254
+  },
+  "2": {
+   "candidatos": [
+    [
+     "Dilma",
+     "PT",
+     13,
+     55752529
+    ],
+    [
+     "José Serra",
+     "PSDB",
+     45,
+     43711388
+    ]
+   ],
+   "aptos": 135804433,
+   "comparecimento": 106606214,
+   "abstencoes": 29197152,
+   "brancos": 2452597,
+   "nulos": 4689428
+  }
+ },
+ "2014": {
+  "1": {
+   "candidatos": [
+    [
+     "Dilma",
+     "PT",
+     13,
+     43267668
+    ],
+    [
+     "Aécio Neves",
+     "PSDB",
+     45,
+     34897211
+    ],
+    [
+     "Marina Silva",
+     "PSB",
+     40,
+     22176619
+    ],
+    [
+     "Luciana Genro",
+     "PSOL",
+     50,
+     1612186
+    ],
+    [
+     "Pastor Everaldo",
+     "PSC",
+     20,
+     780513
+    ],
+    [
+     "Eduardo Jorge",
+     "PV",
+     43,
+     630099
+    ],
+    [
+     "Levy Fidelix",
+     "PRTB",
+     28,
+     446878
+    ],
+    [
+     "Zé Maria",
+     "PSTU",
+     16,
+     91209
+    ],
+    [
+     "Eymael",
+     "PSDC",
+     27,
+     61250
+    ],
+    [
+     "Mauro Iasi",
+     "PCB",
+     21,
+     47845
+    ],
+    [
+     "Rui Costa Pimenta",
+     "PCO",
+     29,
+     12324
+    ]
+   ],
+   "aptos": 142822046,
+   "comparecimento": 115122883,
+   "abstencoes": 27698475,
+   "brancos": 4420489,
+   "nulos": 6678592
+  },
+  "2": {
+   "candidatos": [
+    [
+     "Dilma",
+     "PT",
+     13,
+     54501118
+    ],
+    [
+     "Aécio Neves",
+     "PSDB",
+     45,
+     51041155
+    ]
+   ],
+   "aptos": 142822046,
+   "comparecimento": 112683879,
+   "abstencoes": 30137479,
+   "brancos": 1921819,
+   "nulos": 5219787
+  }
+ },
+ "2018": {
+  "1": {
+   "candidatos": [
+    [
+     "Jair Bolsonaro",
+     "PSL",
+     17,
+     49277010
+    ],
+    [
+     "Fernando Haddad",
+     "PT",
+     13,
+     31342051
+    ],
+    [
+     "Ciro Gomes",
+     "PDT",
+     12,
+     13344371
+    ],
+    [
+     "Geraldo Alckmin",
+     "PSDB",
+     45,
+     5096350
+    ],
+    [
+     "João Amoêdo",
+     "NOVO",
+     30,
+     2679745
+    ],
+    [
+     "Cabo Daciolo",
+     "PATRI",
+     51,
+     1348323
+    ],
+    [
+     "Henrique Meirelles",
+     "MDB",
+     15,
+     1288950
+    ],
+    [
+     "Marina Silva",
+     "REDE",
+     18,
+     1069578
+    ],
+    [
+     "Alvaro Dias",
+     "PODE",
+     19,
+     859601
+    ],
+    [
+     "Guilherme Boulos",
+     "PSOL",
+     50,
+     617122
+    ],
+    [
+     "Vera",
+     "PSTU",
+     16,
+     55762
+    ],
+    [
+     "Eymael",
+     "DC",
+     27,
+     41710
+    ],
+    [
+     "João Goulart Filho",
+     "PPL",
+     54,
+     30176
+    ]
+   ],
+   "aptos": 147306295,
+   "comparecimento": 117364654,
+   "abstencoes": 29941171,
+   "brancos": 3106937,
+   "nulos": 7206222
+  },
+  "2": {
+   "candidatos": [
+    [
+     "Jair Bolsonaro",
+     "PSL",
+     17,
+     57797847
+    ],
+    [
+     "Fernando Haddad",
+     "PT",
+     13,
+     47040906
+    ]
+   ],
+   "aptos": 147306294,
+   "comparecimento": 115933451,
+   "abstencoes": 31372373,
+   "brancos": 2486593,
+   "nulos": 8608105
+  }
+ },
+ "2022": {
+  "1": {
+   "candidatos": [
+    [
+     "Lula",
+     "PT",
+     13,
+     57259504
+    ],
+    [
+     "Jair Bolsonaro",
+     "PL",
+     22,
+     51072345
+    ],
+    [
+     "Simone Tebet",
+     "MDB",
+     15,
+     4915423
+    ],
+    [
+     "Ciro Gomes",
+     "PDT",
+     12,
+     3599287
+    ],
+    [
+     "Soraya Thronicke",
+     "UNIÃO",
+     44,
+     600955
+    ],
+    [
+     "Felipe D Avila",
+     "NOVO",
+     30,
+     559708
+    ],
+    [
+     "Padre Kelmon",
+     "PTB",
+     14,
+     81129
+    ],
+    [
+     "Léo Péricles",
+     "UP",
+     80,
+     53519
+    ],
+    [
+     "Sofia Manzano",
+     "PCB",
+     21,
+     45620
+    ],
+    [
+     "Vera",
+     "PSTU",
+     16,
+     25625
+    ],
+    [
+     "Constituinte Eymael",
+     "DC",
+     27,
+     16604
+    ]
+   ],
+   "aptos": 156454011,
+   "comparecimento": 123682372,
+   "abstencoes": 32770982,
+   "brancos": 1964779,
+   "nulos": 3487874
+  },
+  "2": {
+   "candidatos": [
+    [
+     "Lula",
+     "PT",
+     13,
+     60345999
+    ],
+    [
+     "Jair Bolsonaro",
+     "PL",
+     22,
+     58206354
+    ]
+   ],
+   "aptos": 156454011,
+   "comparecimento": 124252796,
+   "abstencoes": 32200558,
+   "brancos": 1769678,
+   "nulos": 3930765
+  }
+ }
+}
