@@ -41,6 +41,8 @@ def ler_zip(pasta, ano, colunas):
 
 def por_municipio(ano, c, d, ano_d):
     lider, segundo = (str(x[2]) for x in ano_d["1"]["candidatos"][:2])
+    # em 2018 e 2022 os arquivos trazem o código do município com e sem zeros à esquerda
+    c, d = c.assign(CD_MUNICIPIO=c.CD_MUNICIPIO.astype(int)), d.assign(CD_MUNICIPIO=d.CD_MUNICIPIO.astype(int))
     c = c.assign(papel=c.NR_CANDIDATO.map({lider: "lider", segundo: "segundo"}).fillna("outros"))
     v = c.pivot_table(index=["SG_UF", "CD_MUNICIPIO", "NR_TURNO"], columns="papel", values="QT_VOTOS_NOMINAIS", aggfunc="sum", fill_value=0)
     nulos = "QT_TOTAL_VOTOS_NULOS" if "QT_TOTAL_VOTOS_NULOS" in d else "QT_VOTOS_NULOS"

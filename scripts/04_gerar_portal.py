@@ -52,6 +52,10 @@ def main():
     mig = json.load(open(PROCESSADOS / "migracao.json"))
     sens = json.load(open(PROCESSADOS / "sensibilidade.json"))
     lista_cand, ordem_cand, cand_mun = candidatos_todos()
+    # coordenadas dos locais de votação (15_insights.py); sem o arquivo, os locais ficam sem mapa
+    arq_coords = PROCESSADOS / "locais.parquet"
+    coords = (pd.read_parquet(arq_coords) if arq_coords.exists()
+              else pd.DataFrame(columns=["SG_UF", "CD_MUNICIPIO", "NR_ZONA", "NR_LOCAL_VOTACAO", "NR_LATITUDE", "NR_LONGITUDE", "NM_BAIRRO"]))
     cand_uf = cand_mun.groupby(level=0).sum()
 
     # variação do comparecimento por seção, em pontos percentuais
@@ -102,6 +106,7 @@ def main():
         # o número do local de votação é único só dentro da zona
         chave_local = ["CD_MUNICIPIO", "NR_ZONA", "NR_LOCAL_VOTACAO"]
         locais = g[chave_local + ["NM_LOCAL_VOTACAO"]].drop_duplicates(chave_local)
+        locais = locais.merge(coords[coords.SG_UF == uf].drop(columns="SG_UF"), on=chave_local, how="left")
         idx_local = {k: i for i, k in enumerate(zip(locais.CD_MUNICIPIO, locais.NR_ZONA, locais.NR_LOCAL_VOTACAO))}
         cols = ([f"{k}_1" for k in T1] + [f"{k}_2" for k in T2])
         g = g.sort_values(["CD_MUNICIPIO", "NR_ZONA", "NR_SECAO"])
@@ -111,7 +116,10 @@ def main():
             g[cols].to_numpy()]).astype(int).tolist()
         tamanhos[f"secoes/{uf}"] = salvar(PORTAL_DADOS / "secoes" / f"{uf}.json", {
             "colunas": ["mun", "zona", "secao", "local"] + cols,
-            "locais": [[int(r.CD_MUNICIPIO), int(r.NR_ZONA), int(r.NR_LOCAL_VOTACAO), r.NM_LOCAL_VOTACAO.title()] for r in locais.itertuples()],
+            # [município, zona, nº do local, nome, latitude, longitude, bairro]
+            "locais": [[int(r.CD_MUNICIPIO), int(r.NR_ZONA), int(r.NR_LOCAL_VOTACAO), r.NM_LOCAL_VOTACAO.title(),
+                        None if pd.isna(r.NR_LATITUDE) else round(float(r.NR_LATITUDE), 5), None if pd.isna(r.NR_LONGITUDE) else round(float(r.NR_LONGITUDE), 5),
+                        "" if pd.isna(r.NM_BAIRRO) else str(r.NM_BAIRRO).title()] for r in locais.itertuples()],
             "linhas": linhas})
 
     tamanhos["resumo"] = salvar(PORTAL_DADOS / "resumo.json", resumo)

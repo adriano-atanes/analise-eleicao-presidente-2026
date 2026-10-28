@@ -27,6 +27,9 @@ python 10_dados_auditoria.py   # dados da visão Auditoria do portal → portal/
 python 13_ideologia_migracao.py       # eleitores dos eliminados por campo ideológico, 2002–2026 → portal/dados/ideologia.json
 python 12_comportamento_historico.py  # comportamento 2026 × 2002–2022 → portal/dados/comportamento.json
 python 11_relatorio_auditoria.py    # relatório de auditoria → relatorio/auditoria_eleicao_2026.pdf
+python 14_malha.py                  # malha dos municípios (IBGE via geodata-br; requer mapshaper) → portal/dados/mapa/brasil.json
+python 15_insights.py               # perfil do eleitorado, 2022 × 2026, curva da apuração, coordenadas dos locais
+python 16_logs_urnas.py             # logs de todas as urnas (~220 GB lidos em stream, 1 a 3 horas)
 ```
 
 ## Rodar o portal localmente
