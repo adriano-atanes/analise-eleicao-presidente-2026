@@ -13,7 +13,7 @@ import pandas as pd
 
 from comum import PORTAL_DADOS, PROCESSADOS
 
-F = importlib.import_module("08_forense")
+F = importlib.import_module("08_consistencia")
 B_COMP = np.arange(40, 101, 2)      # comparecimento, %
 B_SHARE = np.arange(0, 101, 2)      # % do candidato nos válidos
 B_RES = np.arange(-30, 31, 1)       # resíduo, p.p. do eleitorado
@@ -63,7 +63,7 @@ def indicadores(g):
 
 
 def suspeitas(s):
-    """Seções atípicas, com o motivo. Atípico não quer dizer irregular: é onde conferir primeiro."""
+    """Seções atípicas, com o motivo. Atípico quer dizer fora do padrão estatístico: é onde conferir primeiro."""
     novos = (s.Comp_2 - s.Comp_1).clip(lower=0)
     fontes = s.Elim_1 + s.BN_1 + novos
     s = s.assign(exl=(s.Lula_2 - s.Lula_1) - fontes, exf=(s["Flávio_2"] - s["Flávio_1"]) - fontes,
@@ -98,7 +98,7 @@ def main():
     s = F.carregar()
     _, sr = F.residuos(s)
     s = s.join(sr[["res_lula", "res_fla"]])
-    fz = json.load(open(PROCESSADOS / "forense.json"))
+    fz = json.load(open(PROCESSADOS / "consistencia.json"))
     h = json.load(open(PROCESSADOS / "historico.json"))
     hist = []
     for ano, d in h.items():

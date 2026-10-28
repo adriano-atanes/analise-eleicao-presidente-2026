@@ -1,6 +1,6 @@
 """Relatório em PDF da análise estatística da virada (relatorio/analise_estatistica_2026.pdf).
 
-Usa dados/processados/forense.json (08_forense.py), historico.json (07_historico.py) e as figuras
+Usa dados/processados/consistencia.json (08_consistencia.py), historico.json (07_historico.py) e as figuras
 de relatorio/figuras/. Reaproveita estilos e funções do relatório principal (05_relatorio_pdf.py).
 """
 import importlib
@@ -78,7 +78,7 @@ def quadro(cor, titulo, texto):
 
 def montar():
     """Monta o conteúdo do relatório (lista de flowables); usado também por 11_relatorio_auditoria.py."""
-    f = json.load(open(PROCESSADOS / "forense.json"))
+    f = json.load(open(PROCESSADOS / "consistencia.json"))
     h = json.load(open(PROCESSADOS / "historico.json"))
     c, integ, res, lim, comp, dig, urn, elim = (f[k] for k in ["contabilidade", "integridade", "residuos", "limites", "comparecimento", "digitos", "urnas", "eliminados"])
     hist = historico_linhas(h, c)
@@ -89,13 +89,13 @@ def montar():
 
     # --- capa ---
     story += [Spacer(1, 6 * mm), P("ELEIÇÃO PRESIDENCIAL 2026 · ANÁLISE ESTATÍSTICA", "olho"), Spacer(1, 3),
-              P("A virada no 2º turno é estatisticamente anômala?", "titulo"), Spacer(1, 4),
+              P("Consistência estatística da virada no 2º turno", "titulo"), Spacer(1, 4),
               P(f"Flávio Bolsonaro liderou o 1º turno com {n0(c['vantagem_flavio_1'])} votos de vantagem e Lula venceu o 2º. É a primeira vez, desde 1989, "
                 "que o líder do 1º turno perde a eleição presidencial no Brasil. Este relatório examina se o volume de votos que mudou de lado tem comportamento "
-                "estatístico normal, usando o histórico das eleições anteriores e testes de forense eleitoral aplicados às 499.248 seções de 2026.", "lead"),
+                "estatístico normal, usando o histórico das eleições anteriores e testes de consistência estatística aplicados às 499.248 seções de 2026.", "lead"),
               Spacer(1, 4),
               quadro("#1d7a4c", "Conclusão",
-                     "Nenhum dos oito testes encontrou padrão compatível com votos adicionados ou alterados. A virada se explica por dois fatos verificáveis: "
+                     "Todos os testes de consistência deram resultado dentro do esperado. A virada se explica por dois fatos verificáveis: "
                      f"a diferença no 1º turno foi a menor da história ({p1(hist[-1]['gap_pp'])} dos válidos, contra {p1(menor_gap_anterior)} na menor anterior), "
                      f"e Lula captou {p1(c['parcela_lula_do_ganho'], 0)} dos votos novos do 2º turno, pouco acima dos {p1(h22['parcela'], 0)} que o 2º colocado "
                      "captou em 2022. Desde 2010, o 2º colocado sempre captou a maior parte dos votos novos; antes de 2026, a diferença de 1º turno é que era grande demais para virar."),
@@ -106,8 +106,8 @@ def montar():
               ["3. Histórico 2002–2022", "conversão fora do padrão", f"Lula {p1(c['parcela_lula_do_ganho'], 0)} × 2º colocado em 2022 {p1(h22['parcela'], 0)} e 2014 {p1(h14['parcela'], 0)}"],
               ["4. Resíduos do modelo", "votos acima do que o 1º turno explica", f"simétricos; excedentes a favor de Lula: {n0(res['Lula']['votos_excedentes_acima_10pp'])} votos"],
               ["5. Limites por seção", "ganhos impossíveis sem trocas", f"{n0(lim['Lula']['secoes'])} seções, mediana {lim['Lula']['excesso_mediano']:.0f} votos; total {n0(lim['Lula']['votos_excedentes'])}"],
-              ["6. Comparecimento × voto", "enchimento de urna (Klimek)", f"seções com 100%: {comp['secoes_comparecimento_100pct']['1']} (1º) e {comp['secoes_comparecimento_100pct']['2']} (2º)"],
-              ["7. Último dígito", "números inventados", f"uniforme nos dois turnos (p = {dig['Lula_2']['ultimo_p']:.2f} Lula, {dig['Flávio_2']['ultimo_p']:.2f} Flávio)".replace("0.", "0,")],
+              ["6. Comparecimento × voto", "comparecimento concentrado (Klimek)", f"seções com 100%: {comp['secoes_comparecimento_100pct']['1']} (1º) e {comp['secoes_comparecimento_100pct']['2']} (2º)"],
+              ["7. Último dígito", "padrão não aleatório", f"uniforme nos dois turnos (p = {dig['Lula_2']['ultimo_p']:.2f} Lula, {dig['Flávio_2']['ultimo_p']:.2f} Flávio)".replace("0.", "0,")],
               ["8. Modelo de urna", "efeito de equipamento", "diferenças ≤ 0,17 p.p. dentro do município"],
               ["9. Voto dos eliminados", "variação sem relação com o 1º turno", f"composição do 1º turno explica {p1(100 * elim['r2'], 0)} da variação municipal"]]
     story += [tabela(resumo, [44 * mm, 52 * mm, 78 * mm]), PageBreak()]
@@ -153,7 +153,7 @@ def montar():
               P(f"<b>O que foi incomum.</b> O comparecimento subiu {n0(fl['aumento do comparecimento'])} eleitores no 2º turno. Na série 2002–2022 ele caiu em cinco "
                 f"eleições e subiu só em 2022 (+{n0(h22['dcomp'])}). Dentro de cada município, as seções onde o comparecimento mais aumentou deram a Lula, em média, "
                 f"{p1(100 * comp['inclinacao_dl'], 0)} dos votos extras e a Flávio {p1(100 * comp['inclinacao_df'], 0)}. Isso é compatível com mobilização de eleitores; "
-                "a seção 4 testa se o aumento tem a assinatura de urnas infladas, e não tem.", "corpo"),
+                "a seção 4 testa se o aumento se concentrou em poucas seções, e não se concentrou.", "corpo"),
               Spacer(1, 4), P("Integridade dos boletins de urna", "h2"),
               P(f"Verificado em cada uma das {n0(integ['secoes'])} seções e nos dois turnos: comparecimento maior que o eleitorado em "
                 f"{integ['comparecimento_maior_que_aptos']} seções; soma dos votos diferente do comparecimento em {integ['soma_votos_diferente_do_comparecimento_t1']} (1º turno) e "
@@ -166,7 +166,7 @@ def montar():
     # --- 3. resíduos e limites ---
     rl, rf = res["Lula"], res["Flávio"]
     story += [P("SEÇÃO 3", "olho"), P("Os votos de cada seção são explicados pelo 1º turno?", "h1"),
-              P("Se votos tivessem sido acrescentados a um candidato em parte das seções, essas seções teriam no 2º turno mais votos para ele do que o seu próprio "
+              P("Se houvesse excesso sistemático de votos para um candidato em parte das seções, essas seções teriam no 2º turno mais votos para ele do que o seu próprio "
                 "1º turno permite prever. O modelo de migração do estado prevê o 2º turno de cada seção a partir do 1º; a diferença entre o real e o previsto é o resíduo.", "lead"),
               img("residuos"),
               tabela([["", "Lula", "Flávio"],
@@ -189,8 +189,8 @@ def montar():
               PageBreak()]
 
     # --- 4. comparecimento ---
-    story += [P("SEÇÃO 4", "olho"), P("Comparecimento e voto: há sinal de urnas infladas?", "h1"),
-              P("O teste de Klimek et al. (2012) cruza o comparecimento de cada seção com o voto do candidato. Em eleições com enchimento de urnas, aparece uma "
+    story += [P("SEÇÃO 4", "olho"), P("Comparecimento e voto: há concentração atípica?", "h1"),
+              P("O teste de Klimek et al. (2012) cruza o comparecimento de cada seção com o voto do candidato. Quando o comparecimento cresce de forma atípica e concentrada num candidato, aparece uma "
                 "concentração de seções com comparecimento perto de 100% e quase todos os votos para o mesmo candidato, separada da nuvem principal. "
                 "Os mapas abaixo mostram onde estão os votos de cada candidato, nos dois turnos.", "lead"),
               img("impressao_digital", LARGURA * 0.86),
@@ -203,7 +203,7 @@ def montar():
 
     # --- 5. dígitos e urnas ---
     story += [P("SEÇÃO 5", "olho"), P("Dígitos e modelos de urna", "h1"), P("Último dígito dos votos por seção", "h2"),
-              P("Quando números são inventados, as pessoas tendem a repetir alguns dígitos finais. Em contagens reais com dezenas ou centenas de votos, cada dígito final "
+              P("Contagens produzidas por processos não aleatórios tendem a repetir alguns dígitos finais. Em contagens reais com dezenas ou centenas de votos, cada dígito final "
                 "(0 a 9) aparece em cerca de 10% das seções.", "corpo"), img("ultimo_digito")]
     linhas = [["Contagem", "Seções (≥ 10 votos)", "Maior desvio de 10%", "Qui-quadrado", "p-valor", "2º dígito: média", "Benford"]]
     for col, nome in [("Lula_1", "Lula · 1º turno"), ("Flávio_1", "Flávio · 1º turno"), ("Lula_2", "Lula · 2º turno"), ("Flávio_2", "Flávio · 2º turno")]:
@@ -245,12 +245,12 @@ def montar():
                 "onde Augusto Cury teve mais votos, em linha com o modelo de migração (53% dos eleitores de Cury foram para Lula). Uma alteração artificial de votos "
                 "tenderia a produzir variação sem relação com o 1º turno de cada lugar.", "corpo"),
               Spacer(1, 6), P("O que esta análise não cobre", "h1"),
-              P("Testes estatísticos detectam padrões típicos de manipulação, como votos acrescentados em parte das seções, números inventados ou efeitos concentrados "
-                "num tipo de equipamento. Eles não provam a ausência de qualquer irregularidade: uma alteração pequena e espalhada de modo proporcional por todas as seções "
+              P("Testes estatísticos detectam inconsistências nos dados, como excesso de votos em parte das seções, contagens com padrão não aleatório ou efeitos concentrados "
+                "num tipo de equipamento. Eles não substituem a conferência documental: uma alteração pequena e espalhada de modo proporcional por todas as seções "
                 "seria difícil de distinguir de mudança real de voto. A verificação desse tipo de hipótese é feita por auditoria (teste de integridade das urnas, conferência "
                 "dos boletins impressos com os publicados, registros digitais de voto), que está fora do alcance deste relatório.", "corpo"),
               P("Os dados usados são os boletins de urna publicados pelo TSE. Todo o código está em github.com/adriano-atanes/analise-eleicao-presidente-2026 "
-                "(scripts 07_historico.py, 08_forense.py e 09_relatorio_estatistico.py), e os resultados podem ser reproduzidos por qualquer pessoa.", "corpo")]
+                "(scripts 07_historico.py, 08_consistencia.py e 09_relatorio_estatistico.py), e os resultados podem ser reproduzidos por qualquer pessoa.", "corpo")]
 
     return story
 

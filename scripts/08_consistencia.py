@@ -1,8 +1,8 @@
-"""Testes estatísticos (forense eleitoral) sobre as seções do 1º e do 2º turno de 2026.
+"""Testes de consistência estatística sobre as seções do 1º e do 2º turno de 2026.
 
-Os testes procuram padrões que costumam aparecer quando há votos adicionados ou alterados
-em parte das seções. Nenhum deles prova fraude ou ausência de fraude; servem para dizer se
-os números têm o comportamento esperado de uma eleição limpa ou se há algo a investigar.
+Os testes verificam a consistência dos boletins e se o comportamento do eleitorado entre os
+turnos segue o padrão esperado para contagens de votos. Um resultado fora do esperado não é
+conclusão; indica onde aprofundar a conferência documental.
 
 1. Integridade aritmética de cada boletim de seção
 2. Contabilidade da virada: de onde vieram, em termos líquidos, os votos novos dos finalistas
@@ -14,7 +14,7 @@ os números têm o comportamento esperado de uma eleição limpa ou se há algo 
 7. Modelo de urna: a variação do voto muda com o modelo, dentro do mesmo município?
 8. A variação entre turnos acompanha o voto dos eliminados?
 
-Saídas: dados/processados/forense.json e figuras em relatorio/figuras/.
+Saídas: dados/processados/consistencia.json e figuras em relatorio/figuras/.
 """
 import json
 
@@ -273,7 +273,7 @@ def main():
         nome: s_res.nlargest(15, col)[["SG_UF", "CD_MUNICIPIO", "NM_MUNICIPIO", "NR_ZONA", "NR_SECAO", "Aptos_2", "Lula_1", "Flávio_1", "Elim_1",
                                        "BN_1", "Comp_1", "Lula_2", "Flávio_2", "BN_2", "Comp_2", col]].to_dict("records")
         for nome, col in [("Lula", "res_lula"), ("Flávio", "res_fla")]}
-    with open(PROCESSADOS / "forense.json", "w") as f:
+    with open(PROCESSADOS / "consistencia.json", "w") as f:
         json.dump(out, f, ensure_ascii=False, indent=1, default=lambda o: o.item() if hasattr(o, "item") else str(o))
     print(json.dumps({k: v for k, v in out.items() if k != "maiores_residuos"}, ensure_ascii=False, indent=1, default=str))
 

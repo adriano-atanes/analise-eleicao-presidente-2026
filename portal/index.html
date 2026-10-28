@@ -801,18 +801,18 @@ async function visaoAuditoria(app) {
   const dig2 = A.digitos;
   const urnaMax = Math.max(...Object.values(A.urnas.dentro_do_municipio).map((v) => Math.abs(v.efeito_pp)));
   app.innerHTML = `<div class="cabeca"><span class="olho">Auditoria estatística · 1º e 2º turno</span>
-    <h1>A virada de 2026 tem sinais de fraude?</h1>
-    <p class="lead">Flávio liderou o 1º turno por ${n0(c.vantagem_flavio_1)} votos e Lula venceu o 2º. É a primeira virada numa eleição presidencial desde 1989. Esta página reúne os testes usados em forense eleitoral para procurar votos adicionados ou alterados, aplicados às ${n0(R.secoes)} seções, e lista as seções atípicas para conferência. Todos os números vêm dos boletins de urna publicados pelo TSE.</p></div>
+    <h1>Auditoria de dados e comportamento eleitoral</h1>
+    <p class="lead">Flávio liderou o 1º turno por ${n0(c.vantagem_flavio_1)} votos e Lula venceu o 2º. É a primeira virada numa eleição presidencial desde 1989. Esta página verifica a consistência dos boletins e o comportamento do eleitorado entre os turnos, com testes estatísticos aplicados às ${n0(R.secoes)} seções, e lista as seções atípicas para conferência. Todos os números vêm dos boletins de urna publicados pelo TSE.</p></div>
   <section class="bloco"><div class="bloco-cab"><div><span class="olho">Resultado dos testes · Brasil</span><h2>O que cada teste procurou e o que encontrou</h2>
-    <p class="lead">Um teste estatístico mostra se os números se comportam como numa eleição sem interferência. Ele não prova fraude nem ausência de fraude; aponta onde olhar.</p></div></div>
+    <p class="lead">Cada teste compara os dados com o comportamento esperado para contagens de votos. Um resultado fora do esperado não é conclusão; indica onde aprofundar a conferência.</p></div></div>
     <div class="testes">
-      <div class="teste"><h3>Integridade dos boletins ${status("ok", "Sem anomalia")}</h3><p>Em ${n0(R.secoes)} seções, ${A.integridade.comparecimento_maior_que_aptos} com mais votantes que eleitores e ${A.integridade.soma_votos_diferente_do_comparecimento_t2} com votos que não somam o comparecimento.</p></div>
+      <div class="teste"><h3>Integridade dos boletins ${status("ok", "Consistente")}</h3><p>Em ${n0(R.secoes)} seções, ${A.integridade.comparecimento_maior_que_aptos} com mais votantes que eleitores e ${A.integridade.soma_votos_diferente_do_comparecimento_t2} com votos que não somam o comparecimento.</p></div>
       <div class="teste"><h3>Contabilidade da virada ${status("ok", "Fecha exatamente")}</h3><p>Os ${mi(c.ganho_total)} votos ganhos pelos finalistas são, voto a voto, a soma dos eliminados, da queda de brancos e nulos e do aumento do comparecimento.</p></div>
       <div class="teste"><h3>Histórico de 2º turnos ${status("ok", "Dentro do padrão")}</h3><p>Lula captou ${p1(h26.parcela, 0)} dos votos novos; o 2º colocado captou ${p1(h22.parcela, 0)} em 2022. O inédito foi a diferença de 1º turno: ${p1(h26.gap_pp)}, contra ${p1(menorAnterior)} na menor anterior.</p></div>
-      <div class="teste"><h3>Aumento do comparecimento ${status("atencao", "Incomum")}</h3><p>${sinal(c.fontes_liquidas["aumento do comparecimento"])} eleitores no 2º turno; de 2002 a 2018 o comparecimento sempre caiu. O aumento foi espalhado pelas seções, sem a assinatura de urnas infladas (ver abaixo).</p></div>
-      <div class="teste"><h3>Votos que o 1º turno não explica ${status("ok", "Sem anomalia")}</h3><p>Seções muito acima do previsto: ${n0(K.res_lula_acima10)} para Lula e ${n0(K.res_fla_acima10)} para Flávio, contra ${n0(K.res_lula_abaixo10)} e ${n0(K.res_fla_abaixo10)} muito abaixo. A cauda não favorece ninguém.</p></div>
+      <div class="teste"><h3>Aumento do comparecimento ${status("atencao", "Incomum")}</h3><p>${sinal(c.fontes_liquidas["aumento do comparecimento"])} eleitores no 2º turno; de 2002 a 2018 o comparecimento sempre caiu. O aumento foi espalhado pelas seções, sem concentração atípica (ver abaixo).</p></div>
+      <div class="teste"><h3>Votos que o 1º turno não explica ${status("ok", "Consistente")}</h3><p>Seções muito acima do previsto: ${n0(K.res_lula_acima10)} para Lula e ${n0(K.res_fla_acima10)} para Flávio, contra ${n0(K.res_lula_abaixo10)} e ${n0(K.res_fla_abaixo10)} muito abaixo. A cauda não favorece ninguém.</p></div>
       <div class="teste"><h3>Ganhos acima das fontes ${status("ok", "Irrelevante")}</h3><p>${n0(K.limite_lula_10)} seções com ganho de Lula 10 ou mais votos acima de tudo o que poderia vir sem tirar eleitores de Flávio (${n0(K.limite_fla_10)} no caso inverso). Excesso total: ${n0(K.limite_lula_votos)} votos.</p></div>
-      <div class="teste"><h3>Enchimento de urna (Klimek) ${status("ok", "Sem anomalia")}</h3><p>Sem aglomerado de seções com comparecimento perto de 100% e voto quase todo num candidato. Seções com 100%: ${K.comp100_1} no 1º turno e ${K.comp100_2} no 2º.</p></div>
+      <div class="teste"><h3>Comparecimento × voto (Klimek) ${status("ok", "Consistente")}</h3><p>Sem aglomerado de seções com comparecimento perto de 100% e voto quase todo num candidato. Seções com 100%: ${K.comp100_1} no 1º turno e ${K.comp100_2} no 2º.</p></div>
       <div class="teste"><h3>Último dígito ${status("ok", "Uniforme")}</h3><p>Cada dígito final aparece em cerca de 10% das seções para os dois candidatos (p = ${dig2.Lula_2.ultimo_p.toFixed(2).replace(".", ",")} Lula e ${dig2["Flávio_2"].ultimo_p.toFixed(2).replace(".", ",")} Flávio no 2º turno).</p></div>
       <div class="teste"><h3>Modelo de urna ${status("ok", "Sem efeito")}</h3><p>Dentro do mesmo município, a variação de Lula difere no máximo ${p1(urnaMax, 2).replace("%", "")} ponto entre urnas de 2013, 2015, 2020 e 2022.</p></div>
       <div class="teste"><h3>Relação com o 1º turno ${status("ok", "Coerente")}</h3><p>A composição do 1º turno explica ${p1(100 * A.eliminados.r2, 0)} da variação de Lula entre municípios; ele cresceu mais onde Augusto Cury foi forte.</p></div>
@@ -831,18 +831,18 @@ async function visaoAuditoria(app) {
     <span class="nota" id="uf-info"></span></div>
 
   <section class="bloco"><div class="bloco-cab"><div><span class="olho">Teste de Klimek et al. (2012)</span><h2>Comparecimento × voto em cada seção</h2>
-    <p class="lead">Cada célula soma os votos do candidato nas seções com aquele comparecimento (eixo horizontal) e aquela porcentagem do candidato (eixo vertical). Enchimento de urna aparece como uma mancha separada no canto superior direito. Compare o 1º com o 2º turno.</p></div>
+    <p class="lead">Cada célula soma os votos do candidato nas seções com aquele comparecimento (eixo horizontal) e aquela porcentagem do candidato (eixo vertical). Um comparecimento atípico concentrado num candidato apareceria como uma mancha separada no canto superior direito. Compare o 1º com o 2º turno.</p></div>
     <div class="seg" role="group" aria-label="Candidato" id="seg-fp"><button aria-pressed="true" data-c="Lula">Lula</button><button aria-pressed="false" data-c="Flávio">Flávio</button></div></div>
     <div class="grade2"><div class="grafico" data-g="fp1" style="height:340px"></div><div class="grafico" data-g="fp2" style="height:340px"></div></div>
     <p class="nota" id="fp-nota"></p></section>
 
   <section class="bloco"><div class="bloco-cab"><div><span class="olho">Modelo de migração</span><h2>Votos que o 1º turno da seção não explica</h2>
-    <p class="lead">Para cada seção, o 2º turno real menos o previsto a partir do 1º turno dela, em pontos percentuais do eleitorado. Votos acrescentados a um candidato formariam uma cauda à direita na curva dele.</p></div></div>
+    <p class="lead">Para cada seção, o 2º turno real menos o previsto a partir do 1º turno dela, em pontos percentuais do eleitorado. Um excesso sistemático de votos para um candidato formaria uma cauda à direita na curva dele.</p></div></div>
     <div class="grafico" data-g="res" style="height:300px"></div><p class="nota" id="res-nota"></p></section>
 
   <div class="grade2">
     <section class="bloco"><div class="bloco-cab"><div><span class="olho">Teste do último dígito</span><h2>Dígito final dos votos por seção</h2>
-      <p class="lead">Em contagens reais, cada dígito de 0 a 9 aparece em cerca de 10% das seções. Números inventados costumam desviar disso.</p></div>
+      <p class="lead">Em contagens reais, cada dígito de 0 a 9 aparece em cerca de 10% das seções. Desvios indicam contagens com padrão não aleatório.</p></div>
       <div class="seg" role="group" aria-label="Turno" id="seg-dig"><button aria-pressed="false" data-t="1">1º turno</button><button aria-pressed="true" data-t="2">2º turno</button></div></div>
       <div class="grafico" data-g="dig" style="height:260px"></div><p class="nota" id="dig-nota"></p></section>
     <section class="bloco"><div class="bloco-cab"><div><span class="olho">Comparecimento</span><h2>Variação do comparecimento por seção</h2>
@@ -857,13 +857,13 @@ async function visaoAuditoria(app) {
     <p class="lead">Clique num estado para aplicar o recorte aos testes acima. χ² do último dígito acima de ${String(CHI2_9.p01).replace(".", ",")} indicaria desvio significativo a 1%.</p></div></div><div id="tab-ind"></div></section>
 
   <section class="bloco" id="lista-secoes"><div class="bloco-cab"><div><span class="olho">Para conferência</span><h2>Seções atípicas</h2>
-    <p class="lead">Seções que se destacam em algum teste. Atípica não quer dizer irregular: são as primeiras a conferir. Clique numa linha para abrir o boletim da seção e compare-o com o boletim impresso afixado na seção ou com o QR code do boletim.</p></div></div>
+    <p class="lead">Seções que se destacam em algum teste. Atípica quer dizer fora do padrão estatístico: são as primeiras a conferir. Clique numa linha para abrir o boletim da seção e compare-o com o boletim impresso afixado na seção ou com o QR code do boletim.</p></div></div>
     <div class="leg">${Object.entries(MOTIVOS).map(([k, t]) => `<span class="chip">${esc(t)}: <b>${n0(A.suspeitas.linhas.filter((l) => l[19].includes(k)).length)}</b></span>`).join("")}</div>
     <div id="tab-susp"></div></section>
 
-  <section class="bloco"><div class="bloco-cab"><div><span class="olho">Como verificar</span><h2>O que a estatística não alcança e como ir além</h2></div></div>
+  <section class="bloco"><div class="bloco-cab"><div><span class="olho">Como verificar</span><h2>O que a estatística não alcança e como aprofundar</h2></div></div>
     <div class="metodo">
-      <p>Os testes acima procuram padrões típicos de manipulação: votos acrescentados em parte das seções, números inventados, efeito concentrado num tipo de urna. Uma alteração pequena e distribuída de forma proporcional por todas as seções seria difícil de distinguir de mudança real de voto. Esse tipo de hipótese só se verifica por auditoria:</p>
+      <p>Os testes acima procuram inconsistências nos dados: excesso de votos em parte das seções, contagens com padrão não aleatório, efeito concentrado num tipo de urna. Uma alteração pequena e distribuída de forma proporcional por todas as seções seria difícil de distinguir de mudança real de voto. Esse tipo de verificação é documental:</p>
       <ol class="passos">
         <li>Conferir o boletim publicado de uma seção com o boletim impresso, afixado na seção ao fim da votação e entregue aos fiscais dos partidos (o QR code do boletim permite conferir pelo celular).</li>
         <li>Consultar os arquivos de cada urna publicados pelo TSE (boletim, registro digital do voto e log) para as seções da lista acima.</li>

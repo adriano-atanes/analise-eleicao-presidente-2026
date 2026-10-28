@@ -57,22 +57,22 @@ def main():
     linhas_sus = sus["linhas"]
 
     story = [Spacer(1, 6 * mm), P("ELEIÇÃO PRESIDENCIAL 2026 · RELATÓRIO DE AUDITORIA ESTATÍSTICA", "olho"), Spacer(1, 3),
-             P("Há sinais estatísticos de fraude na virada do 2º turno?", "titulo"), Spacer(1, 4),
+             P("Auditoria de dados e comportamento eleitoral do 2º turno", "titulo"), Spacer(1, 4),
              P(f"Flávio Bolsonaro liderou o 1º turno (04/10/2026) por {n0(c['vantagem_flavio_1'])} votos e Lula venceu o 2º (25/10/2026) por "
-               f"{n0(c['lula_2'] - c['flavio_2'])}. Este relatório aplica às {n0(A['brasil']['secoes'])} seções eleitorais os testes usados em forense eleitoral para "
-               "detectar votos adicionados ou alterados, compara a virada com as eleições de 2002 a 2022 e lista as seções atípicas para conferência.", "lead"),
+               f"{n0(c['lula_2'] - c['flavio_2'])}. Este relatório aplica às {n0(A['brasil']['secoes'])} seções eleitorais testes de consistência dos dados e de "
+               "comportamento do eleitorado, compara a virada com as eleições de 2002 a 2022 e lista as seções atípicas para conferência.", "lead"),
              Spacer(1, 2),
              P(f"<b>Escopo.</b> Boletins de urna de Presidente publicados pelo TSE (Portal de Dados Abertos), 1º e 2º turno, todas as seções do Brasil e do exterior. "
                f"<b>Data da análise:</b> {datetime.now():%d/%m/%Y}. <b>Reprodução:</b> github.com/adriano-atanes/analise-eleicao-presidente-2026.", "nota"),
              Spacer(1, 6),
              E.quadro("#1d7a4c", "Conclusão da auditoria estatística",
-                      "Nenhum teste encontrou padrão compatível com votos adicionados ou alterados. A virada se explica pela menor diferença de 1º turno da história "
+                      "Todos os testes de consistência deram resultado dentro do esperado. A virada se explica pela menor diferença de 1º turno da história "
                       f"({p1(h26['gap_pp'])} dos válidos, contra {p1(menor_ant)} na menor anterior) e por uma captação de votos novos ({p1(h26['parcela'], 0)}) "
                       f"próxima da de 2022 ({p1(h22['parcela'], 0)}). O único indicador fora do padrão histórico é o aumento do comparecimento "
-                      f"({sinal(c['fontes_liquidas']['aumento do comparecimento'])} eleitores), espalhado pelas seções e sem a assinatura de urnas infladas. "
+                      f"({sinal(c['fontes_liquidas']['aumento do comparecimento'])} eleitores), espalhado pelas seções e sem concentração atípica. "
                       f"As {n0(len(linhas_sus))} seções atípicas listadas no anexo somam efeito desprezível sobre a margem e são o ponto de partida para conferência documental."),
              Spacer(1, 8), P("Quadro de testes", "h1")]
-    ok, at = '<font color="#0b7a0b"><b><font name="Simbolos">✓</font> Sem anomalia</b></font>', '<font color="#a86f00"><b>! Incomum</b></font>'
+    ok, at = '<font color="#0b7a0b"><b><font name="Simbolos">✓</font> Consistente</b></font>', '<font color="#a86f00"><b>! Incomum</b></font>'
     quadro = [["Teste", "O que detectaria", "Resultado", "Status"],
               ["Integridade dos boletins", "contas que não fecham", f"{integ['comparecimento_maior_que_aptos']} seções com comparecimento > aptos; "
                f"{integ['soma_votos_diferente_do_comparecimento_t2']} com votos ≠ comparecimento", ok],
@@ -82,8 +82,8 @@ def main():
               ["Resíduos do modelo", "votos que o 1º turno não explica", f"> +10 p.p.: {K['res_lula_acima10']} seções Lula, {K['res_fla_acima10']} Flávio; "
                f"< −10 p.p.: {K['res_lula_abaixo10']} e {K['res_fla_abaixo10']}", ok],
               ["Ganhos acima das fontes", "trocas impossíveis", f"{K['limite_lula_10']} seções (Lula) e {K['limite_fla_10']} (Flávio) com 10+ votos; excesso total {n0(K['limite_lula_votos'])}", ok],
-              ["Klimek (comparecimento × voto)", "enchimento de urna", f"comparecimento 100%: {K['comp100_1']} seções (1º) e {K['comp100_2']} (2º)", ok],
-              ["Último dígito", "números inventados", f"p = {dec(A['digitos']['Lula_2']['ultimo_p'])} (Lula) e {dec(A['digitos']['Flávio_2']['ultimo_p'])} (Flávio)", ok],
+              ["Klimek (comparecimento × voto)", "comparecimento concentrado", f"comparecimento 100%: {K['comp100_1']} seções (1º) e {K['comp100_2']} (2º)", ok],
+              ["Último dígito", "padrão não aleatório", f"p = {dec(A['digitos']['Lula_2']['ultimo_p'])} (Lula) e {dec(A['digitos']['Flávio_2']['ultimo_p'])} (Flávio)", ok],
               ["Modelo de urna", "efeito de equipamento", f"diferença máxima {dec(urna_max)} p.p. no mesmo município", ok],
               ["Relação com o 1º turno", "variação arbitrária", f"composição do 1º turno explica {p1(100 * A['eliminados']['r2'], 0)} da variação municipal", ok]]
     story += [tabela(quadro, [38 * mm, 33 * mm, 77 * mm, 26 * mm]), PageBreak()]
@@ -110,13 +110,13 @@ def main():
         ind.append(["Exterior" if uf == "ZZ" else uf, n0(u["secoes"]), dec(k["res_desvio_lula"]), dec(k["res_desvio_fla"]), k["res_lula_acima10"], k["res_fla_acima10"],
                     k["limite_lula_10"], k["limite_fla_10"], f"{k['comp100_1']}/{k['comp100_2']}", pp(k["dcomp_medio"]), marca(xl), marca(xf)])
     story += [tabela(ind, [14 * mm, 16 * mm, 14 * mm, 15 * mm, 13 * mm, 14 * mm, 15 * mm, 15 * mm, 15 * mm, 17 * mm, 12 * mm, 14 * mm], numericas=range(1, 12)),
-              P("Estados com poucas seções (Exterior, RR, AP, AC) têm resíduos mais dispersos por efeito de tamanho; isso não indica anomalia por si só.", "nota"),
+              P("Estados com poucas seções (Exterior, RR, AP, AC) têm resíduos mais dispersos por efeito de tamanho; isso, por si só, não indica inconsistência.", "nota"),
               PageBreak()]
 
     # parte 3: seções atípicas
     cont = {m: sum(1 for l in linhas_sus if m in l[col["motivos"]]) for m in MOTIVOS}
     story += [P("PARTE 3", "olho"), P("Seções atípicas para conferência", "h1"),
-              P(f"{n0(len(linhas_sus))} seções se destacam em pelo menos um teste. <b>Atípica não quer dizer irregular</b>: são as seções a conferir primeiro, comparando o "
+              P(f"{n0(len(linhas_sus))} seções se destacam em pelo menos um teste. <b>Atípica quer dizer fora do padrão estatístico</b>: são as seções a conferir primeiro, comparando o "
                 "boletim publicado com o boletim impresso (ou o QR code) e com os arquivos da urna. Ordenadas por estado, município, zona e seção.", "lead")]
     leg = [["Código", "Motivo", "Seções"]] + [[f"<b>{cod}</b>", txt, n0(cont[m])] for m, (cod, txt) in MOTIVOS.items()]
     story += [tabela(leg, [16 * mm, 140 * mm, 18 * mm], numericas=(2,)), Spacer(1, 4),
@@ -135,7 +135,7 @@ def main():
 
     # parte 4: roteiro
     story += [P("PARTE 4", "olho"), P("Roteiro de verificação além da estatística", "h1"),
-              P("A estatística aponta onde olhar; a confirmação de qualquer irregularidade depende de documentos. Para as seções do anexo, ou para uma amostra aleatória "
+              P("A estatística aponta onde olhar; a confirmação de qualquer inconsistência depende de documentos. Para as seções do anexo, ou para uma amostra aleatória "
                 "de seções como controle:", "lead")]
     passos = [
         "<b>Boletim impresso.</b> Comparar o boletim de urna publicado pelo TSE com o boletim impresso afixado na seção ao fim da votação e entregue aos fiscais "
@@ -154,14 +154,14 @@ def main():
     ]
     story += [Paragraph(t, S["bullet"], bulletText=f"{i}.") for i, t in enumerate(passos, 1)]
     story += [Spacer(1, 6), P("Limitações", "h2"),
-              P("Testes estatísticos detectam padrões típicos de manipulação (votos acrescentados em parte das seções, números inventados, efeitos concentrados num "
+              P("Testes estatísticos detectam inconsistências nos dados (excesso de votos em parte das seções, contagens com padrão não aleatório, efeitos concentrados num "
                 "tipo de equipamento). Uma alteração pequena e espalhada de forma proporcional por todas as seções seria difícil de distinguir de mudança real de voto. "
                 "A migração de votos é estimada por inferência ecológica, já que o voto é secreto; as estimativas para os eleitores de Renan Santos são as menos estáveis. "
                 "Este relatório não examina software, hardware ou a cadeia de custódia das urnas.", "corpo")]
 
     doc = SimpleDocTemplate(str(SAIDA), pagesize=A4, leftMargin=18 * mm, rightMargin=18 * mm, topMargin=17 * mm, bottomMargin=17 * mm,
                             title="Eleição Presidencial 2026: relatório de auditoria estatística", author="Análise com dados oficiais do TSE",
-                            subject="Testes de forense eleitoral, indicadores por estado e seções atípicas")
+                            subject="Testes de consistência dos dados, comportamento do eleitorado, indicadores por estado e seções atípicas")
     doc.build(story, onFirstPage=R.rodape, onLaterPages=R.rodape)
     print(f"PDF salvo em {SAIDA}")
 
