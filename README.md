@@ -24,6 +24,7 @@ python 07_historico.py         # totais de Presidente 2002–2022 (TSE) → dado
 python 08_forense.py           # testes estatísticos por seção → dados/processados/forense.json
 python 09_relatorio_estatistico.py  # análise estatística da virada → relatorio/analise_estatistica_2026.pdf
 python 10_dados_auditoria.py   # dados da visão Auditoria do portal → portal/dados/auditoria.json
+python 11_relatorio_auditoria.py    # relatório de auditoria → relatorio/auditoria_eleicao_2026.pdf
 ```
 
 ## Rodar o portal localmente

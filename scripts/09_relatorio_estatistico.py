@@ -76,7 +76,8 @@ def quadro(cor, titulo, texto):
     return t
 
 
-def main():
+def montar():
+    """Monta o conteúdo do relatório (lista de flowables); usado também por 11_relatorio_auditoria.py."""
     f = json.load(open(PROCESSADOS / "forense.json"))
     h = json.load(open(PROCESSADOS / "historico.json"))
     c, integ, res, lim, comp, dig, urn, elim = (f[k] for k in ["contabilidade", "integridade", "residuos", "limites", "comparecimento", "digitos", "urnas", "eliminados"])
@@ -251,6 +252,11 @@ def main():
               P("Os dados usados são os boletins de urna publicados pelo TSE. Todo o código está em github.com/adriano-atanes/analise-eleicao-presidente-2026 "
                 "(scripts 07_historico.py, 08_forense.py e 09_relatorio_estatistico.py), e os resultados podem ser reproduzidos por qualquer pessoa.", "corpo")]
 
+    return story
+
+
+def main():
+    story = montar()
     doc = SimpleDocTemplate(str(SAIDA), pagesize=A4, leftMargin=18 * mm, rightMargin=18 * mm, topMargin=17 * mm, bottomMargin=17 * mm,
                             title="Eleição Presidencial 2026: análise estatística da virada", author="Análise com dados oficiais do TSE")
     doc.build(story, onFirstPage=R.rodape, onLaterPages=R.rodape)
