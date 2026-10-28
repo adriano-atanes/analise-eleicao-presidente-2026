@@ -6,3 +6,4 @@ __pycache__/
 
 # tabela por seção (22 MB) — recriada por scripts/02_preparar_secoes.py
 dados/processados/secoes.parquet
+site/

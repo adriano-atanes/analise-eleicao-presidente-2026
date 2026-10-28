@@ -22,7 +22,13 @@ python 04_gerar_portal.py      # JSONs do portal → portal/dados/
 python 05_relatorio_pdf.py     # relatório em PDF → relatorio/relatorio_eleicao_presidente_2026.pdf
 ```
 
-Para abrir o portal localmente: `python -m http.server -d portal` e acesse <http://localhost:8000>.
+Para abrir o portal localmente: `python scripts/06_montar_site.py && python -m http.server -d site` e acesse <http://localhost:8000>.
+
+## GitHub Pages
+
+O workflow `.github/workflows/pages.yml` publica o portal a cada push na `main` que altere `portal/` ou o relatório. Ele roda `scripts/06_montar_site.py`, que acrescenta o esqueleto HTML ao `portal/index.html` e copia os dados e o PDF para `site/`.
+
+Para ativar: **Settings → Pages → Build and deployment → Source: GitHub Actions**. Depois, rode o workflow em **Actions → Publicar portal no GitHub Pages → Run workflow**.
 
 ## Fontes
 
