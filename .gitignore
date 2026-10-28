@@ -1,0 +1,8 @@
+# arquivos brutos do TSE (centenas de MB) — baixados por scripts/01_baixar_dados.py
+dados/brutos/
+__pycache__/
+*.pyc
+.venv/
+
+# tabela por seção (22 MB) — recriada por scripts/02_preparar_secoes.py
+dados/processados/secoes.parquet
