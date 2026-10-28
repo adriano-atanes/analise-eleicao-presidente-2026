@@ -7,7 +7,7 @@ Análise dos resultados oficiais do TSE para Presidente da República em 2026 (1
 - comparecimento, abstenção, brancos e nulos nos dois turnos;
 - detalhamento por estado, município, local de votação e seção eleitoral.
 
-O resultado é um portal estático (`portal/`) com gráficos interativos.
+O resultado é um portal estático (`portal/`) com gráficos interativos e um relatório em PDF (`relatorio/relatorio_eleicao_presidente_2026.pdf`). As fontes IBM Plex em `relatorio/fontes/` são licenciadas sob a SIL Open Font License.
 
 ## Como reproduzir
 
@@ -19,6 +19,7 @@ python 02_preparar_secoes.py   # uma linha por seção, dois turnos lado a lado;
 python 03_migracao.py          # matriz de migração Brasil/estados/municípios (~10 min)
 python 03b_sensibilidade.py    # mesma estimativa com zonas eleitorais, para comparação
 python 04_gerar_portal.py      # JSONs do portal → portal/dados/
+python 05_relatorio_pdf.py     # relatório em PDF → relatorio/relatorio_eleicao_presidente_2026.pdf
 ```
 
 Para abrir o portal localmente: `python -m http.server -d portal` e acesse <http://localhost:8000>.
