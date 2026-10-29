@@ -7,7 +7,7 @@ Análise dos resultados oficiais do TSE para Presidente da República em 2026 (1
 - comparecimento, abstenção, brancos e nulos nos dois turnos;
 - detalhamento por estado, município, local de votação e seção eleitoral.
 
-O resultado é um portal estático (`portal/`) com gráficos interativos e um relatório em PDF (`relatorio/relatorio_eleicao_presidente_2026.pdf`). As fontes IBM Plex em `relatorio/fontes/` são licenciadas sob a SIL Open Font License.
+O resultado é um portal estático (`portal/`) com gráficos interativos. Os relatórios em PDF (`relatorio/`, scripts 05, 09 e 11) foram descontinuados: o portal é a versão atualizada da análise. As fontes IBM Plex em `relatorio/fontes/` são licenciadas sob a SIL Open Font License.
 
 ## Como reproduzir
 
