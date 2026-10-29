@@ -310,9 +310,17 @@ const eixo = () => ({ axisLine: { lineStyle: { color: T.axis } }, axisTick: { sh
 // ---------- dados ----------
 const D = { resumo: null, uf: {}, secoes: {} };
 // arquivo .json.gz descomprimido no navegador (os logs por seção são publicados comprimidos)
+// (no artefato do Claude, que não serve .gz, o mesmo arquivo vai em base64 com sufixo .b64.txt)
 async function jsonGz(url) {
-  const r = await fetch(url); if (!r.ok) throw new Error(url + ": " + r.status);
-  return new Response(r.body.pipeThrough(new DecompressionStream("gzip"))).json();
+  let r = await fetch(url), corpo;
+  if (r.ok && !(r.headers.get("content-type") || "").includes("html")) corpo = r.body;
+  else {
+    r = await fetch(url + ".b64.txt"); if (!r.ok) throw new Error(url + ": " + r.status);
+    const b = atob((await r.text()).trim()), u = new Uint8Array(b.length);
+    for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i);
+    corpo = new Blob([u]).stream();
+  }
+  return new Response(corpo.pipeThrough(new DecompressionStream("gzip"))).json();
 }
 async function json(url) { const r = await fetch(url); if (!r.ok) throw new Error(url + ": " + r.status); return r.json(); }
 async function carregarUF(uf) { return (D.uf[uf] ||= await json(`dados/uf/${uf}.json`)); }
