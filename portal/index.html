@@ -181,6 +181,38 @@ tbody tr.sel { background: color-mix(in srgb, var(--accent) 14%, transparent); }
 .carregando { color: var(--muted); padding: 40px 0; text-align: center; }
 .aviso { border-left: 3px solid var(--cury); padding: 8px 12px; background: var(--surface-2); border-radius: 0 6px 6px 0; font-size: 13.5px; color: var(--ink-2); }
 footer { max-width: 1180px; margin: 0 auto; color: var(--muted); font-size: 13px; display: grid; gap: 4px; padding-top: 8px; }
+.ap-palco { position: relative; }
+.ap-hud, .vp-hud { display: flex; justify-content: space-between; font-family: var(--f-mono); font-size: 13px; letter-spacing: 0.12em; color: var(--muted); padding: 0 4px 6px; }
+.ap-hud b, .vp-hud b { color: var(--ink); font-weight: 500; }
+.ap-ctrl { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; }
+.ap-play { border: 0; background: var(--accent); color: var(--accent-ink); font-weight: 600; padding: 8px 16px; border-radius: 7px; cursor: pointer; min-width: 132px; }
+#ap-scrub { flex: 1 1 220px; accent-color: var(--accent); min-width: 0; }
+.ap-chk { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
+.ap-h3 { margin: 0 0 8px; font-size: 14px; }
+.reg-lin { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 10px; align-items: center; font-size: 13px; color: var(--ink-2); margin-bottom: 6px; }
+.reg-barra { display: flex; height: 16px; border-radius: 4px; overflow: hidden; background: var(--surface-2); }
+.reg-barra i { display: block; height: 100%; }
+.reg-barra i + i { box-shadow: inset 2px 0 0 var(--surface); }
+.reg-leg { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12.5px; color: var(--ink-2); margin-top: 4px; }
+.reg-leg i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+.ap-momentos { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr)); gap: 10px; }
+.ap-momentos li { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; display: grid; gap: 2px; font-size: 13px; color: var(--muted); transition: opacity .3s, border-color .3s; opacity: .45; }
+.ap-momentos li b { color: var(--ink); font-family: var(--f-mono); font-weight: 500; font-size: 12.5px; }
+.ap-momentos li.passou { opacity: 1; border-color: var(--accent); color: var(--ink-2); }
+body.modo-video .topo, body.modo-video footer { display: none; }
+body.modo-video main { padding: 0; }
+.video-palco { width: 1080px; height: 1080px; background: var(--bg); padding: 56px 64px 44px; display: flex; flex-direction: column; gap: 10px; overflow: hidden; }
+.video-palco .olho { font-size: 22px; }
+.vp-topo { display: flex; justify-content: space-between; }
+.vp-hud { font-size: 30px; padding: 6px 0 0; }
+.vp-reg .reg-lin { grid-template-columns: 150px 1fr; font-size: 21px; }
+.vp-reg .reg-barra { height: 24px; }
+.video-palco .reg-leg { font-size: 19px; gap: 6px 22px; }
+.video-palco .reg-leg i { width: 16px; height: 16px; }
+.vp-legenda { min-height: 108px; display: grid; gap: 4px; align-content: start; margin-top: 8px; }
+.vp-legenda b { font-family: var(--f-mono); font-weight: 500; font-size: 27px; color: var(--ink); }
+.vp-legenda span { font-size: 24px; color: var(--ink-2); line-height: 1.3; }
+.vp-rodape { margin-top: auto; display: flex; justify-content: space-between; font-size: 17px; color: var(--muted); }
 @media (max-width: 560px) { .grafico { height: 320px; } .bloco { padding: 14px; } .placar { padding: 14px; } }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 </style>
@@ -189,6 +221,7 @@ footer { max-width: 1180px; margin: 0 auto; color: var(--muted); font-size: 13px
   <div class="topo-in">
     <a class="marca" href="#">Presidente<span>/</span>2026</a>
     <a class="nav-aud" href="#perfil" id="nav-perfil">Perfil</a>
+    <a class="nav-aud" href="#apuracao" id="nav-apur">Apuração</a>
     <a class="nav-aud" href="#logs" id="nav-logs">Logs da urna</a>
     <a class="nav-aud" href="#auditoria" id="nav-aud">Auditoria</a>
     <nav class="trilha" id="trilha" aria-label="Navegação"></nav>
@@ -1722,6 +1755,178 @@ function htmlMetodo() {
   </div></section>`;
 }
 
+// ---------- apuração animada ----------
+const REG_COR = { Norte: "caiado", Nordeste: "up", "Centro-Oeste": "cury", Sudeste: "ink2", Sul: "down", Exterior: "muted" };
+const hhmm = (h) => h.replace(":", "h");
+function momentosApuracao(A, t) {
+  const M = A.momentos, R = A.real, out = [];
+  const reg0 = Object.entries(R.regioes).map(([r, v]) => [r, v[Math.min(40, v.length - 1)]]).sort((a, b) => b[1] - a[1]).filter(([, v]) => v > 5).map(([r]) => r);
+  out.push({ i: 1, titulo: `${hhmm(A.inicio)} · primeiros boletins`, texto: `As primeiras seções apuradas vêm de ${reg0.slice(0, 3).join(", ").replace(/, ([^,]*)$/, " e $1")}. O Nordeste, que tem ${p1(A.regioes_no_total.Nordeste, 0)} dos votos válidos, quase não aparece.` });
+  if (t === "1") {
+    out.push({ i: M.pico_flavio.i, titulo: `${hhmm(M.pico_flavio.hora)} · ${p1(M.pico_flavio.valor)} para Flávio`, texto: `Com ${p1(M.pico_flavio.pct_secoes, 0)} das seções, a parcial indicava vitória no 1º turno.` });
+    if (M.abaixo_50) out.push({ i: M.abaixo_50.i, titulo: `${hhmm(M.abaixo_50.hora)} · abaixo de 50%`, texto: `Com ${p1(M.abaixo_50.pct_secoes, 0)} das seções, Flávio fica abaixo da metade dos votos válidos.` });
+  } else {
+    for (const x of M.trocas_lideranca) out.push({ i: x.i, titulo: `${hhmm(x.hora)} · ${x.lider} passa à frente`, texto: `Com ${p1(x.pct_secoes, 0)} das seções apuradas.` });
+    out.splice(out.length - 1, 0, { i: M.pico_flavio.i, titulo: `${hhmm(M.pico_flavio.hora)} · ${p1(M.pico_flavio.valor)} para Flávio`, texto: `Maior vantagem de Flávio na parcial, com ${p1(M.pico_flavio.pct_secoes, 0)} das seções.` });
+    out.sort((a, b) => a.i - b.i);
+  }
+  out.push({ i: R.pct_secoes.length - 1, titulo: `${hhmm(A.fim)} · resultado final`, texto: `Flávio ${p1(A.final.flavio)} e Lula ${p1(A.final.lula)} dos válidos. Nenhum voto mudou de lado: mudou a ordem de chegada.` });
+  return out;
+}
+function palcoApuracao(el, A, t, opts = {}) {
+  const R = A.real, S = A.sorteio, N = R.pct_secoes.length, ps = R.pct_secoes;
+  const vis = R.flavio.map((_, i) => i).filter((i) => ps[i] >= 1);
+  const vals = vis.flatMap((i) => [R.flavio[i], R.lula[i], S.flavio_lo[i], S.lula_hi[i], S.flavio_hi[i], S.lula_lo[i]]);
+  const ymin = 2 * Math.floor((Math.min(...vals) - 1) / 2), ymax = 2 * Math.ceil((Math.max(...vals) + 1) / 2);
+  const grande = !!opts.video, estreito = !grande && el.clientWidth < 520, fs = grande ? 1.9 : estreito ? 0.85 : 1;
+  const c = novoGrafico(el, {
+    animation: false,
+    grid: { left: grande ? 90 : 40, right: grande ? 210 : estreito ? 84 : 112, top: 16, bottom: grande ? 90 : 46 },
+    xAxis: { type: "value", min: 0, max: 100, interval: 25, ...eixo(), splitLine: { show: false },
+      axisLabel: { color: T.muted, formatter: "{value}%", fontSize: 12 * fs, fontFamily: "IBM Plex Mono" },
+      name: "SEÇÕES APURADAS", nameLocation: "middle", nameGap: grande ? 56 : 30, nameTextStyle: { color: T.muted, fontSize: 11 * fs, fontFamily: "IBM Plex Mono", letterSpacing: 2 } },
+    yAxis: { type: "value", min: ymin, max: ymax, interval: ymax - ymin > 12 ? 4 : 2, ...eixo(), axisLine: { show: false }, axisLabel: { color: T.muted, formatter: "{value}%", fontSize: 12 * fs, fontFamily: "IBM Plex Mono" } },
+    series: [] });
+  const cab = (nome, k) => ({ type: "scatter", symbolSize: grande ? 22 : 11, z: 5, itemStyle: { color: T[k], borderColor: T.surface, borderWidth: grande ? 4 : 2 },
+    label: { show: true, position: "right", distance: grande ? 14 : 8, formatter: (p) => estreito ? `{v|${p1(p.value[1])}}` : `{n|${nome}}  {v|${p1(p.value[1])}}`,
+      rich: { n: { color: T[k], fontSize: 12 * fs, fontWeight: 600 }, v: { color: T.ink, fontSize: 17 * fs, fontWeight: 700, fontFamily: "IBM Plex Mono" } } } });
+  const linha = (k, dash) => ({ type: "line", showSymbol: false, smooth: false, z: dash ? 2 : 3, lineStyle: { color: T[k], width: dash ? (grande ? 2.5 : 1.5) : (grande ? 5 : 2.5), type: dash ? [6, 5] : "solid", opacity: dash ? 0.8 : 1 } });
+  const ref = t === "1" && !estreito && !grande ? [{ yAxis: 50, label: { formatter: "metade dos válidos", color: T.muted, fontSize: 11 * fs, position: "insideEndTop" } }] : [{ yAxis: 50, label: { show: false } }];
+  let mostrarSorteio = !!opts.sorteio;
+  const interp = (arr, f) => { const i = Math.floor(f), r = f - i; return i >= N - 1 ? arr[N - 1] : arr[i] + (arr[i + 1] - arr[i]) * r; };
+  const serie = (arr, f) => { const i = Math.floor(f), d = []; for (let k = 0; k <= Math.min(i, N - 1); k++) d.push([ps[k], arr[k]]); if (i < N - 1) d.push([interp(ps, f), interp(arr, f)]); return d; };
+  const momentos = opts.momentos || [];
+  function quadro(f) {
+    f = Math.max(0, Math.min(N - 1, f));
+    const series = [];
+    if (mostrarSorteio) {
+      series.push(Object.assign(linha("flavio", true), { data: serie(S.flavio, f) }), Object.assign(linha("lula", true), { data: serie(S.lula, f) }));
+    }
+    const lf = Object.assign(linha("flavio"), { data: serie(R.flavio, f) });
+    lf.markLine = { silent: true, symbol: "none", lineStyle: { color: T.axis, type: [4, 4], width: grande ? 2 : 1 }, data: ref };
+    const passou = momentos.filter((m) => m.i <= f && m.marca);
+    lf.markPoint = { symbol: "circle", symbolSize: grande ? 16 : 9, itemStyle: { color: T.surface, borderColor: T.ink, borderWidth: grande ? 3 : 2 },
+      label: { show: true, position: "top", distance: grande ? 12 : 6, color: T.ink, fontSize: 12 * fs, fontFamily: "IBM Plex Mono", formatter: (p) => p.name, textBorderColor: T.surface, textBorderWidth: grande ? 6 : 3 },
+      data: passou.map((m) => ({ name: m.marca, coord: [ps[m.i], m.serie === "lula" ? R.lula[m.i] : R.flavio[m.i]], label: { position: m.embaixo ? "bottom" : "top", lineHeight: grande ? 28 : 15 } })) };
+    series.push(lf, Object.assign(linha("lula"), { data: serie(R.lula, f) }));
+    const fim = Math.min(f, N - 1);
+    series.push(Object.assign(cab("Flávio", "flavio"), { data: [[interp(ps, fim), interp(R.flavio, fim)]] }), Object.assign(cab("Lula", "lula"), { data: [[interp(ps, fim), interp(R.lula, fim)]] }));
+    c.setOption({ series }, { replaceMerge: ["series"] });
+    const i = Math.min(Math.round(f), N - 1);
+    return { hora: R.hora[i], pct: interp(ps, f), i, regioes: Object.fromEntries(Object.entries(R.regioes).map(([r, v]) => [r, interp(v, f)])) };
+  }
+  return { quadro, N, sorteio: (v) => (mostrarSorteio = v), chart: c };
+}
+// tempo (0..1) → índice da curva: avança pela parcela de seções, com mais tempo no começo
+function indicePorTempo(ps, u) {
+  const alvo = 100 * Math.pow(Math.max(0, Math.min(1, u)), 1.7);
+  let lo = 0, hi = ps.length - 1;
+  if (alvo >= ps[hi]) return hi;
+  while (hi - lo > 1) { const m = (lo + hi) >> 1; if (ps[m] <= alvo) lo = m; else hi = m; }
+  return lo + (alvo - ps[lo]) / Math.max(1e-9, ps[hi] - ps[lo]);
+}
+function barraRegioes(regioes, total, ordem) {
+  const seg = (v) => ordem.map((r) => `<i title="${r}: ${p1(v[r])}" style="width:${v[r]}%;background:${T[REG_COR[r]]}"></i>`).join("");
+  return `<div class="reg-lin"><span>Já apurado</span><div class="reg-barra">${seg(regioes)}</div></div>
+    <div class="reg-lin"><span>No total</span><div class="reg-barra">${seg(total)}</div></div>`;
+}
+async function visaoApuracao(app, video) {
+  app.innerHTML = `<p class="carregando">Carregando a apuração…</p>`;
+  const AP = (D.apur ||= await json("dados/apuracao.json"));
+  const rota = location.hash;
+  if (!rota.startsWith("#apuracao")) return;
+  let t = (video && video.turno) || "1", sorteio = !!(video && video.sorteio), tocando = false, u = 0, vel = 1, raf = 0, ultimo = 0;
+  const DUR = 20000;
+  const ordem = AP.regioes;
+  const legendaReg = ordem.map((r) => `<span><i style="background:${T[REG_COR[r]]}"></i>${r}</span>`).join("");
+  if (video) {
+    document.body.classList.add("modo-video");
+    app.innerHTML = `<div class="video-palco" id="vp">
+      <div class="vp-topo"><span class="olho">${t}º turno · Presidente 2026 · parcial da apuração</span><span class="olho">Votos válidos</span></div>
+      <div class="vp-hud"><span>HORA <b id="hud-hora">--</b></span><span><b id="hud-pct">0%</b> DAS SEÇÕES</span></div>
+      <div class="grafico" data-g="apur" style="height:600px"></div>
+      <div class="vp-reg" id="ap-reg"></div><div class="reg-leg">${legendaReg}</div>
+      <div class="vp-legenda" id="vp-leg"></div>
+      <div class="vp-rodape"><span>Boletins de urna · TSE · hora de chegada de cada seção à totalização</span><span>${sorteio ? "- - - mesmas seções em ordem sorteada" : ""}</span></div></div>`;
+  } else {
+    app.innerHTML = `<div class="cabeca"><span class="olho">Apuração · ordem de chegada dos boletins</span>
+      <h1>A parcial virou sem nenhum voto mudar de lado</h1>
+      <p class="lead">A apuração não sorteia as urnas: soma os boletins na ordem em que chegam ao TSE. Os primeiros vieram do exterior, do Sul, do Centro-Oeste e do Norte, e os do Nordeste chegaram depois. A animação refaz a parcial minuto a minuto e compara com as mesmas seções somadas em ordem sorteada.</p></div>
+    <section class="bloco"><div class="bloco-cab"><div><span class="olho" id="ap-olho"></span><h2 id="ap-tit"></h2></div>
+      <div class="seg" role="group" aria-label="Turno" id="seg-ap"><button aria-pressed="true" data-t="1">1º turno</button><button aria-pressed="false" data-t="2">2º turno</button></div></div>
+      <div class="ap-palco">
+        <div class="ap-hud"><span>HORA <b id="hud-hora">--</b></span><span><b id="hud-pct">0%</b> DAS SEÇÕES</span></div>
+        <div class="grafico" data-g="apur" style="height:440px"></div>
+      </div>
+      <div class="ap-ctrl">
+        <button class="ap-play" id="ap-play" aria-label="Reproduzir">▶ Reproduzir</button>
+        <input type="range" id="ap-scrub" min="0" max="1000" value="0" aria-label="Momento da apuração">
+        <div class="seg" role="group" aria-label="Velocidade" id="seg-vel"><button aria-pressed="false" data-v="0.5">0,5×</button><button aria-pressed="true" data-v="1">1×</button><button aria-pressed="false" data-v="2">2×</button></div>
+        <label class="nota ap-chk"><input type="checkbox" id="ap-sort"> Comparar com ordem sorteada</label>
+      </div>
+      <div><h3 class="ap-h3">De onde vinham os votos já apurados</h3><div id="ap-reg"></div><div class="reg-leg">${legendaReg}</div></div>
+      <ol class="ap-momentos" id="ap-mom"></ol>
+    </section>
+    <div class="kpis" id="ap-kpis"></div>
+    <section class="bloco"><div><span class="olho">Por que isso acontece</span><h2>Uma parcial não é uma amostra sorteada</h2></div>
+      <p class="lead" id="ap-expl"></p>
+      <p class="nota">A linha tracejada usa as mesmas ${n0(AP["1"].secoes)} seções, com os mesmos votos, somadas em ordem aleatória; em 95% de 200 sorteios, a parcial com 5% das seções já fica a menos de 0,3 ponto do resultado final. A hora de cada seção é a da primeira totalização do seu boletim (DT_PRIM_TOT_PARCIAL_HOR_TSE, horário de Brasília). Percentuais sobre os votos válidos: todos os candidatos no 1º turno; Lula e Flávio no 2º.</p>
+      <p class="nota">Vídeos para compartilhar: <a href="apuracao_1turno.mp4" download>1º turno</a> · <a href="apuracao_2turno.mp4" download>2º turno</a> (MP4, 1080×1080).</p></section>`;
+  }
+  let P, M;
+  const hud = (q) => {
+    app.querySelector("#hud-hora").textContent = hhmm(q.hora);
+    app.querySelector("#hud-pct").textContent = p1(q.pct, 1);
+    app.querySelector("#ap-reg").innerHTML = barraRegioes(q.regioes, AP[t].regioes_no_total, ordem);
+    const mom = app.querySelector("#ap-mom");
+    if (mom) mom.querySelectorAll("li").forEach((li) => li.classList.toggle("passou", +li.dataset.i <= q.i));
+    const vl = app.querySelector("#vp-leg");
+    if (vl) { const atual = [...M].reverse().find((m) => m.i <= q.i + 0.01); vl.innerHTML = atual ? `<b>${esc(atual.titulo)}</b><span>${esc(atual.texto)}</span>` : ""; }
+  };
+  const desenhar = () => { const f = indicePorTempo(AP[t].real.pct_secoes, u); hud(P.quadro(f)); const sc = app.querySelector("#ap-scrub"); if (sc) sc.value = Math.round(u * 1000); };
+  const montar = () => {
+    const A = AP[t];
+    M = momentosApuracao(A, t);
+    M.forEach((m) => { if (/para Flávio|abaixo de 50%|passa à frente/.test(m.titulo)) { m.marca = m.titulo.split(" · ")[1].replace(" para Flávio", "") + " · " + hhmm(A.real.hora[m.i]); m.serie = /Lula passa/.test(m.titulo) ? "lula" : "flavio"; } });
+    M.forEach((m) => { if (/passa à frente/.test(m.titulo)) { m.marca = m.titulo.split(" · ")[1].replace(" passa à frente", " à frente") + "\n" + hhmm(A.real.hora[m.i]); m.embaixo = true; } });
+    const el = app.querySelector('[data-g="apur"]');
+    P = trocarGrafico(el, () => palcoApuracao(el, A, t, { sorteio, momentos: M, video: !!video }));
+    if (!video) {
+      app.querySelector("#ap-olho").textContent = `${t}º turno · ${t === "1" ? "04/10/2026" : "25/10/2026"} · votos válidos`;
+      app.querySelector("#ap-tit").textContent = t === "1" ? `Flávio chegou a ${p1(A.momentos.pico_flavio.valor)} e terminou com ${p1(A.final.flavio)}` : `A liderança trocou de mãos duas vezes durante a apuração`;
+      app.querySelector("#ap-mom").innerHTML = M.map((m) => `<li data-i="${m.i}"><b>${esc(m.titulo)}</b><span>${esc(m.texto)}</span></li>`).join("");
+      const B = AP["1"], B2 = AP["2"];
+      app.querySelector("#ap-kpis").innerHTML = `
+        <div class="kpi"><span class="rot">Flávio no pico da parcial · 1º turno</span><span class="val">${p1(B.momentos.pico_flavio.valor)}</span><span class="sub">${hhmm(B.momentos.pico_flavio.hora)} · ${p1(B.momentos.pico_flavio.pct_secoes, 0)} das seções</span></div>
+        <div class="kpi"><span class="rot">Resultado final · 1º turno</span><span class="val">${p1(B.final.flavio)}</span><span class="sub">Lula ${p1(B.final.lula)}</span></div>
+        <div class="kpi"><span class="rot">Erro com 1.000 seções sorteadas</span><span class="val">±${B.erro_1000_secoes_pp.toLocaleString("pt-BR")} p.p.</span><span class="sub">95% dos sorteios · 1º turno</span></div>
+        <div class="kpi"><span class="rot">Seções sorteadas para ficar a ±0,5 p.p. do final</span><span class="val">${n0(B.secoes_para_05pp)}</span><span class="sub">${p1(100 * B.secoes_para_05pp / B.secoes, 1)} das seções · 2º turno: ${n0(B2.secoes_para_05pp)}</span></div>`;
+      const r1 = B.real.regioes, k10 = B.real.pct_secoes.findIndex((v) => v >= 25);
+      app.querySelector("#ap-expl").innerHTML = `Quando ${p1(B.real.pct_secoes[k10], 0)} das seções do 1º turno estavam apuradas, o Nordeste respondia por ${p1(r1.Nordeste[k10], 0)} dos votos contados, contra ${p1(B.regioes_no_total.Nordeste, 0)} no resultado final, e o Sul por ${p1(r1.Sul[k10], 0)} (${p1(B.regioes_no_total.Sul, 0)} no final). Quem chegou antes votava diferente da média. Sorteando a ordem das mesmas seções, a parcial fica perto do resultado final desde o começo: com 1.000 seções, o erro é de ±${B.erro_1000_secoes_pp.toLocaleString("pt-BR")} ponto. No 2º turno, as primeiras seções foram as do exterior; o grosso chegou depois das 19h, e a liderança passou de Lula para Flávio às ${hhmm(B2.momentos.trocas_lideranca[0].hora)} e voltou a Lula às ${hhmm(B2.momentos.trocas_lideranca[1].hora)}.`;
+    }
+    desenhar();
+  };
+  if (video) {
+    montar();
+    window.__apuracao = { quadro: (uu) => { u = uu; desenhar(); }, pronto: true };
+    return;
+  }
+  const btn = app.querySelector("#ap-play");
+  const setTocando = (v) => { tocando = v; btn.textContent = v ? "❚❚ Pausar" : u >= 1 ? "↺ Repetir" : "▶ Reproduzir"; btn.setAttribute("aria-label", v ? "Pausar" : "Reproduzir"); if (v) { ultimo = performance.now(); raf = requestAnimationFrame(passo); } else cancelAnimationFrame(raf); };
+  function passo(agora) {
+    if (!tocando || !document.body.contains(btn)) return;
+    u = Math.min(1, u + ((agora - ultimo) / DUR) * vel); ultimo = agora; desenhar();
+    if (u >= 1) setTocando(false); else raf = requestAnimationFrame(passo);
+  }
+  btn.onclick = () => { if (u >= 1) u = 0; setTocando(!tocando); };
+  app.querySelector("#ap-scrub").oninput = (e) => { setTocando(false); u = e.target.value / 1000; desenhar(); };
+  app.querySelector("#ap-sort").onchange = (e) => { sorteio = e.target.checked; P.sorteio(sorteio); desenhar(); };
+  app.querySelectorAll("#seg-vel button").forEach((b) => (b.onclick = () => { vel = +b.dataset.v; app.querySelectorAll("#seg-vel button").forEach((x) => x.setAttribute("aria-pressed", x === b)); }));
+  app.querySelectorAll("#seg-ap button").forEach((b) => (b.onclick = () => { setTocando(false); t = b.dataset.t; u = 0; app.querySelectorAll("#seg-ap button").forEach((x) => x.setAttribute("aria-pressed", x === b)); montar(); }));
+  montar();
+  if (!matchMedia("(prefers-reduced-motion: reduce)").matches) setTocando(true); else { u = 1; desenhar(); setTocando(false); }
+}
+
 // ---------- roteamento ----------
 function trilha(partes) {
   document.getElementById("trilha").innerHTML = partes.map(([t, h], i) => (i === partes.length - 1 ? `<b>${esc(t)}</b>` : `<a href="#${h}">${esc(t)}</a><span aria-hidden="true">›</span>`)).join("");
@@ -1737,9 +1942,10 @@ async function rotear() {
       trilha([["Brasil", ""], [D.resumo.ufs[m[1]]?.nome || m[1], "uf-" + m[1]], [nome, h]]); await visaoMunicipio(app, m[1], +m[2]);
     } else if (h === "auditoria") { trilha([["Brasil", ""], ["Auditoria", h]]); await visaoAuditoria(app); }
     else if (h === "perfil") { trilha([["Brasil", ""], ["Perfil e tendências", h]]); await visaoPerfil(app); }
+    else if ((m = h.match(/^apuracao(?:-video-([12])(-sorteio)?)?$/))) { trilha([["Brasil", ""], ["Apuração", "apuracao"]]); await visaoApuracao(app, m[1] ? { turno: m[1], sorteio: !!m[2] } : null); }
     else if (h === "logs") { trilha([["Brasil", ""], ["Logs da urna", h]]); await visaoLogs(app); }
     else { trilha([["Brasil", ""]]); visaoBrasil(app); }
-    for (const [id, alvo] of [["nav-aud", "auditoria"], ["nav-perfil", "perfil"], ["nav-logs", "logs"]]) {
+    for (const [id, alvo] of [["nav-aud", "auditoria"], ["nav-perfil", "perfil"], ["nav-apur", "apuracao"], ["nav-logs", "logs"]]) {
       const a = document.getElementById(id);
       if (h === alvo) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
     }

@@ -37,6 +37,8 @@ def main():
     (SITE / ".nojekyll").touch()
     for pdf in ("relatorio_eleicao_presidente_2026.pdf", "analise_estatistica_2026.pdf", "auditoria_eleicao_2026.pdf"):
         shutil.copy(RAIZ / "relatorio" / pdf, SITE / pdf)
+    for video in PORTAL.glob("*.mp4"):  # animações da apuração (18_apuracao_animada.py + render do modo vídeo)
+        shutil.copy(video, SITE / video.name)
     print(f"site montado em {SITE}")
 
 

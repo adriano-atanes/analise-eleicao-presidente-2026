@@ -30,6 +30,10 @@ python 11_relatorio_auditoria.py    # relatório de auditoria → relatorio/audi
 python 14_malha.py                  # malha dos municípios (IBGE via geodata-br; requer mapshaper) → portal/dados/mapa/brasil.json
 python 15_insights.py               # perfil do eleitorado, 2022 × 2026, curva da apuração, coordenadas dos locais
 python 16_logs_urnas.py             # logs de todas as urnas (~220 GB lidos em stream, 1 a 3 horas)
+python 17_analise_logs.py           # consolida os logs → portal/dados/logs*.json
+python 18_apuracao_animada.py       # parcial na ordem de chegada × ordem sorteada → portal/dados/apuracao.json
+node 18b_video_apuracao.js apuracao-video-1-sorteio <pasta> 600 90   # quadros do vídeo (portal servido em localhost:8765);
+#   depois: ffmpeg -framerate 30 -i <pasta>/q%04d.png -c:v libx264 -pix_fmt yuv420p portal/apuracao_1turno.mp4
 ```
 
 ## Rodar o portal localmente
