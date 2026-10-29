@@ -182,12 +182,13 @@ def parte_logs(LG):
     ef = [["Ocorrência no 2º turno", "Diferença na variação de Lula", "Erro-padrão", "Leitura"]]
     for k, e in X["efeito_na_variacao_lula"].items():
         sem = abs(e["efeito_pp"]) < 2 * e["erro_padrao"]
-        ef.append([RE.get(k, k), pp(e["efeito_pp"]), dec(e["erro_padrao"]), situacao({"status": "dentro" if sem else "acima", "status_texto": ""})
-                   .replace("Dentro do histórico", "Sem associação").replace("Acima do histórico", "Associação estatística")])
+        leve = not sem and abs(e["efeito_pp"]) < 0.1  # mensurável, mas desprezível para o resultado
+        ef.append([RE.get(k, k), f"{e['efeito_pp']:+.2f}".replace(".", ",").replace("-", "−") + " p.p.", dec(e["erro_padrao"]), situacao({"status": "dentro" if sem or leve else "acima", "status_texto": ""})
+                   .replace("Dentro do histórico", "Associação desprezível" if leve else "Sem associação").replace("Acima do histórico", "Associação estatística")])
     out += [KeepTogether([P("Ocorrências nas seções atípicas × nas demais", "h2"), tabela(cz, [80 * mm, 47 * mm, 47 * mm], numericas=(1, 2))]), Spacer(1, 4),
             KeepTogether([P("As ocorrências se associam à variação do voto?", "h2"),
                           P(f"Diferença na variação de Lula entre os turnos (média: {pp(X['variacao_lula_media_pp'])}) nas seções com cada ocorrência, comparadas com as "
-                            "demais seções do mesmo município.", "corpo"),
+                            "demais seções do mesmo município. Dentro de 2 erros-padrão: sem associação; fora desse limite e abaixo de 0,1 p.p.: associação desprezível.", "corpo"),
                           tabela(ef, [70 * mm, 40 * mm, 24 * mm, 40 * mm], numericas=(1, 2)),
                           P(f"Correlação, dentro do município, entre o aumento da habilitação manual e o aumento do comparecimento: {dec(X['corr_dmanual_dcomp'], 3)}.", "nota")]),
             Spacer(1, 4)]
