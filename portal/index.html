@@ -2220,32 +2220,21 @@ async function desenharViradaFalhas(app) {
 function htmlVotosEleitorado() {
   return `<section class="bloco" id="votos-eleitorado"><div><span class="olho">Verificação de alegação · boletins de urna × eleitorado</span>
       <h2>Houve cidade com mais votos para Lula do que eleitores?</h2>
-      <p class="lead">Circula uma lista de "cidades que até os mortos votaram em Lula", com mais votos do que habitantes. O teto de votos de um município é o eleitorado apto: só vota quem está inscrito na seção (o eleitorado costuma ser bem menor que a população). A tabela confere cada cidade da lista com os boletins de urna do TSE.</p></div>
+      <p class="lead">Circula uma lista de "cidades que até os mortos votaram em Lula", com mais votos do que habitantes. O teto de votos de um município é o eleitorado apto: só vota quem está inscrito na seção (o eleitorado costuma ser bem menor que a população). Abaixo, o teste com os boletins de urna do TSE de todos os municípios.</p></div>
     <div class="quadro-conc" id="ve-conc"></div>
     <div class="kpis" id="ve-kpis"></div>
-    <h3>A lista, cidade por cidade</h3><div id="ve-lista"></div>
     <h3>Onde Lula teve a maior parcela do eleitorado</h3><p class="nota">Votos de Lula no 2º turno divididos pelos eleitores aptos do município. Clique para abrir o município.</p><div id="ve-top"></div>
   </section>`;
 }
 async function desenharVotosEleitorado(app) {
   const V = (D.ve ||= await json("dados/votos_eleitorado.json").catch(() => null));
   const sec = app.querySelector("#votos-eleitorado"); if (!V || !sec) { if (sec) sec.remove(); return; }
-  const C = V.checagens, L = V.lista;
-  const nExiste = L.filter((x) => x.situacao === "existe" || x.situacao === "grafia").length, nNao = L.filter((x) => x.situacao === "nao_existe").length, nOutro = L.filter((x) => x.situacao === "outro_estado").length;
-  sec.querySelector("#ve-conc").innerHTML = `<b>O que os dados mostram.</b> Em nenhum dos ${n0(C.municipios)} municípios Lula teve mais votos que eleitores aptos, em nenhum dos turnos, e em nenhuma das ${n0(C.secoes)} seções o comparecimento passou do eleitorado. A maior parcela foi de ${p1(C.max_lula2_aptos_pct)} do eleitorado (${esc(C.top_lula_aptos[0][2])}, ${C.top_lula_aptos[0][0]}). Das ${L.length} cidades da lista, ${nNao} não existem com esse nome, ${nOutro} existem só em outro estado e, nas ${nExiste} que existem, os votos de Lula ficaram abaixo do eleitorado e muito abaixo dos números da lista.`;
+  const C = V.checagens;
+  sec.querySelector("#ve-conc").innerHTML = `<b>O que os dados mostram.</b> Em nenhum dos ${n0(C.municipios)} municípios Lula teve mais votos que eleitores aptos, em nenhum dos turnos, e em nenhuma das ${n0(C.secoes)} seções o comparecimento passou do eleitorado. A maior parcela foi de ${p1(C.max_lula2_aptos_pct)} do eleitorado (${esc(C.top_lula_aptos[0][2])}, ${C.top_lula_aptos[0][0]}).`;
   sec.querySelector("#ve-kpis").innerHTML = `
     <div class="kpi"><span class="rot">Municípios com mais votos de Lula que eleitores</span><span class="val">${n0(C.mun_lula_maior_que_aptos)}</span><span class="sub">de ${n0(C.municipios)} · 1º e 2º turno</span></div>
     <div class="kpi"><span class="rot">Seções com comparecimento acima do eleitorado</span><span class="val">${n0(C.secoes_comp_maior_que_aptos)}</span><span class="sub">de ${n0(C.secoes)} seções</span></div>
-    <div class="kpi"><span class="rot">Maior parcela do eleitorado para Lula</span><span class="val">${p1(C.max_lula2_aptos_pct)}</span><span class="sub">${esc(C.top_lula_aptos[0][2])} (${C.top_lula_aptos[0][0]}) · 2º turno</span></div>
-    <div class="kpi"><span class="rot">Cidades da lista que existem no estado indicado</span><span class="val">${nExiste} de ${L.length}</span><span class="sub">${nNao} inexistentes · ${nOutro} em outro estado</span></div>`;
-  const sit = (x) => x.situacao === "existe" ? status("ok", "Existe") : x.situacao === "grafia" ? status("ok", "Nome com erro") : x.situacao === "outro_estado" ? status("atencao", "Fica em outro estado") : status("atencao", "Não existe");
-  sec.querySelector("#ve-lista").innerHTML = `<div class="tabela-wrap"><table><thead><tr><th style="cursor:default">Cidade na lista</th><th class="n" style="cursor:default">Habitantes (lista)</th><th class="n" style="cursor:default">Lula (lista)</th><th style="cursor:default">Situação</th><th style="cursor:default">Município no TSE</th><th class="n" style="cursor:default">Eleitores aptos</th><th class="n" style="cursor:default">Comparecimento</th><th class="n" style="cursor:default">Lula 2º turno</th><th class="n" style="cursor:default">Flávio 2º turno</th></tr></thead><tbody>
-    ${L.map((x) => { const ok = x.cod != null, o = (x.outros || [])[0];
-      return `<tr${ok ? ` style="cursor:pointer" data-h="mun-${x.uf}-${x.cod}"` : o ? ` style="cursor:pointer" data-h="mun-${o[0]}-${o[1]}"` : ""}><td>${esc(x.nome)} (${x.uf})</td><td class="n">${n0(x.habitantes_alegado)}</td><td class="n">${n0(x.lula_alegado)}</td><td>${sit(x)}</td>
-        <td>${ok ? esc(x.nome_tse) + " (" + x.uf + ")" : o ? `${esc(o[2])} (${o[0]})` : "—"}</td>
-        <td class="n">${ok ? n0(x.aptos) : o ? n0(o[3]) : "—"}</td><td class="n">${ok ? n0(x.comparecimento) : "—"}</td><td class="n"><b>${ok ? n0(x.lula_2) : o ? n0(o[4]) : "—"}</b></td><td class="n">${ok ? n0(x.flavio_2) : "—"}</td></tr>`; }).join("")}
-    </tbody></table></div><p class="nota">Nomes conferidos sem acento e sem hífen. "Guananbim" corresponde a Guanambi (BA). Nas linhas de "outro estado", os números são do município de mesmo nome no estado onde ele existe. Clique numa linha para abrir o município.</p>`;
-  sec.querySelectorAll("#ve-lista tr[data-h]").forEach((tr) => (tr.onclick = () => (location.hash = tr.dataset.h)));
+    <div class="kpi"><span class="rot">Maior parcela do eleitorado para Lula</span><span class="val">${p1(C.max_lula2_aptos_pct)}</span><span class="sub">${esc(C.top_lula_aptos[0][2])} (${C.top_lula_aptos[0][0]}) · 2º turno</span></div>`;
   tabela(sec.querySelector("#ve-top"), { porPagina: 10, linhas: C.top_lula_aptos.map((r, i) => ({ id: i, r })), aoClicar: (l) => (location.hash = `mun-${l.r[0]}-${l.r[1]}`),
     colunas: [{ t: "UF", v: (l) => l.r[0] }, { t: "Município", v: (l) => l.r[2] }, { t: "Eleitores aptos", n: 1, v: (l) => l.r[3], f: (l) => n0(l.r[3]) },
       { t: "Comparecimento", n: 1, v: (l) => l.r[4], f: (l) => n0(l.r[4]) }, { t: "Lula 2º turno", n: 1, v: (l) => l.r[5], f: (l) => n0(l.r[5]) },
