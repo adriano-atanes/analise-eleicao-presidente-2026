@@ -32,6 +32,7 @@ python 15_insights.py               # perfil do eleitorado, 2022 × 2026, curva 
 python 16_logs_urnas.py             # logs de todas as urnas (~220 GB lidos em stream, 1 a 3 horas)
 python 17_analise_logs.py           # consolida os logs → portal/dados/logs*.json
 python 18_apuracao_animada.py       # parcial na ordem de chegada × ordem sorteada → portal/dados/apuracao.json
+python 19_virada_falhas.py          # verificação: virada da apuração × falhas no log das urnas → portal/dados/virada_falhas.json
 node 18b_video_apuracao.js apuracao-video-1-sorteio <pasta> 600 90   # quadros do vídeo (portal servido em localhost:8765);
 #   depois: ffmpeg -framerate 30 -i <pasta>/q%04d.png -c:v libx264 -pix_fmt yuv420p portal/apuracao_1turno.mp4
 ```

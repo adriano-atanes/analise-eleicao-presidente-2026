@@ -215,6 +215,8 @@ body.modo-video main { padding: 0; }
 .vp-rodape { margin-top: auto; display: flex; justify-content: space-between; font-size: 17px; color: var(--muted); }
 .int-mini { display: inline-flex; align-items: flex-end; gap: 2px; height: 34px; width: 150px; vertical-align: middle; }
 .int-mini i { display: block; flex: 1; border-radius: 2px 2px 0 0; }
+.quadro-conc { border-left: 3px solid var(--accent); background: var(--surface-2); border-radius: 0 8px 8px 0; padding: 12px 14px; font-size: 14.5px; color: var(--ink-2); line-height: 1.55; }
+.quadro-conc b { color: var(--ink); }
 @media (max-width: 560px) { .grafico { height: 320px; } .bloco { padding: 14px; } .placar { padding: 14px; } }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 </style>
@@ -2000,6 +2002,58 @@ function htmlMetodo() {
   </div></section>`;
 }
 
+// ---------- verificação: virada da apuração × falhas operacionais ----------
+function htmlViradaFalhas() {
+  return `<section class="bloco" id="virada-falhas"><div class="bloco-cab"><div><span class="olho">Verificação de alegação · apuração × logs das urnas</span>
+      <h2>A virada da apuração coincidiu com falhas operacionais?</h2>
+      <p class="lead">Circula a afirmação de que a virada na apuração "teria ocorrido em um período com falhas operacionais". Para testar, cada seção foi colocada na hora em que seu boletim entrou na totalização e cruzada com as ocorrências registradas no log da urna da mesma seção: troca de urna, erro fora da rotina, reinício durante a votação e voto não registrado.</p></div>
+      <div class="seg" role="group" aria-label="Turno" id="seg-vf"><button aria-pressed="false" data-t="1">1º turno</button><button aria-pressed="true" data-t="2">2º turno</button></div></div>
+    <div class="quadro-conc" id="vf-conc"></div>
+    <div class="kpis" id="vf-kpis"></div>
+    <div class="grafico" data-g="vf-faixas" style="height:320px"></div>
+    <div id="vf-tab"></div>
+    <p class="nota">As falhas acontecem durante a votação (das 8h às 17h); a hora da apuração é a de chegada do boletim ao TSE, à noite. A ordem de chegada depende da transmissão de cada local. As seções que chegaram por último, depois das 21h30, têm mais falhas: problema na urna atrasa a entrega do boletim; esse período vem depois da virada, quando o resultado já estava definido. Efeito no município: diferença de Lula entre os finalistas nas seções com falha em relação às seções sem falha do mesmo município (± 2 erros-padrão).</p>
+  </section>`;
+}
+async function desenharViradaFalhas(app) {
+  const VF = (D.vf ||= await json("dados/virada_falhas.json").catch(() => null));
+  const sec = app.querySelector("#virada-falhas"); if (!VF || !sec) { if (sec) sec.remove(); return; }
+  let t = "2";
+  const leitura = (e) => (!e ? "—" : Math.abs(e.efeito_pp) < 2 * e.erro_padrao ? status("ok", "Sem associação") : Math.abs(e.efeito_pp) < 0.5 ? status("ok", "Associação pequena") : status("atencao", "Associação estatística"));
+  const fe = (e) => (!e ? "—" : `${pp(e.efeito_pp, 2)} <span class="nota">±${(2 * e.erro_padrao).toFixed(2).replace(".", ",")}</span>`);
+  const desenhar = () => {
+    const X = VF[t], J = X.janela, a = X.na_janela, b = X.fora_da_janela;
+    const mais = a.falha_pct > b.falha_pct;
+    const ef = X.efeito_falha_no_municipio.falha;
+    sec.querySelector("#vf-conc").innerHTML = `<b>O que os dados mostram (${t}º turno).</b> ${t === "2" ? "A liderança da parcial passou para Flávio às " + J.inicio.replace(":", "h") + " e voltou a Lula às " + J.fim.replace(":", "h") : "Flávio teve o pico da parcial às " + J.inicio.replace(":", "h") + " e ficou abaixo de 50% às " + J.fim.replace(":", "h")} (de ${p1(J.pct_apurado_inicio, 0)} a ${p1(J.pct_apurado_fim, 0)} das seções apuradas). As ${n0(a.secoes)} seções que chegaram nesse intervalo tiveram falha registrada no log em <b>${p1(a.falha_pct, 2)}</b> dos casos, contra <b>${p1(b.falha_pct, 2)}</b> nas demais: ${mais ? "um pouco mais" : "menos"} falhas, não um período de falhas concentradas. Nas seções com falha, o voto ${Math.abs(ef.efeito_pp) < 2 * ef.erro_padrao ? "não foi diferente" : "foi " + (ef.efeito_pp > 0 ? "um pouco mais favorável a Lula" : "um pouco mais favorável a Flávio")} do das seções sem falha do mesmo município (${pp(ef.efeito_pp, 2)}). Retirando todas as ${n0(X.falha_total.secoes)} seções com falha do país, ${X.sem_secoes_com_falha.lula_pct > 50 ? "Lula" : "Flávio"} teria ${p1(Math.max(X.sem_secoes_com_falha.lula_pct, 100 - X.sem_secoes_com_falha.lula_pct), 2)} dos votos válidos entre os finalistas${t === "2" ? ` (resultado oficial: Lula ${p1(X.total.lula_pct, 2)})` : ""}. A virada da parcial se explica por quais seções chegaram em cada momento (lugares com outro perfil de voto: Lula teve ${p1(a.lula_pct)} nas seções que chegaram nesse intervalo e ${p1(b.lula_pct)} nas demais), não por falhas.`;
+    sec.querySelector("#vf-kpis").innerHTML = `
+      <div class="kpi"><span class="rot">Seções com falha · durante a virada</span><span class="val">${p1(a.falha_pct, 2)}</span><span class="sub">${n0(Math.round((a.secoes * a.falha_pct) / 100))} de ${n0(a.secoes)} seções · ${J.rotulo}</span></div>
+      <div class="kpi"><span class="rot">Seções com falha · fora da virada</span><span class="val">${p1(b.falha_pct, 2)}</span><span class="sub">${n0(Math.round((b.secoes * b.falha_pct) / 100))} de ${n0(b.secoes)} seções</span></div>
+      <div class="kpi"><span class="rot">Saldo de Lula nas seções com falha</span><span class="val">${sinal(X.falha_total.margem_lula)}</span><span class="sub">margem final: ${sinal(X.margem_final_lula)} votos · na virada: ${sinal(X.falha_na_janela.margem_lula)}</span></div>
+      <div class="kpi"><span class="rot">Lula sem as seções com falha</span><span class="val">${p1(X.sem_secoes_com_falha.lula_pct, 2)}</span><span class="sub">resultado com todas: ${p1(X.total.lula_pct, 2)} · entre os finalistas</span></div>`;
+    const F = X.faixas, el = sec.querySelector('[data-g="vf-faixas"]');
+    const ini = F.findIndex((f) => f.janela), fim = F.length - 1 - [...F].reverse().findIndex((f) => f.janela);
+    trocarGrafico(el, () => novoGrafico(el, {
+      title: { text: `Falhas no log e voto, pela hora de chegada do boletim · ${t}º turno`, left: 0, top: 0, textStyle: { color: T.ink, fontSize: 13, fontWeight: 600 } },
+      legend: { top: 22, left: 0, textStyle: { color: T.ink2 } }, grid: { left: 8, right: 8, top: 56, bottom: 8, containLabel: true },
+      tooltip: { trigger: "axis", formatter: (ps) => { const f = F[ps[0].dataIndex]; return `<b>${f.hora}–${f.hora.slice(0, 3)}${String(+f.hora.slice(3) + 9).padStart(2, "0")}</b>${f.janela ? " · período da virada" : ""}<br>${n0(f.secoes)} seções chegaram<br>com falha no log: <b>${p1(f.falha_pct, 2)}</b><br>Lula entre os finalistas: ${p1(f.lula_pct)}<br>seções do Nordeste: ${p1(f.nordeste_pct, 0)}`; } },
+      xAxis: { type: "category", data: F.map((f) => f.hora), ...eixo(), splitLine: { show: false }, axisLabel: { color: T.ink2, fontSize: 10 } },
+      yAxis: [{ type: "value", ...eixo(), axisLabel: { color: T.muted, formatter: "{value}%" } },
+        { type: "value", ...eixo(), splitLine: { show: false }, min: (v) => Math.floor(v.min / 10) * 10, max: (v) => Math.ceil(v.max / 10) * 10, axisLabel: { color: T.muted, formatter: "{value}%" } }],
+      series: [{ name: "Seções com falha no log", type: "bar", barCategoryGap: "20%", itemStyle: { color: T.ink2 }, data: F.map((f) => ({ value: +f.falha_pct.toFixed(2), itemStyle: { color: f.janela ? T.up : T.ink2, borderRadius: [2, 2, 0, 0] } })),
+          markArea: ini >= 0 ? { silent: true, itemStyle: { color: T.up, opacity: 0.08 }, label: { show: true, position: "insideTop", color: T.muted, fontSize: 11, formatter: "período da virada" }, data: [[{ xAxis: ini }, { xAxis: fim }]] } : undefined },
+        { name: "Lula entre os finalistas", type: "line", yAxisIndex: 1, showSymbol: false, data: F.map((f) => +f.lula_pct.toFixed(2)), lineStyle: { color: T.lula, width: 2 }, itemStyle: { color: T.lula } }] }));
+    const R = X.rotulos, E = X.efeito_falha_no_municipio;
+    sec.querySelector("#vf-tab").innerHTML = `<div class="tabela-wrap"><table><thead><tr><th style="cursor:default">Ocorrência no log</th><th class="n" style="cursor:default">Durante a virada</th><th class="n" style="cursor:default">Fora da virada</th><th class="n" style="cursor:default">Efeito no município</th><th style="cursor:default">Leitura</th></tr></thead><tbody style="cursor:default">
+      ${Object.entries(R).map(([k, rot]) => `<tr><td>${esc(rot)}</td><td class="n">${p1(a[k + "_pct"], 2)}</td><td class="n">${p1(b[k + "_pct"], 2)}</td><td class="n">${fe(E[k])}</td><td>${leitura(E[k])}</td></tr>`).join("")}
+      <tr><td><b>Qualquer falha</b></td><td class="n"><b>${p1(a.falha_pct, 2)}</b></td><td class="n"><b>${p1(b.falha_pct, 2)}</b></td><td class="n">${fe(E.falha)}</td><td>${leitura(E.falha)}</td></tr>
+      <tr><td>Lula entre os finalistas</td><td class="n">${p1(a.lula_pct)}</td><td class="n">${p1(b.lula_pct)}</td><td></td><td></td></tr>
+      <tr><td>Seções do Nordeste</td><td class="n">${p1(a.nordeste_pct, 0)}</td><td class="n">${p1(b.nordeste_pct, 0)}</td><td></td><td></td></tr>
+      </tbody></table></div>`;
+  };
+  sec.querySelectorAll("#seg-vf button").forEach((bt) => (bt.onclick = () => { t = bt.dataset.t; sec.querySelectorAll("#seg-vf button").forEach((x) => x.setAttribute("aria-pressed", x === bt)); desenhar(); }));
+  desenhar();
+}
 // ---------- apuração animada ----------
 const REG_COR = { Norte: "caiado", Nordeste: "up", "Centro-Oeste": "cury", Sudeste: "ink2", Sul: "down", Exterior: "muted" };
 const hhmm = (h) => h.replace(":", "h");
@@ -2116,7 +2170,8 @@ async function visaoApuracao(app, video) {
     <section class="bloco"><div><span class="olho">Por que isso acontece</span><h2>Uma parcial não é uma amostra sorteada</h2></div>
       <p class="lead" id="ap-expl"></p>
       <p class="nota">A linha tracejada usa as mesmas ${n0(AP["1"].secoes)} seções, com os mesmos votos, somadas em ordem aleatória; em 95% de 200 sorteios, a parcial com 5% das seções já fica a menos de 0,3 ponto do resultado final. A hora de cada seção é a da primeira totalização do seu boletim (DT_PRIM_TOT_PARCIAL_HOR_TSE, horário de Brasília). Percentuais sobre os votos válidos: todos os candidatos no 1º turno; Lula e Flávio no 2º.</p>
-      <p class="nota">Vídeos para compartilhar: <a href="https://adriano-atanes.github.io/analise-eleicao-presidente-2026/apuracao_1turno.mp4" target="_blank" rel="noopener">1º turno</a> · <a href="https://adriano-atanes.github.io/analise-eleicao-presidente-2026/apuracao_2turno.mp4" target="_blank" rel="noopener">2º turno</a> (MP4, 1080×1080).</p></section>`;
+      <p class="nota">Vídeos para compartilhar: <a href="https://adriano-atanes.github.io/analise-eleicao-presidente-2026/apuracao_1turno.mp4" target="_blank" rel="noopener">1º turno</a> · <a href="https://adriano-atanes.github.io/analise-eleicao-presidente-2026/apuracao_2turno.mp4" target="_blank" rel="noopener">2º turno</a> (MP4, 1080×1080).</p></section>
+    ${htmlViradaFalhas()}`;
   }
   let P, M;
   const hud = (q) => {
@@ -2170,6 +2225,7 @@ async function visaoApuracao(app, video) {
   app.querySelectorAll("#seg-ap button").forEach((b) => (b.onclick = () => { setTocando(false); t = b.dataset.t; u = 0; app.querySelectorAll("#seg-ap button").forEach((x) => x.setAttribute("aria-pressed", x === b)); montar(); }));
   montar();
   if (!matchMedia("(prefers-reduced-motion: reduce)").matches) setTocando(true); else { u = 1; desenhar(); setTocando(false); }
+  desenharViradaFalhas(app);
 }
 
 // ---------- roteamento ----------
