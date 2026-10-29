@@ -217,6 +217,14 @@ body.modo-video main { padding: 0; }
 .int-mini i { display: block; flex: 1; border-radius: 2px 2px 0 0; }
 .quadro-conc { border-left: 3px solid var(--accent); background: var(--surface-2); border-radius: 0 8px 8px 0; padding: 12px 14px; font-size: 14.5px; color: var(--ink-2); line-height: 1.55; }
 .quadro-conc b { color: var(--ink); }
+.busca-log { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr)); gap: 10px 12px; align-items: end; }
+.busca-log label { display: grid; gap: 4px; font-size: 13px; color: var(--ink-2); }
+.busca-log input, .busca-log select { padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); min-width: 0; }
+.bl-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; max-height: 220px; overflow: auto; }
+.bl-chips button { font-family: var(--f-mono); font-size: 12.5px; padding: 4px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); cursor: pointer; }
+.bl-chips button:hover { border-color: var(--accent); }
+.bl-cab { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 16px; align-items: center; margin: 6px 0 10px; }
+@media (max-width: 560px) { #bl-log td:first-child, #ficha-log td:first-child { white-space: normal; min-width: 120px; } #bl-log td, #ficha-log td, #bl-log th, #ficha-log th { padding-left: 6px; padding-right: 6px; } }
 @media (max-width: 560px) { .grafico { height: 320px; } .bloco { padding: 14px; } .placar { padding: 14px; } }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 </style>
@@ -1656,6 +1664,65 @@ function desenharLogs(app, LG) {
 }
 
 // insights da extração ampliada dos logs (catálogo de mensagens)
+// ---------- logs: busca de seção por UF, zona e seção ----------
+function htmlBuscaLog() {
+  const ufs = Object.entries(D.resumo.ufs).sort((a, b) => a[1].nome.localeCompare(b[1].nome, "pt-BR"));
+  return `<section class="bloco" id="busca-log"><div><span class="olho">Buscar seção</span><h2>Ver o log de uma seção</h2>
+      <p class="lead">Escolha o estado e informe a zona e a seção (o município é opcional). Só com a zona aparecem todas as seções dela para escolher.</p></div>
+    <form class="busca-log" id="form-busca-log" autocomplete="off">
+      <label>Estado<select id="bl-uf" required><option value="">—</option>${ufs.map(([k, u]) => `<option value="${k}">${esc(u.nome)}</option>`).join("")}</select></label>
+      <label>Município <span class="nota">(opcional)</span><input id="bl-mun" list="bl-muns" placeholder="Todos"><datalist id="bl-muns"></datalist></label>
+      <label>Zona<input id="bl-zona" type="number" min="1" inputmode="numeric" required placeholder="ex.: 1"></label>
+      <label>Seção<input id="bl-secao" type="number" min="1" inputmode="numeric" placeholder="ex.: 153"></label>
+      <button class="ap-play" type="submit">Ver log</button>
+    </form>
+    <div id="bl-res"></div></section>`;
+}
+function ligarBuscaLog(app) {
+  const f = app.querySelector("#form-busca-log"); if (!f) return;
+  const selUF = f.querySelector("#bl-uf"), inMun = f.querySelector("#bl-mun"), dl = f.querySelector("#bl-muns"), res = app.querySelector("#bl-res");
+  const munsUF = (uf) => D.resumo.indice_municipios.filter((x) => x[0] === uf);
+  selUF.onchange = () => { inMun.value = ""; dl.innerHTML = munsUF(selUF.value).map((x) => `<option value="${esc(x[2])}">`).join(""); };
+  const marcarURL = (uf, zona, secao) => { try { history.replaceState(null, "", `#logs?uf=${uf}&zona=${zona}${secao ? "&secao=" + secao : ""}`); } catch (_) {} };
+  const nomeMun = (uf, cod) => D.resumo.indice_municipios.find((x) => x[0] === uf && x[1] === cod)?.[2] || String(cod);
+  const norm = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+  async function mostrar(uf, zona, secao, munNome) {
+    res.innerHTML = `<p class="nota">Procurando…</p>`;
+    const S = await carregarSecoes(uf);
+    let codMun = null;
+    if (munNome) { const m = munsUF(uf).find((x) => norm(x[2]) === norm(munNome)); if (!m) { res.innerHTML = `<p class="aviso">Município “${esc(munNome)}” não encontrado em ${esc(D.resumo.ufs[uf].nome)}.</p>`; return; } codMun = m[1]; }
+    const linhas = S.linhas.filter((l) => l[1] === zona && (codMun == null || l[0] === codMun));
+    if (!linhas.length) { res.innerHTML = `<p class="aviso">Nenhuma seção na zona ${z4(zona)}${codMun ? " de " + esc(nomeMun(uf, codMun)) : ""} (${uf}).</p>`; return; }
+    if (!secao) {
+      res.innerHTML = `<p class="nota">${n0(linhas.length)} seções na zona ${z4(zona)} (${uf}). Escolha uma:</p><div class="bl-chips">${linhas.sort((a, b) => a[2] - b[2]).map((l) => `<button type="button" data-s="${l[2]}" data-m="${l[0]}" title="${esc(nomeMun(uf, l[0]))}">${z4(l[2])}</button>`).join("")}</div>`;
+      res.querySelectorAll(".bl-chips button").forEach((b) => (b.onclick = () => { f.querySelector("#bl-secao").value = +b.dataset.s; marcarURL(uf, zona, +b.dataset.s); mostrar(uf, zona, +b.dataset.s, munNome); }));
+      return;
+    }
+    const l = linhas.find((x) => x[2] === secao);
+    if (!l) { res.innerHTML = `<p class="aviso">Seção ${z4(secao)} não encontrada na zona ${z4(zona)} (${uf}).</p>`; return; }
+    const cod = l[0], loc = S.locais[l[3]] || [];
+    const s = { zona, secao, a: agregado(l.slice(4, 15), l.slice(15, 21)) };
+    res.innerHTML = `<div class="bl-cab"><div><b>${esc(nomeMun(uf, cod))} (${uf}) · zona ${z4(zona)} · seção ${z4(secao)}</b><br><span class="nota">${esc(loc[3] || "")}${loc[6] ? " · " + esc(loc[6]) : ""}</span></div>
+        <div class="nota">2º turno: Lula ${p1(s.a.lula2)} · Flávio ${p1(s.a.fla2)} · comparecimento ${n0(s.a.comp2)} de ${n0(s.a.aptos2)}</div>
+        <a class="nav-aud" href="#mun-${uf}-${cod}" id="bl-abrir">Abrir boletim no município</a></div><div id="bl-log" class="ficha"></div>`;
+    res.querySelector("#bl-abrir").onclick = () => { alvoSecao = { uf, cod, zona, secao }; };
+    painelLogSecao(res.querySelector("#bl-log"), uf, cod, s);
+  }
+  f.onsubmit = (e) => {
+    e.preventDefault();
+    const uf = selUF.value, zona = +f.querySelector("#bl-zona").value, secao = +f.querySelector("#bl-secao").value || null;
+    if (!uf || !zona) return;
+    marcarURL(uf, zona, secao);
+    mostrar(uf, zona, secao, inMun.value.trim());
+  };
+  // link direto: #logs?uf=SP&zona=1&secao=153
+  const q = new URLSearchParams(location.hash.split("?")[1] || "");
+  if (q.get("uf") && q.get("zona")) {
+    selUF.value = q.get("uf"); selUF.onchange(); f.querySelector("#bl-zona").value = q.get("zona"); if (q.get("secao")) f.querySelector("#bl-secao").value = q.get("secao");
+    mostrar(q.get("uf"), +q.get("zona"), +q.get("secao") || null, "");
+  }
+}
+
 // ---------- logs: modelo de urna e intervalo entre votos ----------
 const INT_BORDAS = [0, 5, 10, 15, 20, 30, 45, 60, 90, 120, 180, 300, 600, 1800];
 const rotIntervalo = (b, i) => { const f = (s) => (s < 60 ? `${s} s` : `${s / 60} min`); return i === b.length - 1 ? `${f(b[i])} ou mais` : i === 0 ? `até ${f(b[1])}` : `${f(b[i])}–${f(b[i + 1])}`; };
@@ -1913,11 +1980,12 @@ async function visaoLogs(app) {
   app.innerHTML = `<p class="carregando">Carregando os logs das urnas…</p>`;
   const [LG, LM] = await Promise.all([json("dados/logs.json"), json("dados/logs_municipios.json")]);
   D.logs = LG;
-  if (location.hash !== "#logs") return;
+  if (!location.hash.startsWith("#logs")) return;
   const T1 = LG.turnos["1"], T2 = LG.turnos["2"], todas = Object.keys(D.resumo.ufs).length;
   app.innerHTML = `<div class="cabeca"><span class="olho">Logs da urna · TSE · arquivos transmitidos para totalização</span>
     <h1>O que as ${n0(Math.max(T1.secoes_com_log, T2.secoes_com_log))} urnas registraram</h1>
     <p class="lead">Cada urna eletrônica grava um log com o horário de tudo o que acontece no dia: zerésima, abertura, habilitação de cada eleitor, troca de urna, mensagens de erro e encerramento. Esta página resume os ${n0(T1.secoes_com_log + T2.secoes_com_log)} logs dos dois turnos publicados pelo TSE. Para ver o log de uma seção, abra o município e clique na seção.${LG.ufs_processadas.length < todas ? ` <b>Cobertura parcial: ${LG.ufs_processadas.length} de ${todas} unidades.</b>` : ""}</p></div>
+  ${htmlBuscaLog()}
   <section class="bloco"><div class="bloco-cab"><div><span class="olho">1º × 2º turno · Brasil</span><h2>Os dois turnos lado a lado</h2></div></div><div id="log-comp"></div></section>
   ${htmlAmpliada(LG)}
   ${htmlIntervalos(LG)}
@@ -1946,6 +2014,7 @@ async function visaoLogs(app) {
     </tbody></table></div><p class="nota">O 2º turno tem menos cargos (presidente e, em alguns estados, governador), o que explica o voto mais rápido e a fila menor.</p>`;
   desenharLogs(app, LG);
   desenharAmpliada(app, LG);
+  ligarBuscaLog(app);
   desenharIntervalos(app, LG);
   desenharDepois17(app, LG);
   desenharModelos(app, LG);
@@ -1954,7 +2023,7 @@ async function visaoLogs(app) {
   let turnoM = "2";
   const CM = Object.fromEntries(LM.colunas.map((c, i) => [c, i]));
   await carregarMapa();
-  if (location.hash !== "#logs") return;
+  if (!location.hash.startsWith("#logs")) return;
   el.innerHTML = "";
   const reg = registrarMalha(null);
   const desenhar = () => trocarGrafico(el, () => {
@@ -2244,11 +2313,11 @@ async function rotear() {
     } else if (h === "auditoria") { trilha([["Brasil", ""], ["Auditoria", h]]); await visaoAuditoria(app); }
     else if (h === "perfil") { trilha([["Brasil", ""], ["Perfil e tendências", h]]); await visaoPerfil(app); }
     else if ((m = h.match(/^apuracao(?:-video-([12])(-sorteio)?)?$/))) { trilha([["Brasil", ""], ["Apuração", "apuracao"]]); await visaoApuracao(app, m[1] ? { turno: m[1], sorteio: !!m[2] } : null); }
-    else if (h === "logs") { trilha([["Brasil", ""], ["Logs da urna", h]]); await visaoLogs(app); }
+    else if (h === "logs" || h.startsWith("logs?")) { trilha([["Brasil", ""], ["Logs da urna", h]]); await visaoLogs(app); }
     else { trilha([["Brasil", ""]]); visaoBrasil(app); }
     for (const [id, alvo] of [["nav-aud", "auditoria"], ["nav-perfil", "perfil"], ["nav-apur", "apuracao"], ["nav-logs", "logs"]]) {
       const a = document.getElementById(id);
-      if (h === alvo) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
+      if (h.split("?")[0] === alvo) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
     }
   } catch (e) { console.error(e); app.innerHTML = `<p class="aviso">Não foi possível carregar os dados (${esc(e.message)}). Recarregue a página.</p>`; }
   window.scrollTo(0, 0);
