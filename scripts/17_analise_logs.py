@@ -152,17 +152,19 @@ def cruzamentos(d, s, aud):
     m["dcomp"] = 100 * (m.Comp_2 / m.Aptos_2.clip(lower=1) - m.Comp_1 / m.Aptos_1.clip(lower=1))
     X = pd.DataFrame({"contingencia": m.contingencia.fillna(False).astype(float), "reinicio": (m.ligadas_apos_pronta > 0).astype(float),
                       "erro_relevante": (m.erros_relevantes > 0).astype(float), "dmanual_10pp": m.dmanual.fillna(0) / 10})
-    if "mesario_max_hab" in m:
+    if "mesario_max_hab" in m and m.mesario_max_hab.notna().any():
+        m = m.copy()
         X["mesario_30pct"] = (m.mesario_max_hab / m.votos_log.clip(lower=1) >= 0.3).astype(float)
         X["ja_votou"] = (m.eleitor_ja_votou > 0).astype(float)
         X["bateria"] = (m.bateria > 0).astype(float)
+    X = X.loc[:, X.std() > 0]  # retira ocorrências sem variação (ex.: campos ainda não processados)
     chave = m.uf + "-" + m.mun.astype(str)
     yd = m.dl - m.dl.groupby(chave).transform("mean")
     Xd = X - X.groupby(chave).transform("mean")
     beta, *_ = np.linalg.lstsq(Xd.to_numpy(), yd.to_numpy(), rcond=None)
     res = yd.to_numpy() - Xd.to_numpy() @ beta
     sigma2 = (res ** 2).sum() / (len(res) - X.shape[1])
-    se = np.sqrt(np.diag(sigma2 * np.linalg.inv(Xd.T.to_numpy() @ Xd.to_numpy())))
+    se = np.sqrt(np.diag(sigma2 * np.linalg.pinv(Xd.T.to_numpy() @ Xd.to_numpy())))
     out["efeito_na_variacao_lula"] = {k: {"efeito_pp": float(b), "erro_padrao": float(e)} for k, b, e in zip(X.columns, beta, se)}
     out["variacao_lula_media_pp"] = float(m.dl.mean())
     # habilitação manual × aumento do comparecimento, dentro do município
