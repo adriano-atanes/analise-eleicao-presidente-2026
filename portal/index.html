@@ -189,6 +189,7 @@ footer { max-width: 1180px; margin: 0 auto; color: var(--muted); font-size: 13px
   <div class="topo-in">
     <a class="marca" href="#">Presidente<span>/</span>2026</a>
     <a class="nav-aud" href="#perfil" id="nav-perfil">Perfil</a>
+    <a class="nav-aud" href="#logs" id="nav-logs">Logs da urna</a>
     <a class="nav-aud" href="#auditoria" id="nav-aud">Auditoria</a>
     <nav class="trilha" id="trilha" aria-label="Navegação"></nav>
     <div class="busca">
@@ -862,7 +863,9 @@ async function visaoAuditoria(app) {
     <div class="seg" role="group" aria-label="Turno" id="seg-curva"><button aria-pressed="false" data-t="1">1º turno</button><button aria-pressed="true" data-t="2">2º turno</button></div></div>
     <div class="grafico" data-g="curva" style="height:320px"></div><div class="grafico" data-g="curva-ne" style="height:200px"></div><p class="aviso" id="curva-nota"></p></section>
 
-  ${D.logs ? secaoLogs(app, D.logs) : ""}
+  ${D.logs ? `<section class="bloco"><div class="bloco-cab"><div><span class="olho">Logs das urnas</span><h2>O que as urnas registraram no dia</h2>
+    <p class="lead">No 2º turno: ${n0(D.logs.turnos["2"].contingencia)} urnas trocadas, ${p1(D.logs.turnos["2"].abertura_no_horario_pct)} prontas às 8h, ${n0(D.logs.turnos["2"].encerramento_antes_17h)} encerramentos antes das 17h e votos no log iguais ao boletim em ${D.logs.turnos["2"].log_igual_boletim_pct == null ? "—" : p1(D.logs.turnos["2"].log_igual_boletim_pct, 2)} das seções sem troca de urna.</p></div>
+    <a class="nav-aud" href="#logs">Abrir a análise completa dos logs</a></div></section>` : ""}
   <div class="filtro-uf"><label for="sel-uf"><b>Recorte dos testes abaixo:</b></label>
     <select id="sel-uf"><option value="">Brasil</option>${Object.entries(R.ufs).map(([uf, u]) => `<option value="${uf}">${esc(u.nome)}</option>`).join("")}</select>
     <span class="nota" id="uf-info"></span></div>
@@ -1041,7 +1044,6 @@ async function visaoAuditoria(app) {
   });
 
   desenharCurva(app, D.ins);
-  if (D.logs) desenharLogs(app, D.logs);
   // recortes por estado
   const elFp1 = app.querySelector('[data-g="fp1"]'), elFp2 = app.querySelector('[data-g="fp2"]'), elRes = app.querySelector('[data-g="res"]');
   const elDig = app.querySelector('[data-g="dig"]'), elDc = app.querySelector('[data-g="dcomp"]');
@@ -1526,6 +1528,88 @@ function desenharLogs(app, LG) {
   desenhar();
 }
 
+// ---------- página Logs da urna ----------
+const METRICAS_LOG = {
+  cont_pct: { rot: "Urnas trocadas (% das seções)", cor: "up", fmt: (v) => p1(v, 1), max: 5 },
+  atraso_pct: { rot: "Abertura com mais de 15 min de atraso (% das seções)", cor: "up", fmt: (v) => p1(v, 1), max: 5 },
+  err_pct: { rot: "Seções com erro fora da rotina (%)", cor: "up", fmt: (v) => p1(v, 1), max: 5 },
+  rein_pct: { rot: "Seções com reinício durante a votação (%)", cor: "up", fmt: (v) => p1(v, 1), max: 10 },
+  fila_pct: { rot: "Seções com eleitores na fila após as 17h (%)", cor: "ink2", fmt: (v) => p1(v, 0), max: 80 },
+  bio_pct: { rot: "Eleitores habilitados por biometria (%)", cor: "accent", fmt: (v) => p1(v, 1), min: 70, max: 100 },
+  tempo: { rot: "Tempo típico de votação por eleitor (s)", cor: "ink2", fmt: (v) => Math.round(v) + " s", minAuto: true },
+};
+async function visaoLogs(app) {
+  app.innerHTML = `<p class="carregando">Carregando os logs das urnas…</p>`;
+  const [LG, LM] = await Promise.all([json("dados/logs.json"), json("dados/logs_municipios.json")]);
+  D.logs = LG;
+  if (location.hash !== "#logs") return;
+  const T1 = LG.turnos["1"], T2 = LG.turnos["2"], todas = Object.keys(D.resumo.ufs).length;
+  app.innerHTML = `<div class="cabeca"><span class="olho">Logs da urna · TSE · arquivos transmitidos para totalização</span>
+    <h1>O que as ${n0(Math.max(T1.secoes_com_log, T2.secoes_com_log))} urnas registraram</h1>
+    <p class="lead">Cada urna eletrônica grava um log com o horário de tudo o que acontece no dia: zerésima, abertura, habilitação de cada eleitor, troca de urna, mensagens de erro e encerramento. Esta página resume os ${n0(T1.secoes_com_log + T2.secoes_com_log)} logs dos dois turnos publicados pelo TSE. Para ver o log de uma seção, abra o município e clique na seção.${LG.ufs_processadas.length < todas ? ` <b>Cobertura parcial: ${LG.ufs_processadas.length} de ${todas} unidades.</b>` : ""}</p></div>
+  <section class="bloco"><div class="bloco-cab"><div><span class="olho">1º × 2º turno · Brasil</span><h2>Os dois turnos lado a lado</h2></div></div><div id="log-comp"></div></section>
+  ${secaoLogs(app, LG)}
+  <section class="bloco" id="mapa-logs"><div class="bloco-cab"><div><span class="olho">Mapa · municípios</span><h2>Onde as ocorrências se concentram</h2>
+    <p class="lead">Indicadores do log por município. Passe o mouse para ver os números e clique para abrir o município.</p></div>
+    <div class="ctrl"><label class="nota">Indicador <select id="sel-mlog">${Object.entries(METRICAS_LOG).map(([k, m]) => `<option value="${k}">${esc(m.rot)}</option>`).join("")}</select></label>
+    <div class="seg" role="group" aria-label="Turno do mapa" id="seg-mlog"><button aria-pressed="false" data-t="1">1º turno</button><button aria-pressed="true" data-t="2">2º turno</button></div></div></div>
+    <div class="grafico" data-g="mapa-logs" style="height:600px"><p class="carregando">Carregando mapa…</p></div></section>
+  ${htmlMetodoLogs()}`;
+  const lin = (rot, f, ruim) => { const a = f(T1), b = f(T2); return `<tr><td>${rot}</td><td class="n">${a[0]}</td><td class="n">${b[0]}</td><td class="n">${a[1] == null ? "" : (b[1] > a[1]) === !!ruim ? `<span class="delta-up">${b[1] > a[1] ? "aumentou" : "diminuiu"}</span>` : `<span class="delta-down">${b[1] > a[1] ? "aumentou" : "diminuiu"}</span>`}</td></tr>`; };
+  app.querySelector("#log-comp").innerHTML = `<div class="tabela-wrap"><table><thead><tr><th style="cursor:default">Indicador</th><th class="n" style="cursor:default">1º turno · 04/10</th><th class="n" style="cursor:default">2º turno · 25/10</th><th class="n" style="cursor:default">Do 1º para o 2º</th></tr></thead><tbody style="cursor:default">
+    ${lin("Urnas trocadas (contingência)", (t) => [`${n0(t.contingencia)} (${p1(t.contingencia_pct, 2)})`, t.contingencia_pct], true)}
+    ${lin("Urna pronta às 8h", (t) => [p1(t.abertura_no_horario_pct), t.abertura_no_horario_pct], false)}
+    ${lin("Abertura com mais de 15 min de atraso", (t) => [n0(t.abertura_atraso_15), t.abertura_atraso_15], true)}
+    ${lin("Encerramento antes das 17h", (t) => [n0(t.encerramento_antes_17h), null])}
+    ${lin("Seções com fila após as 17h", (t) => [n0(t.secoes_votos_apos_17h), t.secoes_votos_apos_17h], true)}
+    ${lin("Habilitação por biometria", (t) => [p1(t.hab_biometrica_pct), t.hab_biometrica_pct], false)}
+    ${lin("Votos no log = boletim (sem troca de urna)", (t) => [t.log_igual_boletim_pct == null ? "—" : p1(t.log_igual_boletim_pct, 2), null])}
+    ${lin("Seções com erro fora da rotina", (t) => [n0(t.secoes_erros_relevantes), t.secoes_erros_relevantes], true)}
+    ${lin("Votos não registrados por erro", (t) => [n0(t.voto_nao_registrado), t.voto_nao_registrado], true)}
+    ${lin("Seções com reinício durante a votação", (t) => [n0(t.secoes_reiniciadas), t.secoes_reiniciadas], true)}
+    ${lin("Tempo típico de votação", (t) => [t.tempo_votacao_mediano_s == null ? "—" : t.tempo_votacao_mediano_s + " s", null])}
+    </tbody></table></div><p class="nota">O 2º turno tem menos cargos (presidente e, em alguns estados, governador), o que explica o voto mais rápido e a fila menor.</p>`;
+  desenharLogs(app, LG);
+  // mapa municipal dos indicadores do log
+  const el = app.querySelector('[data-g="mapa-logs"]'), sel = app.querySelector("#sel-mlog");
+  let turnoM = "2";
+  const CM = Object.fromEntries(LM.colunas.map((c, i) => [c, i]));
+  await carregarMapa();
+  if (location.hash !== "#logs") return;
+  el.innerHTML = "";
+  const reg = registrarMalha(null);
+  const desenhar = () => trocarGrafico(el, () => {
+    const m = METRICAS_LOG[sel.value];
+    const dados = Object.entries(LM.municipios).filter(([k, v]) => !k.startsWith("ZZ") && v[turnoM]).map(([k, v]) => ({ name: k, value: v[turnoM][CM[sel.value]] })).filter((d) => d.value != null);
+    const vs = dados.map((d) => d.value).sort((a, b) => a - b);
+    const lo = m.min ?? (m.minAuto ? vs[Math.floor(vs.length * 0.02)] : 0), hi = m.minAuto ? vs[Math.floor(vs.length * 0.98)] : m.max;
+    const c = novoGrafico(el, {
+      tooltip: { trigger: "item", formatter: (p) => { const r = LM.municipios[p.name]?.[turnoM]; const nomeM = D.resumo.indice_municipios.find((x) => `${x[0]}-${x[1]}` === p.name)?.[2] || p.name;
+        if (!r) return esc(nomeM);
+        return `<b>${esc(nomeM)}</b> · ${p.name.slice(0, 2)} · ${turnoM}º turno<br>${n0(r[CM.secoes])} seções<br>Urnas trocadas: ${n0(r[CM.cont])}<br>Biometria: ${p1(r[CM.bio_pct])}<br>Erro fora da rotina: ${p1(r[CM.err_pct])} das seções<br>Reinício: ${p1(r[CM.rein_pct])}<br>Atraso > 15 min: ${p1(r[CM.atraso_pct])}<br>Tempo típico: ${r[CM.tempo] == null ? "—" : Math.round(r[CM.tempo]) + " s"}`; } },
+      visualMap: { min: +(+lo).toFixed(1), max: +(+hi).toFixed(1), calculable: false, orient: "horizontal", left: 8, bottom: 4, itemWidth: 12, itemHeight: 160, textStyle: { color: T.ink2 },
+        text: [m.fmt(hi), m.fmt(lo)], inRange: { color: [misturar(T.surface, T[m.cor], 0.06), T[m.cor]] }, seriesIndex: 0 },
+      geo: { map: reg.nome, roam: true, scaleLimit: { min: 1, max: 40 }, layoutCenter: ["50%", "48%"], layoutSize: "96%", itemStyle: { areaColor: T.grid, borderWidth: 0 },
+        emphasis: { label: { show: false }, itemStyle: { areaColor: T.ink } }, select: { disabled: true } },
+      series: [{ type: "map", geoIndex: 0, data: dados },
+        { type: "lines", coordinateSystem: "geo", geoIndex: 0, polyline: true, silent: true, z: 5, lineStyle: { color: T.surface, width: 0.9 }, data: reg.bordas.map((cc) => ({ coords: cc })) }],
+    });
+    c.on("click", (p) => { if (p.componentType === "series" && LM.municipios[p.name]) { const [u2, cod] = p.name.split("-"); location.hash = `mun-${u2}-${cod}`; } });
+    return c;
+  });
+  sel.addEventListener("change", desenhar);
+  app.querySelector("#seg-mlog").addEventListener("click", (e) => { const b = e.target.closest("button"); if (!b) return; b.parentElement.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", x === b)); turnoM = b.dataset.t; desenhar(); });
+  desenhar();
+}
+function htmlMetodoLogs() {
+  return `<section class="bloco"><div class="bloco-cab"><div><span class="olho">Como foi calculado</span><h2>Fonte e método dos logs</h2></div></div><div class="metodo">
+    <p><b>Fonte.</b> Pacotes "Arquivos transmitidos para totalização" do Portal de Dados Abertos do TSE, um por estado e turno, com o boletim, o log, o registro digital do voto e as assinaturas de cada seção (cerca de 220 GB). Os pacotes foram lidos diretamente do servidor do TSE e só os logs foram abertos.</p>
+    <p><b>Recorte.</b> De cada log, só os eventos do dia da eleição do turno (04/10 ou 25/10). Horários convertidos para o de Brasília quando comparados com 8h e 17h; no exterior, não há comparação de horário.</p>
+    <p><b>Definições.</b> Troca de urna: mensagens de contingência no log. Pronta no horário: "Urna pronta para receber votos" até 5 minutos depois das 8h. Erro fora da rotina: mensagens de nível ERRO, exceto "Problema ao desmontar a MR", registrada em quase toda urna ao retirar a mídia de resultado. Reinício: urna religada entre a abertura e o encerramento. Habilitação manual: votos no log menos habilitações por biometria.</p>
+    <p><b>Limites.</b> O log descreve o funcionamento da urna; ele não registra em quem cada eleitor votou. Ocorrências como troca de urna ou erro de leitura biométrica fazem parte da operação normal e têm procedimentos próprios; o que a análise verifica é se elas se concentram em algum lugar ou se associam a mudança de voto. Código: scripts 16_logs_urnas.py e 17_analise_logs.py.</p>
+  </div></section>`;
+}
+
 // ---------- metodologia ----------
 function htmlMetodo() {
   const R = D.resumo;
@@ -1554,8 +1638,9 @@ async function rotear() {
       trilha([["Brasil", ""], [D.resumo.ufs[m[1]]?.nome || m[1], "uf-" + m[1]], [nome, h]]); await visaoMunicipio(app, m[1], +m[2]);
     } else if (h === "auditoria") { trilha([["Brasil", ""], ["Auditoria", h]]); await visaoAuditoria(app); }
     else if (h === "perfil") { trilha([["Brasil", ""], ["Perfil e tendências", h]]); await visaoPerfil(app); }
+    else if (h === "logs") { trilha([["Brasil", ""], ["Logs da urna", h]]); await visaoLogs(app); }
     else { trilha([["Brasil", ""]]); visaoBrasil(app); }
-    for (const [id, alvo] of [["nav-aud", "auditoria"], ["nav-perfil", "perfil"]]) {
+    for (const [id, alvo] of [["nav-aud", "auditoria"], ["nav-perfil", "perfil"], ["nav-logs", "logs"]]) {
       const a = document.getElementById(id);
       if (h === alvo) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
     }

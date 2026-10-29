@@ -40,6 +40,12 @@ def carregar():
         if c not in d:
             d[c] = np.nan
     d["fuso"] = d.uf.map(FUSO).fillna(0)
+    # AM (oeste com fuso do Acre) e PE (Fernando de Noronha) têm mais de um fuso: infere por município pela
+    # hora típica em que as urnas ficaram prontas (8h de Brasília no horário local)
+    multi = d.uf.isin(["AM", "PE"])
+    pronta = minutos(d.t_pronta)
+    hora_tipica = pronta[multi].groupby([d.uf[multi], d.mun[multi], d.turno[multi]]).transform("median")
+    d.loc[multi, "fuso"] = ((hora_tipica - 480) / 60).round().clip(-2, 1)
     d["abertura_min"] = minutos(d.t_pronta) - (8 + d.fuso) * 60
     d["encerr_min"] = minutos(d.t_encerramento) - (17 + d.fuso) * 60
     d["ultimo_min"] = minutos(d.t_ultimo_voto) - (17 + d.fuso) * 60
@@ -173,6 +179,22 @@ def main():
                                         r.t_encerramento, int(r.votos_log), r.modelo] for r in lista.itertuples()]}
     with open(PORTAL_DADOS / "logs.json", "w") as f:
         json.dump(limpar(saida), f, ensure_ascii=False, separators=(",", ":"), allow_nan=False)
+    # por município e turno, para o mapa da página Logs da urna
+    g = d.assign(cont=d.contingencia.fillna(False).astype(int), err=(d.erros_relevantes > 0).astype(int), rein=(d.ligadas_apos_pronta > 0).astype(int),
+                 fila=(d.votos_apos_17h > 0).astype(int), atraso=(d.abertura_min > 15).astype(int))
+    mun = g.groupby(["uf", "mun", "turno"]).agg(secoes=("secao", "size"), cont=("cont", "sum"), err=("err", "sum"), rein=("rein", "sum"), fila=("fila", "sum"),
+                                                 atraso=("atraso", "sum"), bio=("hab_biometrica", "sum"), votos=("votos_log", "sum"),
+                                                 tempo=("tempo_mediano_s", "median"), nreg=("voto_nao_registrado", "sum"))
+    mun["bio_pct"] = 100 * mun.bio / mun.votos.clip(lower=1)
+    for c in ("cont", "err", "rein", "fila", "atraso"):
+        mun[c + "_pct"] = 100 * mun[c] / mun.secoes
+    cols_m = ["secoes", "cont", "cont_pct", "err_pct", "rein_pct", "fila_pct", "atraso_pct", "bio_pct", "tempo", "nreg"]
+    lm = {}
+    for (uf, m, t), r in mun[cols_m].iterrows():
+        lm.setdefault(f"{uf}-{m}", {})[str(t)] = [None if pd.isna(v) else round(float(v), 2) for v in r]
+    with open(PORTAL_DADOS / "logs_municipios.json", "w") as f:
+        json.dump({"colunas": cols_m, "municipios": lm}, f, separators=(",", ":"), allow_nan=False)
+
     # por seção, para o boletim no portal
     (PORTAL_DADOS / "logs_secoes").mkdir(parents=True, exist_ok=True)
     campos = ["turno", "mun", "zona", "secao", "urnas", "modelo", "t_zeresima", "t_pronta", "t_primeiro_voto", "t_ultimo_voto", "t_encerramento",
