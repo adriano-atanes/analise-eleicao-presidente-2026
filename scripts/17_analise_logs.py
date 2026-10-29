@@ -11,7 +11,7 @@ Responde, por turno, estado e seção:
   - conferência: votos registrados no log × comparecimento do boletim de urna
   - cruzamentos: ocorrências nas seções atípicas × nas demais; associação com a variação do voto
 
-Saídas: portal/dados/logs.json (resumos) e portal/dados/logs_secoes/<UF>.json (uma linha por seção,
+Saídas: portal/dados/logs.json (resumos) e portal/dados/logs_secoes/<UF>-<parte>.json (uma linha por seção,
 usada no boletim da seção no portal).
 """
 import collections
@@ -263,10 +263,18 @@ def main():
               "ligadas_apos_pronta", "votos_apos_17h", "tempo_mediano_s"]
     campos += [c for c in ("id_cpf", "ano_nasc_confere", "ano_nasc_diferente", "hab_por_mesario", "mesario_max_hab", "mesarios_que_habilitaram", "eleitor_ja_votou",
                            "eleitor_impedido", "correcoes", "justificativas", "bateria_min", "encerr_cedo_tentativa", "encerr_com_presentes") if c in d]
+    # cada UF é dividida em partes por município e zona ((mun + zona) % n), para o portal baixar só a parte da seção aberta
+    partes = {}
     for uf, g in d.groupby("uf"):
-        linhas = g[campos].astype(object).where(g[campos].notna(), None).values.tolist()
-        with open(PORTAL_DADOS / "logs_secoes" / f"{uf}.json", "w") as f:
-            json.dump({"colunas": campos, "linhas": limpar(linhas)}, f, ensure_ascii=False, separators=(",", ":"), allow_nan=False)
+        n = max(1, -(-len(g) // 12000))
+        partes[uf] = n
+        for k in range(n):
+            gk = g[(g.mun + g.zona) % n == k]
+            linhas = gk[campos].astype(object).where(gk[campos].notna(), None).values.tolist()
+            with open(PORTAL_DADOS / "logs_secoes" / f"{uf}-{k}.json", "w") as f:
+                json.dump({"colunas": campos, "linhas": limpar(linhas)}, f, ensure_ascii=False, separators=(",", ":"), allow_nan=False)
+    with open(PORTAL_DADOS / "logs_secoes" / "partes.json", "w") as f:
+        json.dump(partes, f)
     for t in ("1", "2"):
         r = saida["turnos"][t]
         print(f"turno {t}:", {k: r[k] for k in ("secoes_com_log", "contingencia", "contingencia_durante", "abertura_no_horario_pct", "abertura_atraso_15",

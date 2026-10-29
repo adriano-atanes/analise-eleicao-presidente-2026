@@ -1405,10 +1405,15 @@ function desenharCurva(app, I) {
 }
 
 // ---------- logs das urnas ----------
-async function carregarLogsSecao(uf) { D.logsec ||= {}; return (D.logsec[uf] ||= await json(`dados/logs_secoes/${uf}.json`).catch(() => null)); }
+async function carregarLogsSecao(uf, mun, zona) {
+  D.logpartes ||= await json("dados/logs_secoes/partes.json").catch(() => ({}));
+  const n = D.logpartes[uf]; if (!n) return null;
+  const arq = `${uf}-${(mun + zona) % n}`; D.logsec ||= {};
+  return (D.logsec[arq] ||= await json(`dados/logs_secoes/${arq}.json`).catch(() => null));
+}
 async function painelLogSecao(el, uf, cod, s) {
   el.innerHTML = `<p class="nota">Carregando o log da urna…</p>`;
-  const L = await carregarLogsSecao(uf);
+  const L = await carregarLogsSecao(uf, cod, s.zona);
   if (!L) { el.innerHTML = `<p class="nota">Log da urna ainda não processado para este estado.</p>`; return; }
   const C = Object.fromEntries(L.colunas.map((c, i) => [c, i]));
   const rows = L.linhas.filter((r) => r[C.mun] === cod && r[C.zona] === s.zona && r[C.secao] === s.secao).sort((a, b) => a[C.turno] - b[C.turno]);
