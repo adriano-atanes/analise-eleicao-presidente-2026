@@ -77,7 +77,10 @@ def analisar(t, s, h, logs, mom):
     for f, g in x[(x["min"] >= 17 * 60) & (x["min"] < 23 * 60)].groupby("faixa"):
         if len(g) < 30:
             continue
+        gf = g[g.falha]
         faixas.append({"hora": f"{f // 60:02d}:{f % 60:02d}", "secoes": int(len(g)), "falha_pct": float(100 * g.falha.mean()),
+                       "secoes_falha": int(len(gf)), "votos": int((g.L + g.F).sum()), "votos_falha": int((gf.L + gf.F).sum()),
+                       "lula_falha": int(gf.L.sum()), "flavio_falha": int(gf.F.sum()),
                        "contingencia_pct": float(100 * g.contingencia.mean()), "erro_pct": float(100 * g.erro.mean()),
                        "lula_pct": float(100 * g.L.sum() / max((g.L + g.F).sum(), 1)), "nordeste_pct": float(100 * (g.REGIAO == "Nordeste").mean()),
                        "janela": bool(ini <= f + 9 and f <= fim)})
@@ -97,6 +100,10 @@ def analisar(t, s, h, logs, mom):
                             "margem_lula": int((falha_jan.L - falha_jan.F).sum())},
         "falha_total": {"secoes": int(x.falha.sum()), "lula": int(x[x.falha].L.sum()), "flavio": int(x[x.falha].F.sum()),
                         "margem_lula": int((x[x.falha].L - x[x.falha].F).sum())},
+        # votos (Lula e Flávio) por tipo de falha: durante a virada e no total
+        "votos_por_tipo": {k: {"janela": [int(len(jan[jan[k]])), int(jan[jan[k]].L.sum()), int(jan[jan[k]].F.sum())],
+                               "total": [int(x[k].sum()), int(x[x[k]].L.sum()), int(x[x[k]].F.sum())]} for k in list(FALHAS) + ["falha"]},
+        "votos_janela": int((jan.L + jan.F).sum()), "votos_total": int((x.L + x.F).sum()),
         "margem_final_lula": total_margem,
         "sem_secoes_com_falha": {"lula_pct": float(100 * sem_falha.L.sum() / (sem_falha.L + sem_falha.F).sum()),
                                  "margem_lula": int((sem_falha.L - sem_falha.F).sum()), "secoes": int(len(sem_falha))},

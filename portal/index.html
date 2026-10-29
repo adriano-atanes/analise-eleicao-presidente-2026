@@ -2150,8 +2150,10 @@ function htmlViradaFalhas() {
     <div class="quadro-conc" id="vf-conc"></div>
     <div class="kpis" id="vf-kpis"></div>
     <div class="grafico" data-g="vf-faixas" style="height:320px"></div>
+    <div class="grafico" data-g="vf-votos" style="height:320px"></div>
     <div id="vf-tab"></div>
-    <p class="nota">As falhas acontecem durante a votação (das 8h às 17h); a hora da apuração é a de chegada do boletim ao TSE, à noite. A ordem de chegada depende da transmissão de cada local. As seções que chegaram por último, depois das 21h30, têm mais falhas: problema na urna atrasa a entrega do boletim; esse período vem depois da virada, quando o resultado já estava definido. Efeito no município: diferença de Lula entre os finalistas nas seções com falha em relação às seções sem falha do mesmo município (± 2 erros-padrão).</p>
+    <h3>Votos nas seções com falha, por tipo de falha</h3><div id="vf-votos-tab"></div>
+    <p class="nota">As falhas acontecem durante a votação (das 8h às 17h); a hora da apuração é a de chegada do boletim ao TSE, à noite. A ordem de chegada depende da transmissão de cada local. As seções que chegaram por último, depois das 21h30, têm a maior parcela de falhas, mas são poucas seções e poucos votos (veja o gráfico de votos): problema na urna atrasa a entrega do boletim; esse período vem depois da virada, quando o resultado já estava definido. Efeito no município: diferença de Lula entre os finalistas nas seções com falha em relação às seções sem falha do mesmo município (± 2 erros-padrão).</p>
   </section>`;
 }
 async function desenharViradaFalhas(app) {
@@ -2175,13 +2177,34 @@ async function desenharViradaFalhas(app) {
     trocarGrafico(el, () => novoGrafico(el, {
       title: { text: `Falhas no log e voto, pela hora de chegada do boletim · ${t}º turno`, left: 0, top: 0, textStyle: { color: T.ink, fontSize: 13, fontWeight: 600 } },
       legend: { top: 22, left: 0, textStyle: { color: T.ink2 } }, grid: { left: 8, right: 8, top: 56, bottom: 8, containLabel: true },
-      tooltip: { trigger: "axis", formatter: (ps) => { const f = F[ps[0].dataIndex]; return `<b>${f.hora}–${f.hora.slice(0, 3)}${String(+f.hora.slice(3) + 9).padStart(2, "0")}</b>${f.janela ? " · período da virada" : ""}<br>${n0(f.secoes)} seções chegaram<br>com falha no log: <b>${p1(f.falha_pct, 2)}</b><br>Lula entre os finalistas: ${p1(f.lula_pct)}<br>seções do Nordeste: ${p1(f.nordeste_pct, 0)}`; } },
+      tooltip: { trigger: "axis", formatter: (ps) => { const f = F[ps[0].dataIndex]; return `<b>${f.hora}–${f.hora.slice(0, 3)}${String(+f.hora.slice(3) + 9).padStart(2, "0")}</b>${f.janela ? " · período da virada" : ""}<br>${n0(f.secoes)} seções chegaram (${n0(f.votos)} votos)<br>com falha no log: <b>${p1(f.falha_pct, 2)}</b> · ${n0(f.secoes_falha)} seções · ${n0(f.votos_falha)} votos<br>Lula entre os finalistas: ${p1(f.lula_pct)}<br>seções do Nordeste: ${p1(f.nordeste_pct, 0)}`; } },
       xAxis: { type: "category", data: F.map((f) => f.hora), ...eixo(), splitLine: { show: false }, axisLabel: { color: T.ink2, fontSize: 10 } },
       yAxis: [{ type: "value", ...eixo(), axisLabel: { color: T.muted, formatter: "{value}%" } },
         { type: "value", ...eixo(), splitLine: { show: false }, min: (v) => Math.floor(v.min / 10) * 10, max: (v) => Math.ceil(v.max / 10) * 10, axisLabel: { color: T.muted, formatter: "{value}%" } }],
       series: [{ name: "Seções com falha no log", type: "bar", barCategoryGap: "20%", itemStyle: { color: T.ink2 }, data: F.map((f) => ({ value: +f.falha_pct.toFixed(2), itemStyle: { color: f.janela ? T.up : T.ink2, borderRadius: [2, 2, 0, 0] } })),
           markArea: ini >= 0 ? { silent: true, itemStyle: { color: T.up, opacity: 0.08 }, label: { show: true, position: "insideTop", color: T.muted, fontSize: 11, formatter: "período da virada" }, data: [[{ xAxis: ini }, { xAxis: fim }]] } : undefined },
         { name: "Lula entre os finalistas", type: "line", yAxisIndex: 1, showSymbol: false, data: F.map((f) => +f.lula_pct.toFixed(2)), lineStyle: { color: T.lula, width: 2 }, itemStyle: { color: T.lula } }] }));
+    if (F[0].votos_falha != null) {
+      const el2 = sec.querySelector('[data-g="vf-votos"]');
+      trocarGrafico(el2, () => novoGrafico(el2, {
+        title: { text: `Votos nas seções com falha, pela hora de chegada do boletim · ${t}º turno`, left: 0, top: 0, textStyle: { color: T.ink, fontSize: 13, fontWeight: 600 } },
+        legend: { top: 22, left: 0, textStyle: { color: T.ink2 } }, grid: { left: 8, right: 8, top: 56, bottom: 8, containLabel: true },
+        tooltip: { trigger: "axis", axisPointer: { type: "shadow" }, formatter: (ps) => { const f = F[ps[0].dataIndex];
+          return `<b>${f.hora}</b>${f.janela ? " · período da virada" : ""}<br>${n0(f.secoes_falha)} seções com falha · <b>${n0(f.votos_falha)}</b> votos<br>Lula ${n0(f.lula_falha)} · Flávio ${n0(f.flavio_falha)} · saldo ${f.lula_falha >= f.flavio_falha ? "Lula" : "Flávio"} ${sinal(Math.abs(f.lula_falha - f.flavio_falha))}<br>${p1((100 * f.votos_falha) / f.votos, 2)} dos ${n0(f.votos)} votos que chegaram nessa faixa`; } },
+        xAxis: { type: "category", data: F.map((f) => f.hora), ...eixo(), splitLine: { show: false }, axisLabel: { color: T.ink2, fontSize: 10 } },
+        yAxis: { type: "value", ...eixo(), axisLabel: { color: T.muted, formatter: (v) => mi(v) } },
+        series: [{ name: "Lula", type: "bar", stack: "v", barCategoryGap: "20%", data: F.map((f) => f.lula_falha), itemStyle: { color: T.lula },
+            markArea: ini >= 0 ? { silent: true, itemStyle: { color: T.up, opacity: 0.08 }, data: [[{ xAxis: ini }, { xAxis: fim }]] } : undefined },
+          { name: "Flávio", type: "bar", stack: "v", data: F.map((f) => f.flavio_falha), itemStyle: { color: T.flavio, borderRadius: [2, 2, 0, 0] } }] }));
+    }
+    if (X.votos_por_tipo) {
+      const VT = X.votos_por_tipo, cel = (r) => `${n0(r[0])}</td><td class="n">${n0(r[1])}</td><td class="n">${n0(r[2])}</td><td class="n">${r[1] >= r[2] ? "Lula " : "Flávio "}${sinal(Math.abs(r[1] - r[2]))}`;
+      sec.querySelector("#vf-votos-tab").innerHTML = `<div class="tabela-wrap"><table><thead><tr><th style="cursor:default" rowspan="2">Ocorrência no log</th><th class="n" style="cursor:default" colspan="4">Durante a virada (${J.rotulo})</th><th class="n" style="cursor:default" colspan="4">Turno inteiro</th></tr>
+        <tr><th class="n" style="cursor:default">Seções</th><th class="n" style="cursor:default">Lula</th><th class="n" style="cursor:default">Flávio</th><th class="n" style="cursor:default">Saldo</th><th class="n" style="cursor:default">Seções</th><th class="n" style="cursor:default">Lula</th><th class="n" style="cursor:default">Flávio</th><th class="n" style="cursor:default">Saldo</th></tr></thead><tbody style="cursor:default">
+        ${[...Object.keys(X.rotulos), "falha"].map((k) => `<tr${k === "falha" ? ' style="font-weight:600"' : ""}><td>${k === "falha" ? "Qualquer falha" : esc(X.rotulos[k])}</td><td class="n">${cel(VT[k].janela)}</td><td class="n">${cel(VT[k].total)}</td></tr>`).join("")}
+        <tr><td>Todas as seções</td><td class="n" colspan="4">${n0(X.votos_janela)} votos em Lula e Flávio</td><td class="n" colspan="4">${n0(X.votos_total)} votos · margem final ${X.margem_final_lula >= 0 ? "Lula" : "Flávio"} ${sinal(Math.abs(X.margem_final_lula))}</td></tr>
+        </tbody></table></div><p class="nota">Votos de Lula e Flávio nas seções com cada ocorrência (uma seção pode ter mais de uma). Durante a virada, as seções com falha somaram ${n0(VT.falha.janela[1] + VT.falha.janela[2])} votos, ${p1((100 * (VT.falha.janela[1] + VT.falha.janela[2])) / X.votos_janela, 1)} dos que chegaram nesse intervalo, com saldo de ${sinal(VT.falha.janela[1] - VT.falha.janela[2])} para Lula.</p>`;
+    }
     const R = X.rotulos, E = X.efeito_falha_no_municipio;
     sec.querySelector("#vf-tab").innerHTML = `<div class="tabela-wrap"><table><thead><tr><th style="cursor:default">Ocorrência no log</th><th class="n" style="cursor:default">Durante a virada</th><th class="n" style="cursor:default">Fora da virada</th><th class="n" style="cursor:default">Efeito no município</th><th style="cursor:default">Leitura</th></tr></thead><tbody style="cursor:default">
       ${Object.entries(R).map(([k, rot]) => `<tr><td>${esc(rot)}</td><td class="n">${p1(a[k + "_pct"], 2)}</td><td class="n">${p1(b[k + "_pct"], 2)}</td><td class="n">${fe(E[k])}</td><td>${leitura(E[k])}</td></tr>`).join("")}
