@@ -1431,6 +1431,14 @@ async function painelLogSecao(el, uf, cod, s) {
     ${lin("Reinícios durante a votação", (r) => n0(v(r, "ligadas_apos_pronta")))}
     ${lin("Erros (fora a rotina) · alertas", (r) => `${n0(v(r, "erros_relevantes"))} · ${n0(v(r, "alertas"))}`)}
     ${lin("Votos não registrados (erro)", (r) => (v(r, "voto_nao_registrado") ? `<b style="color:var(--up)">${v(r, "voto_nao_registrado")}</b>` : "0"))}
+    ${C.mesario_max_hab != null ? `
+    ${lin("Identificados pelo CPF", (r) => (v(r, "id_cpf") == null ? "—" : n0(v(r, "id_cpf"))))}
+    ${lin("Ano de nascimento conferido · não conferiu", (r) => (v(r, "ano_nasc_confere") == null ? "—" : `${n0(v(r, "ano_nasc_confere"))} · ${n0(v(r, "ano_nasc_diferente"))}`))}
+    ${lin("Habilitações autorizadas por mesário (máx. por um mesário)", (r) => (v(r, "hab_por_mesario") == null ? "—" : `${n0(v(r, "hab_por_mesario"))} (${n0(v(r, "mesario_max_hab"))} por ${n0(v(r, "mesarios_que_habilitaram"))} mesário${v(r, "mesarios_que_habilitaram") === 1 ? "" : "s"})`))}
+    ${lin("“O eleitor identificado já votou” · impedidos", (r) => (v(r, "eleitor_ja_votou") == null ? "—" : `${n0(v(r, "eleitor_ja_votou"))} · ${n0(v(r, "eleitor_impedido"))}`))}
+    ${lin("Correções na cabine · justificativas", (r) => (v(r, "correcoes") == null ? "—" : `${n0(v(r, "correcoes"))} · ${n0(v(r, "justificativas"))}`))}
+    ${lin("Minutos na bateria (falta de energia)", (r) => (v(r, "bateria_min") == null ? "—" : n0(v(r, "bateria_min"))))}
+    ${lin("Tentativas de encerrar antes das 17h · encerrada com presentes", (r) => (v(r, "encerr_cedo_tentativa") == null ? "—" : `${n0(v(r, "encerr_cedo_tentativa"))} · ${v(r, "encerr_com_presentes") ? "sim" : "não"}`))}` : ""}
     </tbody></table></div><p class="nota">Horários locais da urna. Fonte: log da urna publicado pelo TSE (arquivos transmitidos para totalização).</p>`;
 }
 
@@ -1528,6 +1536,90 @@ function desenharLogs(app, LG) {
   desenhar();
 }
 
+// insights da extração ampliada dos logs (catálogo de mensagens)
+function htmlAmpliada(LG) {
+  const A = LG.ampliada || {};
+  if (!A["1"] && !A["2"]) return `<section class="bloco"><div class="bloco-cab"><div><span class="olho">Mais do que dizem os logs</span><h2>Identificação dos eleitores, cabine, energia e encerramento</h2>
+    <p class="lead">Os logs estão sendo reprocessados com a extração ampliada; estes recortes aparecem aqui quando o processamento terminar.</p></div></div></section>`;
+  const ufsTxt = (t) => (A[t] && A[t].ufs.length < Object.keys(D.resumo.ufs).length ? ` (${A[t].ufs.length} unidades processadas)` : "");
+  return `<section class="bloco" id="log-ritmo"><div class="bloco-cab"><div><span class="olho">Ritmo da votação · votos registrados por hora</span><h2>Quando os eleitores votaram</h2>
+      <p class="lead">Parcela dos votos de cada turno registrada em cada hora, no horário de Brasília, pelo momento em que a urna computou o voto.</p></div></div>
+      <div class="grafico" data-g="log-hora" style="height:300px"></div><p class="nota" id="log-hora-nota"></p></section>
+    <section class="bloco" id="log-ampliada"><div class="bloco-cab"><div><span class="olho">Mais do que dizem os logs</span><h2>Identificação, cabine, energia e encerramento</h2>
+      <p class="lead">Recortes a partir de todas as mensagens que a urna registra no dia.${ufsTxt("2")}</p></div>
+      <div class="seg" role="group" aria-label="Turno" id="seg-amp"><button aria-pressed="false" data-t="1">1º turno</button><button aria-pressed="true" data-t="2">2º turno</button></div></div>
+      <div id="amp-cards"></div>
+      <div class="grade2"><div style="display:grid;gap:6px"><h3>Habilitações autorizadas por um mesmo mesário</h3><p class="nota">Quando a biometria não reconhece o eleitor, o mesário confere o ano de nascimento e autoriza a habilitação com a própria digital. Distribuição das seções pela parcela dos votos autorizada pelo mesário que mais autorizou.</p><div class="grafico" data-g="amp-mes" style="height:260px"></div></div>
+        <div style="display:grid;gap:6px"><h3>Eleitores impedidos de votar, por motivo</h3><p class="nota">Eleitores identificados pelo mesário que a urna não habilitou.</p><div class="grafico" data-g="amp-imp" style="height:260px"></div></div></div>
+      <h3>Seções com maior concentração de habilitações por um mesário</h3><div id="amp-top"></div>
+    </section>`;
+}
+function desenharAmpliada(app, LG) {
+  const A = LG.ampliada || {};
+  if (!A["1"] && !A["2"]) return;
+  const elH = app.querySelector('[data-g="log-hora"]');
+  const pct = (v) => { const t = v.reduce((a, b) => a + b, 0) || 1; return v.map((x) => +((100 * x) / t).toFixed(2)); };
+  const horas = Array.from({ length: 24 }, (_, i) => i).filter((h) => h >= 7 && h <= 19);
+  novoGrafico(elH, {
+    legend: { top: 0, left: 0, textStyle: { color: T.ink2 } }, grid: { left: 8, right: 16, top: 34, bottom: 8, containLabel: true },
+    tooltip: { trigger: "axis", formatter: (ps) => `<b>${ps[0].axisValue}</b><br>` + ps.map((p) => `${p.marker}${p.seriesName}: <b>${p1(p.value)}</b> dos votos`).join("<br>") },
+    xAxis: { type: "category", data: horas.map((h) => `${h}h–${h + 1}h`), ...eixo(), splitLine: { show: false }, axisLabel: { color: T.muted, interval: 1 } },
+    yAxis: { type: "value", ...eixo(), axisLabel: { color: T.muted, formatter: "{value}%" } },
+    series: ["1", "2"].filter((t) => A[t]).map((t) => ({ name: `${t}º turno`, type: "line", smooth: false, symbolSize: 6, lineStyle: { width: 2, color: t === "1" ? T.ink2 : T.accent }, itemStyle: { color: t === "1" ? T.ink2 : T.accent },
+      data: horas.map((h) => pct(A[t].votos_hora)[h]) })),
+  });
+  const pico = (t) => { const v = A[t].votos_hora; const h = v.indexOf(Math.max(...v)); const p = pct(v); return { h, p: p[h], antes10: p.slice(0, 10).reduce((a, b) => a + b, 0), depois17: p.slice(17).reduce((a, b) => a + b, 0) }; };
+  app.querySelector("#log-hora-nota").textContent = ["1", "2"].filter((t) => A[t]).map((t) => { const x = pico(t); return `${t}º turno: pico entre ${x.h}h e ${x.h + 1}h (${p1(x.p)} dos votos); ${p1(x.antes10)} até as 10h; ${p1(x.depois17, 2)} depois das 17h.`; }).join(" ");
+  let turno = A["2"] ? "2" : "1";
+  const card = (titulo, val, sub) => `<div class="destaque"><h3>${titulo}</h3><span class="val" style="font-family:var(--f-display);font-stretch:85%;font-weight:700;font-size:24px">${val}</span><p class="nota" style="margin:0">${sub}</p></div>`;
+  const desenhar = () => {
+    const X = A[turno];
+    if (!X) { app.querySelector("#amp-cards").innerHTML = `<p class="nota">Turno ainda não processado.</p>`; return; }
+    const imp = Object.values(X.impedidos).reduce((a, b) => a + b, 0);
+    app.querySelector("#amp-cards").innerHTML = `<div class="destaques">
+      ${card("Identificação pelo CPF", p1(X.id_cpf_pct), "dos eleitores identificados pelo CPF; os demais, pelo título")}
+      ${card("Biometria com dificuldade", p1(X.biometria_4a_tentativa_por_mil / 10, 1), `dos eleitores precisaram da 4ª tentativa de leitura da digital; ${n0(X.biometria_nao_confere)} digitais não conferiram`)}
+      ${card("Ano de nascimento conferido", n0(X.ano_nasc_confere), `habilitações manuais com o ano de nascimento conferido; ${n0(X.ano_nasc_diferente)} vezes o ano digitado não conferiu`)}
+      ${card("Mesário concentrou habilitações", n0(X.secoes_mesario_30pct), `seções em que um único mesário autorizou 30% ou mais dos eleitores (${n0(X.secoes_mesario_50pct)} com 50% ou mais)`)}
+      ${card("“O eleitor identificado já votou”", n0(X.eleitor_ja_votou), `alertas em ${n0(X.secoes_ja_votou)} seções: a urna recusou habilitar alguém que já tinha votado`)}
+      ${card("Eleitores impedidos", n0(imp), `${n0(X.eleitor_nao_encontrado)} identificadores sem eleitor correspondente na seção`)}
+      ${card("Correções na cabine", p1(X.correcoes_por_mil / 10, 1), `dos eleitores corrigiram o voto na tela de confirmação; ${n0(X.suspenso_sem_votar)} suspensos sem confirmar voto`)}
+      ${card("Justificativas de ausência", n0(X.justificativas), "registradas nas urnas por eleitores de outros locais")}
+      ${card("Voto com áudio", n0(X.audio_cadastro), "eleitores com áudio ativado pelo cadastro (deficiência visual)")}
+      ${card("Urna na bateria", n0(X.secoes_bateria), `seções com falta de energia; ${n0(X.bateria_min_total / 60)} horas no total; ${n0(X.secoes_bateria_critica)} com carga crítica`)}
+      ${card("Tentativas de encerrar antes das 17h", n0(X.secoes_encerr_cedo_tentativa), `seções em que a urna recusou o encerramento antecipado; ${n0(X.secoes_encerr_abortado)} com encerramento cancelado e refeito`)}
+      ${card("Encerrada com pessoas presentes", n0(X.secoes_encerr_com_presentes), "seções em que o mesário respondeu “NÃO” a “Todas as pessoas presentes já votaram?” antes de encerrar")}
+      ${card("Falhas de equipamento", n0(X.secoes_leitor_biometrico + X.secoes_impressora), `${n0(X.secoes_leitor_biometrico)} seções com erro no leitor biométrico, ${n0(X.secoes_impressora)} com falha de impressora, ${n0(X.secoes_log_me_corrompido)} com log da mídia externa corrompido (o log interno é preservado)`)}
+    </div>`;
+    const elM = app.querySelector('[data-g="amp-mes"]');
+    trocarGrafico(elM, () => novoGrafico(elM, {
+      grid: { left: 8, right: 8, top: 16, bottom: 30, containLabel: true },
+      tooltip: { trigger: "axis", axisPointer: { type: "shadow" }, formatter: (ps) => `${ps[0].name}<br><b>${n0(ps[0].value)}</b> seções` },
+      xAxis: { type: "category", data: X.mesario_share_hist.map((_, i) => `${i * 5}–${i * 5 + 5}%`), name: "parcela dos votos autorizada por um mesário", nameLocation: "middle", nameGap: 24, nameTextStyle: { color: T.muted }, ...eixo(), axisLabel: { color: T.muted, interval: 3 } },
+      yAxis: { type: "log", min: 1, ...eixo(), axisLabel: { color: T.muted, formatter: (x) => mi(x) } },
+      series: [{ type: "bar", barCategoryGap: "6%", data: X.mesario_share_hist.map((v, i) => ({ value: v || null, itemStyle: { color: i >= 6 ? T.up : T.ink2, borderRadius: [2, 2, 0, 0] } })) }],
+    }));
+    const imps = Object.entries(X.impedidos).slice(0, 8).reverse();
+    const elI = app.querySelector('[data-g="amp-imp"]');
+    trocarGrafico(elI, () => novoGrafico(elI, {
+      grid: { left: 8, right: 50, top: 8, bottom: 8, containLabel: true },
+      tooltip: { trigger: "item", formatter: (p) => `${esc(p.name)}: <b>${n0(p.value)}</b>` },
+      xAxis: { type: "value", ...eixo(), axisLabel: { color: T.muted, formatter: (x) => mi(x) } },
+      yAxis: { type: "category", data: imps.map(([k]) => k.charAt(0).toUpperCase() + k.slice(1)), ...eixo(), splitLine: { show: false }, axisLabel: { color: T.ink2, fontSize: 11, width: 170, overflow: "truncate" } },
+      series: [{ type: "bar", barWidth: 12, data: imps.map(([, v]) => v), itemStyle: { color: T.ink2, borderRadius: [0, 3, 3, 0] }, label: { show: true, position: "right", color: T.ink2, fontSize: 11, formatter: (p) => n0(p.value) } }],
+    }));
+    const nomeMun = (uf, mun) => D.resumo.indice_municipios.find((x) => x[0] === uf && x[1] === mun)?.[2] || mun;
+    tabela(app.querySelector("#amp-top"), { porPagina: 10, linhas: X.mesario_top.map((r, i) => ({ id: i, r })),
+      aoClicar: (l) => { alvoSecao = { uf: l.r[0], cod: l.r[1], zona: l.r[2], secao: l.r[3] }; location.hash = `mun-${l.r[0]}-${l.r[1]}`; },
+      colunas: [{ t: "UF", v: (l) => l.r[0] }, { t: "Município", v: (l) => nomeMun(l.r[0], l.r[1]) }, { t: "Zona", v: (l) => l.r[2], f: (l) => `<span class="mono">${z4(l.r[2])}</span>` },
+        { t: "Seção", v: (l) => l.r[3], f: (l) => `<span class="mono">${z4(l.r[3])}</span>` },
+        { t: "Habilitações pelo mesário", n: 1, v: (l) => l.r[4], f: (l) => n0(l.r[4]) }, { t: "Votos", n: 1, v: (l) => l.r[5], f: (l) => n0(l.r[5]) },
+        { t: "Parcela", n: 1, v: (l) => l.r[4] / l.r[5], f: (l) => p1((100 * l.r[4]) / l.r[5]), ordemPadrao: 1 }, { t: "Mesários que autorizaram", n: 1, v: (l) => l.r[6], f: (l) => n0(l.r[6]) }] });
+  };
+  app.querySelector("#seg-amp").addEventListener("click", (e) => { const b = e.target.closest("button"); if (!b) return; b.parentElement.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", x === b)); turno = b.dataset.t; desenhar(); });
+  desenhar();
+}
+
 // ---------- página Logs da urna ----------
 const METRICAS_LOG = {
   cont_pct: { rot: "Urnas trocadas (% das seções)", cor: "up", fmt: (v) => p1(v, 1), max: 5 },
@@ -1548,6 +1640,7 @@ async function visaoLogs(app) {
     <h1>O que as ${n0(Math.max(T1.secoes_com_log, T2.secoes_com_log))} urnas registraram</h1>
     <p class="lead">Cada urna eletrônica grava um log com o horário de tudo o que acontece no dia: zerésima, abertura, habilitação de cada eleitor, troca de urna, mensagens de erro e encerramento. Esta página resume os ${n0(T1.secoes_com_log + T2.secoes_com_log)} logs dos dois turnos publicados pelo TSE. Para ver o log de uma seção, abra o município e clique na seção.${LG.ufs_processadas.length < todas ? ` <b>Cobertura parcial: ${LG.ufs_processadas.length} de ${todas} unidades.</b>` : ""}</p></div>
   <section class="bloco"><div class="bloco-cab"><div><span class="olho">1º × 2º turno · Brasil</span><h2>Os dois turnos lado a lado</h2></div></div><div id="log-comp"></div></section>
+  ${htmlAmpliada(LG)}
   ${secaoLogs(app, LG)}
   <section class="bloco" id="mapa-logs"><div class="bloco-cab"><div><span class="olho">Mapa · municípios</span><h2>Onde as ocorrências se concentram</h2>
     <p class="lead">Indicadores do log por município. Passe o mouse para ver os números e clique para abrir o município.</p></div>
@@ -1570,6 +1663,7 @@ async function visaoLogs(app) {
     ${lin("Tempo típico de votação", (t) => [t.tempo_votacao_mediano_s == null ? "—" : t.tempo_votacao_mediano_s + " s", null])}
     </tbody></table></div><p class="nota">O 2º turno tem menos cargos (presidente e, em alguns estados, governador), o que explica o voto mais rápido e a fila menor.</p>`;
   desenharLogs(app, LG);
+  desenharAmpliada(app, LG);
   // mapa municipal dos indicadores do log
   const el = app.querySelector('[data-g="mapa-logs"]'), sel = app.querySelector("#sel-mlog");
   let turnoM = "2";

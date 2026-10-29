@@ -14,6 +14,7 @@ Responde, por turno, estado e seção:
 Saídas: portal/dados/logs.json (resumos) e portal/dados/logs_secoes/<UF>.json (uma linha por seção,
 usada no boletim da seção no portal).
 """
+import collections
 import glob
 import json
 
@@ -90,6 +91,45 @@ def resumo_turno(g, s_t):
     }
 
 
+def insights_v3(g, votos_hora):
+    """Recortes da extração ampliada (16_logs_urnas.py com catálogo de mensagens)."""
+    if "mesario_max_hab" not in g:
+        return None
+    v = g.votos_log.sum()
+    imp = collections.Counter()
+    for t in g.impedidos_tipos.dropna():
+        imp.update(json.loads(t))
+    share_mes = g.mesario_max_hab / g.votos_log.clip(lower=1)
+    n = len(g)
+    top = g.assign(share=share_mes).nlargest(30, "share")
+    return {
+        "secoes": int(n),
+        "votos_hora": votos_hora,
+        "id_cpf_pct": float(100 * g.id_cpf.sum() / max(g.id_cpf.sum() + g.id_titulo.sum(), 1)),
+        "biometria_4a_tentativa_por_mil": float(1000 * g.biometria_4a_tentativa.sum() / v),
+        "biometria_nao_confere": int(g.biometria_nao_confere.sum()),
+        "ano_nasc_confere": int(g.ano_nasc_confere.sum()), "ano_nasc_diferente": int(g.ano_nasc_diferente.sum()),
+        "hab_mesario_total": int(g.hab_por_mesario.sum()),
+        "mesario_share_hist": np.histogram(share_mes.clip(0, 0.999), bins=np.arange(0, 1.01, 0.05))[0].tolist(),
+        "secoes_mesario_30pct": int((share_mes >= 0.3).sum()), "secoes_mesario_50pct": int((share_mes >= 0.5).sum()),
+        "mesario_top": [[r.uf, int(r.mun), int(r.zona), int(r.secao), int(r.mesario_max_hab), int(r.votos_log), int(r.mesarios_que_habilitaram)] for r in top.itertuples()],
+        "eleitor_ja_votou": int(g.eleitor_ja_votou.sum()), "secoes_ja_votou": int((g.eleitor_ja_votou > 0).sum()),
+        "eleitor_nao_encontrado": int(g.eleitor_nao_encontrado.sum()),
+        "impedidos": dict(imp.most_common()),
+        "correcoes_por_mil": float(1000 * g.correcoes.sum() / v), "suspenso_sem_votar": int(g.suspenso_sem_votar.sum()),
+        "sem_atividade": int(g.sem_atividade.sum()),
+        "justificativas": int(g.justificativas.sum()), "audio_cadastro": int(g.audio_cadastro.sum()),
+        "secoes_bateria": int((g.bateria > 0).sum()), "bateria_min_total": float(g.bateria_min.sum()),
+        "bateria_min_p95": float(g.bateria_min[g.bateria > 0].quantile(0.95)) if (g.bateria > 0).any() else 0.0,
+        "secoes_bateria_critica": int((g.bateria_critica > 0).sum()),
+        "secoes_encerr_cedo_tentativa": int((g.encerr_cedo_tentativa > 0).sum()), "secoes_encerr_abortado": int((g.encerr_abortado > 0).sum()),
+        "secoes_encerr_com_presentes": int((g.encerr_com_presentes > 0).sum()),
+        "secoes_impressora": int((g.impressora_falha > 0).sum()), "secoes_leitor_biometrico": int((g.leitor_biometrico_erro > 0).sum()),
+        "secoes_log_me_corrompido": int((g.log_me_corrompido > 0).sum()),
+        "mesarios_registrados_media": float(g.mesarios_registrados.mean()),
+    }
+
+
 def cruzamentos(d, s, aud):
     """Ocorrências nas seções atípicas × demais; associação das ocorrências com a variação do voto (2º turno)."""
     col = {k: i for i, k in enumerate(aud["suspeitas"]["colunas"])}
@@ -112,6 +152,10 @@ def cruzamentos(d, s, aud):
     m["dcomp"] = 100 * (m.Comp_2 / m.Aptos_2.clip(lower=1) - m.Comp_1 / m.Aptos_1.clip(lower=1))
     X = pd.DataFrame({"contingencia": m.contingencia.fillna(False).astype(float), "reinicio": (m.ligadas_apos_pronta > 0).astype(float),
                       "erro_relevante": (m.erros_relevantes > 0).astype(float), "dmanual_10pp": m.dmanual.fillna(0) / 10})
+    if "mesario_max_hab" in m:
+        X["mesario_30pct"] = (m.mesario_max_hab / m.votos_log.clip(lower=1) >= 0.3).astype(float)
+        X["ja_votou"] = (m.eleitor_ja_votou > 0).astype(float)
+        X["bateria"] = (m.bateria > 0).astype(float)
     chave = m.uf + "-" + m.mun.astype(str)
     yd = m.dl - m.dl.groupby(chave).transform("mean")
     Xd = X - X.groupby(chave).transform("mean")
@@ -169,6 +213,21 @@ def main():
                 "secoes_votos_apos_17h", "hab_biometrica_pct", "secoes_erros_relevantes", "voto_nao_registrado", "secoes_reiniciadas",
                 "tempo_votacao_mediano_s", "log_igual_boletim_pct")}
     saida["cruzamentos"] = cruzamentos(d, s, aud)
+    # extração ampliada: só com os estados já reprocessados na versão nova
+    saida["ampliada"] = {}
+    for t in (1, 2):
+        g = d[(d.turno == t)]
+        if "mesario_max_hab" in g:
+            g = g[g.mesario_max_hab.notna()]
+        vh = [0] * 24
+        for f in glob.glob(str(LOGS / f"{t}_*.json")):
+            j = json.load(open(f))
+            if "votos_hora" in j:
+                vh = [a + b for a, b in zip(vh, j["votos_hora"])]
+        r = insights_v3(g, vh) if len(g) else None
+        if r:
+            r["ufs"] = sorted(g.uf.unique().tolist())
+            saida["ampliada"][str(t)] = r
     # listas para conferência: contingências durante a votação, votos não registrados, erros relevantes, encerramento antes das 17h
     lista = d[(d.contingencia.fillna(False)) | (d.voto_nao_registrado > 0) | (d.erros_relevantes >= 3) | (d.encerr_min < 0) | (d.ligadas_apos_pronta >= 2)]
     nomes = s.drop_duplicates(["uf", "mun"]).set_index(["uf", "mun"]).NM_MUNICIPIO
@@ -200,6 +259,8 @@ def main():
     campos = ["turno", "mun", "zona", "secao", "urnas", "modelo", "t_zeresima", "t_pronta", "t_primeiro_voto", "t_ultimo_voto", "t_encerramento",
               "votos_log", "hab_biometrica", "hab_manual", "contingencia", "t_contingencia", "erros_relevantes", "alertas", "voto_nao_registrado",
               "ligadas_apos_pronta", "votos_apos_17h", "tempo_mediano_s"]
+    campos += [c for c in ("id_cpf", "ano_nasc_confere", "ano_nasc_diferente", "hab_por_mesario", "mesario_max_hab", "mesarios_que_habilitaram", "eleitor_ja_votou",
+                           "eleitor_impedido", "correcoes", "justificativas", "bateria_min", "encerr_cedo_tentativa", "encerr_com_presentes") if c in d]
     for uf, g in d.groupby("uf"):
         linhas = g[campos].astype(object).where(g[campos].notna(), None).values.tolist()
         with open(PORTAL_DADOS / "logs_secoes" / f"{uf}.json", "w") as f:
