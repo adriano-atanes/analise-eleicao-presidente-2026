@@ -34,6 +34,7 @@ python 17_analise_logs.py           # consolida os logs → portal/dados/logs*.j
 python 18_apuracao_animada.py       # parcial na ordem de chegada × ordem sorteada → portal/dados/apuracao.json
 python 19_virada_falhas.py          # verificação: virada da apuração × falhas no log das urnas → portal/dados/virada_falhas.json
 python 20_votos_eleitorado.py       # verificação: votos de Lula × eleitorado por município e lista que circula nas redes → portal/dados/votos_eleitorado.json
+python 21_boletins.py               # boletim de urna: votos dos demais candidatos do 1º turno e endereço dos locais → portal/dados/bu/<UF>.json
 node 18b_video_apuracao.js apuracao-video-1-sorteio <pasta> 600 90   # quadros do vídeo (portal servido em localhost:8765);
 #   depois: ffmpeg -framerate 30 -i <pasta>/q%04d.png -c:v libx264 -pix_fmt yuv420p portal/apuracao_1turno.mp4
 ```

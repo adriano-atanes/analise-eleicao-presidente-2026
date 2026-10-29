@@ -224,7 +224,19 @@ body.modo-video main { padding: 0; }
 .bl-chips button { font-family: var(--f-mono); font-size: 12.5px; padding: 4px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); cursor: pointer; }
 .bl-chips button:hover { border-color: var(--accent); }
 .bl-cab { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 16px; align-items: center; margin: 6px 0 10px; }
-@media (max-width: 560px) { #bl-log td:first-child, #ficha-log td:first-child { white-space: normal; min-width: 120px; } #bl-log td, #ficha-log td, #bl-log th, #ficha-log th { padding-left: 6px; padding-right: 6px; } }
+@media (max-width: 560px) { #bl-log td:first-child, #bu-log td:first-child, #ficha-log td:first-child { white-space: normal; min-width: 120px; } #bl-log td, #bu-log td, #ficha-log td, #bl-log th, #bu-log th, #ficha-log th { padding-left: 6px; padding-right: 6px; } }
+.bu-papel { border: 1px solid var(--line); border-radius: 10px; padding: 16px; background: var(--surface); display: grid; gap: 14px; margin-bottom: 14px; }
+.bu-id { display: flex; flex-wrap: wrap; gap: 4px 18px; margin: 6px 0 2px; font-size: 14.5px; }
+.bu-id b { font-weight: 700; }
+.bu-turno h3 { margin: 0 0 6px; font-size: 15px; }
+.bu-tab { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.bu-tab th { text-align: left; font-weight: 600; color: var(--ink-2); border-bottom: 1px solid var(--line); padding: 5px 6px; }
+.bu-tab td { padding: 4px 6px; border-bottom: 1px dashed var(--line); }
+.bu-tab .n { text-align: right; font-variant-numeric: tabular-nums; }
+.bu-tab tr.bu-sep td { border-top: 1px solid var(--axis); }
+.bu-turno { min-width: 0; }
+@media (max-width: 560px) { .bu-papel { padding: 10px; } .bu-tab { font-size: 12.5px; } .bu-tab th, .bu-tab td { padding: 4px 3px; } .bu-tab td:first-child { overflow-wrap: anywhere; } }
+.bu-cor { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 6px; vertical-align: 0; }
 @media (max-width: 560px) { .grafico { height: 320px; } .bloco { padding: 14px; } .placar { padding: 14px; } }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 </style>
@@ -234,6 +246,7 @@ body.modo-video main { padding: 0; }
     <a class="marca" href="#">Presidente<span>/</span>2026</a>
     <a class="nav-aud" href="#perfil" id="nav-perfil">Perfil</a>
     <a class="nav-aud" href="#apuracao" id="nav-apur">Apuração</a>
+    <a class="nav-aud" href="#bu" id="nav-bu">Boletim de urna</a>
     <a class="nav-aud" href="#logs" id="nav-logs">Logs da urna</a>
     <a class="nav-aud" href="#auditoria" id="nav-aud">Auditoria</a>
     <nav class="trilha" id="trilha" aria-label="Navegação"></nav>
@@ -1664,63 +1677,120 @@ function desenharLogs(app, LG) {
 }
 
 // insights da extração ampliada dos logs (catálogo de mensagens)
-// ---------- logs: busca de seção por UF, zona e seção ----------
-function htmlBuscaLog() {
+// ---------- busca de seção por UF, zona e seção (usada em Logs e em Boletim de urna) ----------
+function htmlBuscaSecao(p, { olho, titulo, lead, botao }) {
   const ufs = Object.entries(D.resumo.ufs).sort((a, b) => a[1].nome.localeCompare(b[1].nome, "pt-BR"));
-  return `<section class="bloco" id="busca-log"><div><span class="olho">Buscar seção</span><h2>Ver o log de uma seção</h2>
-      <p class="lead">Escolha o estado e informe a zona e a seção (o município é opcional). Só com a zona aparecem todas as seções dela para escolher.</p></div>
-    <form class="busca-log" id="form-busca-log" autocomplete="off">
-      <label>Estado<select id="bl-uf" required><option value="">—</option>${ufs.map(([k, u]) => `<option value="${k}">${esc(u.nome)}</option>`).join("")}</select></label>
-      <label>Município <span class="nota">(opcional)</span><input id="bl-mun" list="bl-muns" placeholder="Todos"><datalist id="bl-muns"></datalist></label>
-      <label>Zona<input id="bl-zona" type="number" min="1" inputmode="numeric" required placeholder="ex.: 1"></label>
-      <label>Seção<input id="bl-secao" type="number" min="1" inputmode="numeric" placeholder="ex.: 153"></label>
-      <button class="ap-play" type="submit">Ver log</button>
+  return `<section class="bloco" id="${p}-busca"><div><span class="olho">${olho}</span><h2>${titulo}</h2><p class="lead">${lead}</p></div>
+    <form class="busca-log" id="${p}-form" autocomplete="off">
+      <label>Estado<select id="${p}-uf" required><option value="">—</option>${ufs.map(([k, u]) => `<option value="${k}">${esc(u.nome)}</option>`).join("")}</select></label>
+      <label>Município <span class="nota">(opcional)</span><input id="${p}-mun" list="${p}-muns" placeholder="Todos"><datalist id="${p}-muns"></datalist></label>
+      <label>Zona<input id="${p}-zona" type="number" min="1" inputmode="numeric" required placeholder="ex.: 1"></label>
+      <label>Seção<input id="${p}-secao" type="number" min="1" inputmode="numeric" placeholder="ex.: 153"></label>
+      <button class="ap-play" type="submit">${botao}</button>
     </form>
-    <div id="bl-res"></div></section>`;
+    <div id="${p}-res"></div></section>`;
 }
-function ligarBuscaLog(app) {
-  const f = app.querySelector("#form-busca-log"); if (!f) return;
-  const selUF = f.querySelector("#bl-uf"), inMun = f.querySelector("#bl-mun"), dl = f.querySelector("#bl-muns"), res = app.querySelector("#bl-res");
+// aoEscolher(res, {uf, cod, zona, secao, linha, S}) desenha o resultado da seção escolhida
+function ligarBuscaSecao(app, p, rota, aoEscolher) {
+  const f = app.querySelector(`#${p}-form`); if (!f) return;
+  const selUF = f.querySelector(`#${p}-uf`), inMun = f.querySelector(`#${p}-mun`), dl = f.querySelector(`#${p}-muns`), res = app.querySelector(`#${p}-res`);
   const munsUF = (uf) => D.resumo.indice_municipios.filter((x) => x[0] === uf);
   selUF.onchange = () => { inMun.value = ""; dl.innerHTML = munsUF(selUF.value).map((x) => `<option value="${esc(x[2])}">`).join(""); };
-  const marcarURL = (uf, zona, secao) => { try { history.replaceState(null, "", `#logs?uf=${uf}&zona=${zona}${secao ? "&secao=" + secao : ""}`); } catch (_) {} };
-  const nomeMun = (uf, cod) => D.resumo.indice_municipios.find((x) => x[0] === uf && x[1] === cod)?.[2] || String(cod);
   const norm = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+  const marcarURL = (uf, zona, secao) => { try { history.replaceState(null, "", `#${rota}?uf=${uf}&zona=${zona}${secao ? "&secao=" + secao : ""}`); } catch (_) {} };
   async function mostrar(uf, zona, secao, munNome) {
     res.innerHTML = `<p class="nota">Procurando…</p>`;
     const S = await carregarSecoes(uf);
     let codMun = null;
     if (munNome) { const m = munsUF(uf).find((x) => norm(x[2]) === norm(munNome)); if (!m) { res.innerHTML = `<p class="aviso">Município “${esc(munNome)}” não encontrado em ${esc(D.resumo.ufs[uf].nome)}.</p>`; return; } codMun = m[1]; }
     const linhas = S.linhas.filter((l) => l[1] === zona && (codMun == null || l[0] === codMun));
-    if (!linhas.length) { res.innerHTML = `<p class="aviso">Nenhuma seção na zona ${z4(zona)}${codMun ? " de " + esc(nomeMun(uf, codMun)) : ""} (${uf}).</p>`; return; }
+    if (!linhas.length) { res.innerHTML = `<p class="aviso">Nenhuma seção na zona ${z4(zona)}${codMun ? " de " + esc(nomeMunicipio(uf, codMun)) : ""} (${uf}).</p>`; return; }
     if (!secao) {
-      res.innerHTML = `<p class="nota">${n0(linhas.length)} seções na zona ${z4(zona)} (${uf}). Escolha uma:</p><div class="bl-chips">${linhas.sort((a, b) => a[2] - b[2]).map((l) => `<button type="button" data-s="${l[2]}" data-m="${l[0]}" title="${esc(nomeMun(uf, l[0]))}">${z4(l[2])}</button>`).join("")}</div>`;
-      res.querySelectorAll(".bl-chips button").forEach((b) => (b.onclick = () => { f.querySelector("#bl-secao").value = +b.dataset.s; marcarURL(uf, zona, +b.dataset.s); mostrar(uf, zona, +b.dataset.s, munNome); }));
+      res.innerHTML = `<p class="nota">${n0(linhas.length)} seções na zona ${z4(zona)} (${uf}). Escolha uma:</p><div class="bl-chips">${linhas.sort((a, b) => a[2] - b[2]).map((l) => `<button type="button" data-s="${l[2]}" title="${esc(nomeMunicipio(uf, l[0]))}">${z4(l[2])}</button>`).join("")}</div>`;
+      res.querySelectorAll(".bl-chips button").forEach((b) => (b.onclick = () => { f.querySelector(`#${p}-secao`).value = +b.dataset.s; marcarURL(uf, zona, +b.dataset.s); mostrar(uf, zona, +b.dataset.s, munNome); }));
       return;
     }
     const l = linhas.find((x) => x[2] === secao);
     if (!l) { res.innerHTML = `<p class="aviso">Seção ${z4(secao)} não encontrada na zona ${z4(zona)} (${uf}).</p>`; return; }
-    const cod = l[0], loc = S.locais[l[3]] || [];
-    const s = { zona, secao, a: agregado(l.slice(4, 15), l.slice(15, 21)) };
-    res.innerHTML = `<div class="bl-cab"><div><b>${esc(nomeMun(uf, cod))} (${uf}) · zona ${z4(zona)} · seção ${z4(secao)}</b><br><span class="nota">${esc(loc[3] || "")}${loc[6] ? " · " + esc(loc[6]) : ""}</span></div>
-        <div class="nota">2º turno: Lula ${p1(s.a.lula2)} · Flávio ${p1(s.a.fla2)} · comparecimento ${n0(s.a.comp2)} de ${n0(s.a.aptos2)}</div>
-        <a class="nav-aud" href="#mun-${uf}-${cod}" id="bl-abrir">Abrir boletim no município</a></div><div id="bl-log" class="ficha"></div>`;
-    res.querySelector("#bl-abrir").onclick = () => { alvoSecao = { uf, cod, zona, secao }; };
-    painelLogSecao(res.querySelector("#bl-log"), uf, cod, s);
+    aoEscolher(res, { uf, cod: l[0], zona, secao, linha: l, S });
   }
   f.onsubmit = (e) => {
     e.preventDefault();
-    const uf = selUF.value, zona = +f.querySelector("#bl-zona").value, secao = +f.querySelector("#bl-secao").value || null;
+    const uf = selUF.value, zona = +f.querySelector(`#${p}-zona`).value, secao = +f.querySelector(`#${p}-secao`).value || null;
     if (!uf || !zona) return;
     marcarURL(uf, zona, secao);
     mostrar(uf, zona, secao, inMun.value.trim());
   };
-  // link direto: #logs?uf=SP&zona=1&secao=153
   const q = new URLSearchParams(location.hash.split("?")[1] || "");
-  if (q.get("uf") && q.get("zona")) {
-    selUF.value = q.get("uf"); selUF.onchange(); f.querySelector("#bl-zona").value = q.get("zona"); if (q.get("secao")) f.querySelector("#bl-secao").value = q.get("secao");
+  if (q.get("uf") && q.get("zona") && D.resumo.ufs[q.get("uf")]) {
+    selUF.value = q.get("uf"); selUF.onchange(); f.querySelector(`#${p}-zona`).value = q.get("zona"); if (q.get("secao")) f.querySelector(`#${p}-secao`).value = q.get("secao");
     mostrar(q.get("uf"), +q.get("zona"), +q.get("secao") || null, "");
   }
+}
+const nomeMunicipio = (uf, cod) => D.resumo.indice_municipios.find((x) => x[0] === uf && x[1] === cod)?.[2] || String(cod);
+function cabecalhoSecao({ uf, cod, zona, secao, linha, S }, extra = "") {
+  const loc = S.locais[linha[3]] || [];
+  return `<div class="bl-cab"><div><b>${esc(nomeMunicipio(uf, cod))} (${uf}) · zona ${z4(zona)} · seção ${z4(secao)}</b><br><span class="nota">${esc(loc[3] || "")}${loc[6] ? " · " + esc(loc[6]) : ""}</span></div>${extra}</div>`;
+}
+
+// ---------- logs: busca de seção ----------
+function htmlBuscaLog() {
+  return htmlBuscaSecao("bl", { olho: "Buscar seção", titulo: "Ver o log de uma seção", botao: "Ver log",
+    lead: "Escolha o estado e informe a zona e a seção (o município é opcional). Só com a zona aparecem todas as seções dela para escolher." });
+}
+function ligarBuscaLog(app) {
+  ligarBuscaSecao(app, "bl", "logs", (res, x) => {
+    const s = { zona: x.zona, secao: x.secao, a: agregado(x.linha.slice(4, 15), x.linha.slice(15, 21)) };
+    res.innerHTML = cabecalhoSecao(x, `<div class="nota">2º turno: Lula ${p1(s.a.lula2)} · Flávio ${p1(s.a.fla2)} · comparecimento ${n0(s.a.comp2)} de ${n0(s.a.aptos2)}</div>
+      <div class="ctrl"><a class="nav-aud" href="#bu?uf=${x.uf}&zona=${x.zona}&secao=${x.secao}">Boletim de urna</a><a class="nav-aud" href="#mun-${x.uf}-${x.cod}" data-abrir>Abrir no município</a></div>`) + `<div id="bl-log" class="ficha"></div>`;
+    res.querySelector("[data-abrir]").onclick = () => { alvoSecao = { uf: x.uf, cod: x.cod, zona: x.zona, secao: x.secao }; };
+    painelLogSecao(res.querySelector("#bl-log"), x.uf, x.cod, s);
+  });
+}
+
+// ---------- boletim de urna ----------
+async function carregarBU(uf) { D.bu ||= {}; return (D.bu[uf] ||= await json(`dados/bu/${uf}.json`).catch(() => null)); }
+async function visaoBoletim(app) {
+  app.innerHTML = `<div class="cabeca"><span class="olho">Boletim de urna · TSE</span><h1>Boletim de urna de uma seção</h1>
+      <p class="lead">O boletim de urna é o resultado que cada urna imprime ao encerrar a votação e transmite para a totalização. Aqui estão os dois turnos de qualquer seção do país, com todos os candidatos, brancos, nulos, eleitores aptos e comparecimento, além do log da urna da mesma seção.</p></div>
+    ${htmlBuscaSecao("bu", { olho: "Buscar seção", titulo: "Encontrar o boletim", botao: "Ver boletim",
+      lead: "Escolha o estado e informe a zona e a seção (o município é opcional). Só com a zona aparecem todas as seções dela para escolher." })}`;
+  ligarBuscaSecao(app, "bu", "bu", async (res, x) => {
+    res.innerHTML = `<p class="nota">Carregando o boletim…</p>`;
+    const B = await carregarBU(x.uf);
+    const l = x.linha, C = Object.fromEntries(x.S.colunas.map((c, i) => [c, i])), v = (k) => l[C[k]];
+    const outros = B ? (B.linhas.find((r) => r[0] === x.cod && r[1] === x.zona && r[2] === x.secao) || [0, 0, 0, ...B.candidatos.map(() => 0)]).slice(3) : null;
+    const loc = x.S.locais[l[3]] || [];
+    const endereco = B && loc.length ? B.enderecos[`${loc[0]}-${loc[1]}-${loc[2]}`] : "";
+    const t1 = [["Lula (PT)", 13, v("Lula_1"), "lula"], ["Flávio Bolsonaro (PL)", 22, v("Flávio_1"), "flavio"], ["Renan Santos (Missão)", 14, v("Renan_1"), "renan"],
+      ["Augusto Cury (Avante)", 70, v("Cury_1"), "cury"], ["Ronaldo Caiado (PSD)", 55, v("Caiado_1"), "caiado"], ["Zema (Novo)", 30, v("Zema_1"), "zema"]];
+    if (outros) B.candidatos.forEach(([n, nome], i) => t1.push([nome, n, outros[i], "outros"]));
+    else t1.push(["Outros 6 candidatos", "—", v("Outros_1"), "outros"]);
+    const t2 = [["Lula (PT)", 13, v("Lula_2"), "lula"], ["Flávio Bolsonaro (PL)", 22, v("Flávio_2"), "flavio"]];
+    const bloco = (turno, cands, br, nu, abst, aptos) => {
+      const val = cands.reduce((a, c) => a + c[2], 0), comp = aptos - abst, tot = val + br + nu;
+      const ord = [...cands].sort((a, b) => b[2] - a[2]);
+      return `<div class="bu-turno"><h3>${turno}º turno · ${turno === 1 ? "04/10/2026" : "25/10/2026"}</h3>
+        <table class="bu-tab"><thead><tr><th>Candidato</th><th class="n">Nº</th><th class="n">Votos</th><th class="n">% válidos</th></tr></thead><tbody>
+        ${ord.map(([nome, n, q, c]) => `<tr><td><i class="bu-cor" style="background:var(--${c})"></i>${esc(nome)}</td><td class="n mono">${n}</td><td class="n"><b>${n0(q)}</b></td><td class="n">${val ? p1((100 * q) / val) : "—"}</td></tr>`).join("")}
+        <tr class="bu-sep"><td>Votos válidos</td><td></td><td class="n"><b>${n0(val)}</b></td><td></td></tr>
+        <tr><td>Brancos</td><td class="n mono">95</td><td class="n">${n0(br)}</td><td></td></tr>
+        <tr><td>Nulos</td><td class="n mono">96</td><td class="n">${n0(nu)}</td><td></td></tr>
+        <tr class="bu-sep"><td>Total de votos (comparecimento)</td><td></td><td class="n"><b>${n0(tot)}</b></td><td class="n nota">${tot === comp ? "✓ confere" : "≠ " + n0(comp)}</td></tr>
+        <tr><td>Eleitores aptos</td><td></td><td class="n">${n0(aptos)}</td><td></td></tr>
+        <tr><td>Faltosos (abstenção)</td><td></td><td class="n">${n0(abst)}</td><td class="n">${p1((100 * abst) / aptos)}</td></tr>
+        </tbody></table></div>`;
+    };
+    res.innerHTML = cabecalhoSecao(x, `<div class="ctrl"><a class="nav-aud" href="#logs?uf=${x.uf}&zona=${x.zona}&secao=${x.secao}">Log desta urna</a><a class="nav-aud" href="#mun-${x.uf}-${x.cod}" data-abrir>Abrir no município</a></div>`)
+      + `<div class="bu-papel"><div class="bu-topo"><div><span class="olho">Eleição Geral Federal 2026 · Presidente da República</span>
+          <div class="bu-id"><span>UF <b>${x.uf}</b></span><span>Município <b>${esc(nomeMunicipio(x.uf, x.cod))}</b> <span class="nota mono">${x.cod}</span></span><span>Zona <b class="mono">${z4(x.zona)}</b></span><span>Seção <b class="mono">${z4(x.secao)}</b></span></div>
+          <div class="nota">Local ${loc[2] ?? "—"} · ${esc(loc[3] || "")}${endereco ? " · " + esc(endereco) : ""}${loc[6] ? " · " + esc(loc[6]) : ""}</div></div></div>
+        <div class="grade2">${bloco(1, t1, v("Branco_1"), v("Nulo_1"), v("Abst_1"), v("Aptos_1"))}${bloco(2, t2, v("Branco_2"), v("Nulo_2"), v("Abst_2"), v("Aptos_2"))}</div>
+        <p class="nota">Fonte: votação por seção eleitoral, Portal de Dados Abertos do TSE. Nulos incluem votos em números sem candidato válido.</p></div>
+      <div id="bu-log" class="ficha"></div>`;
+    res.querySelector("[data-abrir]").onclick = () => { alvoSecao = { uf: x.uf, cod: x.cod, zona: x.zona, secao: x.secao }; };
+    painelLogSecao(res.querySelector("#bu-log"), x.uf, x.cod, { zona: x.zona, secao: x.secao, a: agregado(l.slice(4, 15), l.slice(15, 21)) });
+  });
 }
 
 // ---------- logs: modelo de urna e intervalo entre votos ----------
@@ -2350,9 +2420,10 @@ async function rotear() {
     } else if (h === "auditoria") { trilha([["Brasil", ""], ["Auditoria", h]]); await visaoAuditoria(app); }
     else if (h === "perfil") { trilha([["Brasil", ""], ["Perfil e tendências", h]]); await visaoPerfil(app); }
     else if ((m = h.match(/^apuracao(?:-video-([12])(-sorteio)?)?$/))) { trilha([["Brasil", ""], ["Apuração", "apuracao"]]); await visaoApuracao(app, m[1] ? { turno: m[1], sorteio: !!m[2] } : null); }
+    else if (h === "bu" || h.startsWith("bu?")) { trilha([["Brasil", ""], ["Boletim de urna", "bu"]]); await visaoBoletim(app); }
     else if (h === "logs" || h.startsWith("logs?")) { trilha([["Brasil", ""], ["Logs da urna", h]]); await visaoLogs(app); }
     else { trilha([["Brasil", ""]]); visaoBrasil(app); }
-    for (const [id, alvo] of [["nav-aud", "auditoria"], ["nav-perfil", "perfil"], ["nav-apur", "apuracao"], ["nav-logs", "logs"]]) {
+    for (const [id, alvo] of [["nav-aud", "auditoria"], ["nav-perfil", "perfil"], ["nav-apur", "apuracao"], ["nav-bu", "bu"], ["nav-logs", "logs"]]) {
       const a = document.getElementById(id);
       if (h.split("?")[0] === alvo) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
     }
