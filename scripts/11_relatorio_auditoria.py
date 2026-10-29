@@ -90,6 +90,61 @@ def g_barras_hist(CP, chave, tend, sufixo, titulo):
     return fig
 
 
+def parte_logs_ampliada(AMP):
+    """Recortes das mensagens do log: identificação, mesário, impedidos, energia, encerramento e ritmo da votação."""
+    if not AMP:
+        return []
+    ts = [t for t in ("1", "2") if t in AMP]
+    A = {t: AMP[t] for t in ts}
+    cab = ["Recorte"] + [f"{t}º turno" for t in ts]
+    lin = lambda rot, f: [rot] + [f(A[t]) for t in ts]
+    tab = [cab,
+           lin("Seções analisadas", lambda a: n0(a["secoes"])),
+           lin("Eleitores identificados pelo CPF (demais pelo título)", lambda a: p1(a["id_cpf_pct"])),
+           lin("Biometria só na 4ª tentativa (por mil votos)", lambda a: dec(a["biometria_4a_tentativa_por_mil"], 1)),
+           lin("Ano de nascimento conferido · divergente", lambda a: f"{n0(a['ano_nasc_confere'])} · {n0(a['ano_nasc_diferente'])}"),
+           lin("Seções em que um mesário autorizou 30%+ · 50%+ dos votos", lambda a: f"{n0(a['secoes_mesario_30pct'])} · {n0(a['secoes_mesario_50pct'])}"),
+           lin("Alerta \"o eleitor identificado já votou\" · seções", lambda a: f"{n0(a['eleitor_ja_votou'])} · {n0(a['secoes_ja_votou'])}"),
+           lin("Identificador sem eleitor na seção", lambda a: n0(a["eleitor_nao_encontrado"])),
+           lin("Eleitores impedidos de votar", lambda a: n0(sum(a["impedidos"].values()))),
+           lin("Correções na cabine (por mil votos)", lambda a: dec(a["correcoes_por_mil"], 0)),
+           lin("Justificativas de ausência", lambda a: n0(a["justificativas"])),
+           lin("Voto com áudio ativado pelo cadastro", lambda a: n0(a["audio_cadastro"])),
+           lin("Seções na bateria · com carga crítica", lambda a: f"{n0(a['secoes_bateria'])} · {n0(a['secoes_bateria_critica'])}"),
+           lin("Tentativas de encerrar antes das 17h (seções)", lambda a: n0(a["secoes_encerr_cedo_tentativa"])),
+           lin("Encerradas com \"NÃO\" a \"todos os presentes já votaram?\"", lambda a: n0(a["secoes_encerr_com_presentes"])),
+           lin("Falha de impressora · leitor biométrico · log da mídia", lambda a: f"{n0(a['secoes_impressora'])} · {n0(a['secoes_leitor_biometrico'])} · {n0(a['secoes_log_me_corrompido'])}")]
+    larg = [100 * mm] + [74 * mm / len(ts)] * len(ts)
+    ufs = sorted(set().union(*(A[t]["ufs"] for t in ts)))
+    out = [Spacer(1, 4), KeepTogether([P("O que mais as mensagens do log mostram", "h2"),
+           P("Recortes a partir de todas as mensagens gravadas pela urna: como o eleitor foi identificado, quem autorizou a habilitação, quem foi impedido "
+             "de votar, quedas de energia e como a seção foi encerrada." + ("" if len(ufs) >= 28 else f" <b>Cobertura: {len(ufs)} unidades ({', '.join(ufs)}).</b>"), "corpo"),
+           tabela(tab, larg, numericas=range(1, len(cab)))]),
+           P("A urna recusa o encerramento antes das 17h: a tentativa fica registrada e a votação continua. \"Já votou\" é o alerta exibido quando o mesário digita "
+             "o título de quem já votou; a urna não habilita o eleitor de novo. A habilitação pelo mesário (ano de nascimento + digital do mesário) é o "
+             "procedimento previsto quando a biometria do eleitor não confere.", "nota")]
+    t = ts[-1]
+    imp = [["Motivo do impedimento", "Eleitores"]] + [[k[:1].upper() + k[1:], n0(v)] for k, v in list(A[t]["impedidos"].items())[:8]]
+    top = [["UF", "Município", "Zona", "Seção", "Pelo mesário", "Votos", "Parcela"]]
+    nomes = {(u, m["cod"]): m["nome"] for u in {r[0] for r in A[t]["mesario_top"]}
+             for m in json.load(open(PORTAL_DADOS / "uf" / f"{u}.json"))["municipios"]}
+    for u, mun, z, sc, h, v, _ in A[t]["mesario_top"][:10]:
+        top.append([u, nomes.get((u, mun), str(mun))[:26], f"{z:04d}", f"{sc:04d}", n0(h), n0(v), p1(100 * h / max(v, 1))])
+    out += [Spacer(1, 4), KeepTogether([P(f"Eleitores impedidos de votar, por motivo · {t}º turno", "h2"), tabela(imp, [130 * mm, 44 * mm], numericas=(1,))]),
+            Spacer(1, 4), KeepTogether([P(f"Seções com maior parcela de habilitações autorizadas por um mesário · {t}º turno", "h2"),
+                                        tabela(top, [12 * mm, 52 * mm, 16 * mm, 16 * mm, 28 * mm, 22 * mm, 28 * mm], numericas=(2, 3, 4, 5, 6)),
+                                        P("Concentração alta indica seção com muitos eleitores sem biometria reconhecida (idosos, digitais gastas) e é ponto de "
+                                          "conferência com a ata da mesa, não indicativo isolado de irregularidade.", "nota")])]
+    vh = [["Turno", "Pico", "Até as 10h", "Depois das 17h"]]
+    for t in ts:
+        h = A[t]["votos_hora"]
+        tot = sum(h) or 1
+        pico = max(range(24), key=lambda i: h[i])
+        vh.append([f"{t}º", f"{pico}h–{pico + 1}h ({p1(100 * h[pico] / tot)})", p1(100 * sum(h[:10]) / tot), p1(100 * sum(h[17:]) / tot)])
+    out += [Spacer(1, 4), KeepTogether([P("Ritmo da votação (horário de Brasília)", "h2"), tabela(vh, [30 * mm, 60 * mm, 42 * mm, 42 * mm], numericas=(2, 3))])]
+    return out
+
+
 def parte_logs(LG):
     """Parte do relatório com os logs de todas as urnas."""
     T1, T2 = LG["turnos"]["1"], LG["turnos"]["2"]
@@ -122,7 +177,8 @@ def parte_logs(LG):
     for k, rot in [("contingencia_pct", "Troca de urna"), ("erros_relevantes_pct", "Erro fora da rotina"), ("reinicio_pct", "Reinício durante a votação"),
                    ("hab_manual_pct", "Habilitação manual (dos votos)"), ("voto_nao_registrado_pct", "Voto não registrado")]:
         cz.append([rot, p1(X["atipicas"][k], 2), p1(X["demais"][k], 2)])
-    RE = {"contingencia": "Troca de urna", "reinicio": "Reinício durante a votação", "erro_relevante": "Erro fora da rotina", "dmanual_10pp": "Habilitação manual 10 p.p. maior que no 1º turno"}
+    RE = {"contingencia": "Troca de urna", "reinicio": "Reinício durante a votação", "erro_relevante": "Erro fora da rotina", "dmanual_10pp": "Habilitação manual 10 p.p. maior que no 1º turno",
+          "mesario_30pct": "Um mesário autorizou 30%+ dos votos", "ja_votou": "Alerta \"eleitor já votou\"", "bateria": "Urna funcionou na bateria"}
     ef = [["Ocorrência no 2º turno", "Diferença na variação de Lula", "Erro-padrão", "Leitura"]]
     for k, e in X["efeito_na_variacao_lula"].items():
         sem = abs(e["efeito_pp"]) < 2 * e["erro_padrao"]
@@ -135,6 +191,7 @@ def parte_logs(LG):
                           tabela(ef, [70 * mm, 40 * mm, 24 * mm, 40 * mm], numericas=(1, 2)),
                           P(f"Correlação, dentro do município, entre o aumento da habilitação manual e o aumento do comparecimento: {dec(X['corr_dmanual_dcomp'], 3)}.", "nota")]),
             Spacer(1, 4)]
+    out += parte_logs_ampliada(LG.get("ampliada") or {})
     for t in ("1", "2"):
         msgs = [m for m in LG["mensagens"][t] if m[0] == "ERRO"][:12]
         tm = [["Mensagem de erro", "Ocorrências", "Estados"]] + [[Paragraph(m[1][:160], R.estilo("msg", fontSize=7.2, leading=9)), n0(m[2]), m[3]] for m in msgs]
