@@ -309,6 +309,11 @@ const eixo = () => ({ axisLine: { lineStyle: { color: T.axis } }, axisTick: { sh
 
 // ---------- dados ----------
 const D = { resumo: null, uf: {}, secoes: {} };
+// arquivo .json.gz descomprimido no navegador (os logs por seção são publicados comprimidos)
+async function jsonGz(url) {
+  const r = await fetch(url); if (!r.ok) throw new Error(url + ": " + r.status);
+  return new Response(r.body.pipeThrough(new DecompressionStream("gzip"))).json();
+}
 async function json(url) { const r = await fetch(url); if (!r.ok) throw new Error(url + ": " + r.status); return r.json(); }
 async function carregarUF(uf) { return (D.uf[uf] ||= await json(`dados/uf/${uf}.json`)); }
 async function carregarAuditoria() { D.comp ||= await json("dados/comportamento.json"); D.ins ||= await json("dados/insights.json"); D.logs ||= await json("dados/logs.json").catch(() => null); D.ideo ||= await json("dados/ideologia.json"); return (D.aud ||= await json("dados/auditoria.json")); }
@@ -1503,7 +1508,7 @@ async function carregarLogsSecao(uf, mun, zona) {
   D.logpartes ||= await json("dados/logs_secoes/partes.json").catch(() => ({}));
   const n = D.logpartes[uf]; if (!n) return null;
   const arq = `${uf}-${(mun + zona) % n}`; D.logsec ||= {};
-  return (D.logsec[arq] ||= await json(`dados/logs_secoes/${arq}.json`).catch(() => null));
+  return (D.logsec[arq] ||= await jsonGz(`dados/logs_secoes/${arq}.json.gz`).catch(() => null));
 }
 async function painelLogSecao(el, uf, cod, s) {
   el.innerHTML = `<p class="nota">Carregando o log da urna…</p>`;
@@ -1530,8 +1535,8 @@ async function painelLogSecao(el, uf, cod, s) {
     ${C.int_hist != null ? `
     ${lin("Intervalo entre votos: típico · menor", (r) => (v(r, "int_mediano_s") == null ? "—" : `${n0(v(r, "int_mediano_s"))} s · <b${v(r, "int_menor_s") < 30 ? ' style="color:var(--up)"' : ""}>${n0(v(r, "int_menor_s"))} s</b>`))}
     ${lin("Intervalos abaixo de 1 min · 30 s · 10 s", (r) => (v(r, "int_n") == null ? "—" : `${n0(v(r, "int_menos_1min"))} · ${n0(v(r, "int_menos_30s"))} · ${n0(v(r, "int_menos_10s"))} <span class="nota">de ${n0(v(r, "int_n"))}</span>`))}
-    ${lin("Distribuição dos intervalos (até 5 s → 30 min ou mais)", (r) => (v(r, "int_hist") == null ? "—" : barrasIntervalo(JSON.parse(v(r, "int_hist")), INT_BORDAS)))}
-    ${lin("Os 5 menores intervalos (voto → voto seguinte)", (r) => (v(r, "int_menores") == null ? "—" : JSON.parse(v(r, "int_menores")).map(([a, b, s]) => `<span class="mono">${a}→${b}</span> <b>${s} s</b>`).join("<br>")))}` : ""}
+    ${lin("Distribuição dos intervalos (até 5 s → 30 min ou mais)", (r) => (v(r, "int_hist") == null ? "—" : barrasIntervalo(v(r, "int_hist"), INT_BORDAS)))}
+    ${lin("Os 5 menores intervalos (horário do voto → voto seguinte)", (r) => (v(r, "int_menores") == null ? "—" : v(r, "int_menores").split(" ").map((x) => { const [h, s] = x.split("+"), a = +h.slice(0, 2) * 3600 + +h.slice(2, 4) * 60 + +h.slice(4), b = a + +s, f = (t) => [t / 3600, (t % 3600) / 60, t % 60].map((y) => String(Math.floor(y)).padStart(2, "0")).join(":"); return `<span class="mono">${f(a)}→${f(b)}</span> <b>${s} s</b>`; }).join("<br>")))}` : ""}
     ${lin("Reinícios durante a votação", (r) => n0(v(r, "ligadas_apos_pronta")))}
     ${lin("Erros (fora a rotina) · alertas", (r) => `${n0(v(r, "erros_relevantes"))} · ${n0(v(r, "alertas"))}`)}
     ${lin("Votos não registrados (erro)", (r) => (v(r, "voto_nao_registrado") ? `<b style="color:var(--up)">${v(r, "voto_nao_registrado")}</b>` : "0"))}

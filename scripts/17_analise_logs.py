@@ -11,11 +11,12 @@ Responde, por turno, estado e seção:
   - conferência: votos registrados no log × comparecimento do boletim de urna
   - cruzamentos: ocorrências nas seções atípicas × nas demais; associação com a variação do voto
 
-Saídas: portal/dados/logs.json (resumos) e portal/dados/logs_secoes/<UF>-<parte>.json (uma linha por seção,
+Saídas: portal/dados/logs.json (resumos) e portal/dados/logs_secoes/<UF>-<parte>.json.gz (uma linha por seção,
 usada no boletim da seção no portal).
 """
 import collections
 import glob
+import gzip
 import json
 
 import numpy as np
@@ -235,6 +236,17 @@ def depois_17h(d, nomes):
     return out
 
 
+def compactar_intervalos(g):
+    """int_hist vira lista de inteiros e int_menores vira "HHMMSS+segundos" separados por espaço (formato do painel da seção)."""
+    if "int_hist" not in g:
+        return g
+    g = g.copy()
+    g["int_hist"] = [None if x is None or (isinstance(x, float) and np.isnan(x)) else json.loads(x) for x in g.int_hist]
+    g["int_menores"] = [None if x is None or (isinstance(x, float) and np.isnan(x)) else
+                        " ".join(f"{a.replace(':', '')}+{dt}" for a, _, dt in json.loads(x)) for x in g.int_menores]
+    return g
+
+
 def cruzamentos(d, s, aud):
     """Ocorrências nas seções atípicas × demais; associação das ocorrências com a variação do voto (2º turno)."""
     col = {k: i for i, k in enumerate(aud["suspeitas"]["colunas"])}
@@ -380,8 +392,10 @@ def main():
         partes[uf] = n
         for k in range(n):
             gk = g[(g.mun + g.zona) % n == k]
+            gk = compactar_intervalos(gk)
             linhas = gk[campos].astype(object).where(gk[campos].notna(), None).values.tolist()
-            with open(PORTAL_DADOS / "logs_secoes" / f"{uf}-{k}.json", "w") as f:
+            # gzip: o portal descomprime no navegador (DecompressionStream); reduz cerca de 5 vezes o tamanho
+            with gzip.open(PORTAL_DADOS / "logs_secoes" / f"{uf}-{k}.json.gz", "wt", encoding="utf-8", compresslevel=9) as f:
                 json.dump({"colunas": campos, "linhas": limpar(linhas)}, f, ensure_ascii=False, separators=(",", ":"), allow_nan=False)
     with open(PORTAL_DADOS / "logs_secoes" / "partes.json", "w") as f:
         json.dump(partes, f)
