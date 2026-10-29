@@ -183,6 +183,13 @@ def por_modelo(d, s):
     return out
 
 
+def menos_17s(menores):
+    """Intervalos abaixo de 17 s a partir dos 5 menores da seção (exato quando menos de 5 ficam abaixo do limite)."""
+    if menores is None or (isinstance(menores, float) and np.isnan(menores)):
+        return None
+    return sum(1 for _, _, dt in json.loads(menores) if dt < 17)
+
+
 def intervalos(d, nomes):
     """Intervalo entre votos consecutivos em cada seção (extração com int_hist)."""
     if "int_hist" not in d:
@@ -195,9 +202,14 @@ def intervalos(d, nomes):
         h = np.array([json.loads(x) for x in g.int_hist]).sum(axis=0)
         n = int(g.int_n.sum())
         top = g.sort_values(["int_menor_s", "int_menos_10s"], ascending=[True, False]).head(40)
+        abaixo17 = g[g.int_menos_17s > 0]
         out[str(t)] = {"secoes": int(len(g)), "intervalos": n, "bordas": INT_BORDAS, "hist": h.tolist(),
                        "menos_1min_pct": float(100 * g.int_menos_1min.sum() / n), "menos_30s_pct": float(100 * g.int_menos_30s.sum() / n),
                        "menos_10s": int(g.int_menos_10s.sum()),
+                       "menos_17s": int(g.int_menos_17s.sum()), "secoes_menos_17s": int(len(abaixo17)),
+                       "menos_17s_exato": bool((abaixo17.int_menos_17s < 5).all()),
+                       "lista_menos_17s": [[r.uf, int(r.mun), nomes.get((r.uf, r.mun), ""), int(r.zona), int(r.secao), int(r.int_menos_17s), int(r.int_menor_s),
+                                            r.int_menores] for r in abaixo17.itertuples()],
                        "secoes_menos_1min": int((g.int_menos_1min > 0).sum()), "secoes_menos_30s": int((g.int_menos_30s > 0).sum()),
                        "secoes_menos_10s": int((g.int_menos_10s > 0).sum()),
                        "menor_s": int(g.int_menor_s.min()), "mediano_s": float(g.int_mediano_s.median()),
@@ -351,6 +363,8 @@ def main():
     lista = d[(d.contingencia.fillna(False)) | (d.voto_nao_registrado > 0) | (d.erros_relevantes >= 3) | (d.encerr_min < 0) | (d.ligadas_apos_pronta >= 2)]
     nomes = s.drop_duplicates(["uf", "mun"]).set_index(["uf", "mun"]).NM_MUNICIPIO
     saida["modelos"] = por_modelo(d, s)
+    if "int_menores" in d:
+        d["int_menos_17s"] = [menos_17s(x) for x in d.int_menores]
     saida["intervalos"] = intervalos(d, nomes.to_dict())
     saida["depois_17h"] = depois_17h(d, nomes.to_dict())
     saida["ocorrencias"] = {"colunas": ["turno", "uf", "mun", "nome", "zona", "secao", "contingencia", "t_contingencia", "voto_nao_registrado", "erros_relevantes",
@@ -383,7 +397,7 @@ def main():
               "ligadas_apos_pronta", "votos_apos_17h", "tempo_mediano_s"]
     campos += [c for c in ("id_cpf", "ano_nasc_confere", "ano_nasc_diferente", "hab_por_mesario", "mesario_max_hab", "mesarios_que_habilitaram", "eleitor_ja_votou",
                            "eleitor_impedido", "correcoes", "justificativas", "bateria_min", "encerr_cedo_tentativa", "encerr_com_presentes",
-                           "int_n", "int_menor_s", "int_mediano_s", "int_menos_1min", "int_menos_30s", "int_menos_10s", "int_hist", "int_menores",
+                           "int_n", "int_menor_s", "int_mediano_s", "int_menos_1min", "int_menos_30s", "int_menos_17s", "int_menos_10s", "int_hist", "int_menores",
                            "apos17_biometria", "apos17_sem_biometria", "apos17_mesario") if c in d]
     # cada UF é dividida em partes por município e zona ((mun + zona) % n), para o portal baixar só a parte da seção aberta
     partes = {}
