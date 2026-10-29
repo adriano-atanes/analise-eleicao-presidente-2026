@@ -91,6 +91,9 @@ MESARIO_HAB = re.compile(r"Mesário (\d+) habilitou o eleitor")
 IMPEDIDO = re.compile(r"Eleitor impedido - (.+)")
 
 
+INT_BORDAS = [0, 5, 10, 15, 20, 30, 45, 60, 90, 120, 180, 300, 600, 1800]  # faixas do intervalo entre votos, em segundos
+
+
 def analisar(texto, dia, uf):
     """Extrai os indicadores de um log para o dia da eleição."""
     ini = texto.find(dia)
@@ -103,7 +106,7 @@ def analisar(texto, dia, uf):
          "t_contingencia": None, "bateria": 0, "bateria_min": 0.0, "duracoes": []}
     r.update({k: 0 for k in CONTA})
     msgs, por_mesario, impedidos = collections.Counter(), collections.Counter(), collections.Counter()
-    t_hab, t_bat, votos_s = None, None, []
+    t_hab, t_bat, votos_s, votos_tipo, tipo_hab = None, None, [], [], None
     for l in linhas:
         if not l.startswith(dia):
             continue
@@ -139,6 +142,8 @@ def analisar(texto, dia, uf):
             r["t_ultimo_voto"] = hora
             sec = segundos(hora)
             votos_s.append(sec)
+            votos_tipo.append(tipo_hab)  # tipo de habilitação do eleitor deste voto (None se o log não registrou)
+            tipo_hab = None
             if t_hab is not None and 0 <= sec - t_hab < 1800:
                 r["duracoes"].append(sec - t_hab)
             t_hab = None
@@ -148,10 +153,12 @@ def analisar(texto, dia, uf):
             m = HAB.search(msg)
             if m:
                 r["hab"][m.group(1)] += 1
+                tipo_hab = m.group(1)
         elif "habilitação manual" in msg:
             r["hab_manual_pedido"] += 1
         elif "habilitou o eleitor" in msg:
             r["hab_por_mesario"] += 1
+            tipo_hab = tipo_hab or "autorizada pelo mesário"
             m = MESARIO_HAB.search(msg)
             if m:
                 por_mesario[m.group(1)] += 1
@@ -187,11 +194,28 @@ def analisar(texto, dia, uf):
     r["fuso"] = fuso
     fim = (17 + fuso) * 3600
     r["votos_apos_17h"] = sum(1 for x in votos_s if x > fim)
+    apos = [tp for x, tp in zip(votos_s, votos_tipo) if x > fim]
+    r["apos17_biometria"] = sum(1 for tp in apos if tp == "biométrica")
+    # sem biometria: o log só grava "Tipo de habilitação" na biometria; os demais votos foram habilitados sem a digital do eleitor
+    r["apos17_sem_biometria"] = sum(1 for tp in apos if tp != "biométrica")
+    r["apos17_mesario"] = sum(1 for tp in apos if tp == "autorizada pelo mesário")
     r["votos_hora"] = [0] * 24  # por hora de Brasília
     for x in votos_s:
         r["votos_hora"][min(23, max(0, x // 3600 - fuso))] += 1
     d = sorted(r["duracoes"])
     r["tempo_mediano_s"] = d[len(d) // 2] if d else None
+    # intervalo entre votos consecutivos (do voto computado de um eleitor ao do seguinte)
+    iv = [(b - a, a, b) for a, b in zip(votos_s, votos_s[1:]) if b >= a]
+    ivs = sorted(x[0] for x in iv)
+    r["int_hist"] = json.dumps([sum(1 for x in ivs if lo <= x < hi) for lo, hi in zip(INT_BORDAS, INT_BORDAS[1:] + [10 ** 9])])
+    r["int_n"] = len(ivs)
+    r["int_menor_s"] = ivs[0] if ivs else None
+    r["int_mediano_s"] = ivs[len(ivs) // 2] if ivs else None
+    r["int_menos_1min"] = sum(1 for x in ivs if x < 60)
+    r["int_menos_30s"] = sum(1 for x in ivs if x < 30)
+    r["int_menos_10s"] = sum(1 for x in ivs if x < 10)
+    hms = lambda x: f"{x // 3600:02d}:{x % 3600 // 60:02d}:{x % 60:02d}"
+    r["int_menores"] = json.dumps([[hms(a), hms(b), dt] for dt, a, b in sorted(iv)[:5]])
     r["n_urnas"] = len(r["urnas"])
     r["urnas"] = ",".join(sorted(r["urnas"]))
     r["hab_biometrica"] = r["hab"].get("biométrica", 0)
@@ -217,7 +241,7 @@ def baixar_em_blocos(url, tamanho=1 << 20):
 def processar(tarefa):
     turno, uf = tarefa
     destino = SAIDA / f"{turno}_{uf}.parquet"
-    if destino.exists() and "mesario_max_hab" in pd.read_parquet(destino).columns:  # já processado nesta versão
+    if destino.exists() and "apos17_mesario" in pd.read_parquet(destino).columns:  # já processado nesta versão
         return f"{turno}_{uf}: já processado"
     url = URL.format(t=turno, uf=uf)
     for tentativa in range(5):

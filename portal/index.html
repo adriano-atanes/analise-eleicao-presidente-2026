@@ -213,6 +213,8 @@ body.modo-video main { padding: 0; }
 .vp-legenda b { font-family: var(--f-mono); font-weight: 500; font-size: 27px; color: var(--ink); }
 .vp-legenda span { font-size: 24px; color: var(--ink-2); line-height: 1.3; }
 .vp-rodape { margin-top: auto; display: flex; justify-content: space-between; font-size: 17px; color: var(--muted); }
+.int-mini { display: inline-flex; align-items: flex-end; gap: 2px; height: 34px; width: 150px; vertical-align: middle; }
+.int-mini i { display: block; flex: 1; border-radius: 2px 2px 0 0; }
 @media (max-width: 560px) { .grafico { height: 320px; } .bloco { padding: 14px; } .placar { padding: 14px; } }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 </style>
@@ -1523,8 +1525,13 @@ async function painelLogSecao(el, uf, cod, s) {
     ${lin("Encerramento", (r) => v(r, "t_encerramento"))}
     ${lin("Votos no log × comparecimento no boletim", (r) => { const ok = v(r, "votos_log") === comp(v(r, "turno")); return `${n0(v(r, "votos_log"))} × ${n0(comp(v(r, "turno")))} ${ok ? "✓" : v(r, "contingencia") ? "(urna trocada)" : "<b style=\"color:var(--up)\">≠</b>"}`; })}
     ${lin("Habilitação por biometria", (r) => p1((100 * v(r, "hab_biometrica")) / Math.max(1, v(r, "votos_log")), 0) + ` · ${n0(v(r, "hab_manual"))} manuais`)}
-    ${lin("Votos depois das 17h (fila)", (r) => n0(v(r, "votos_apos_17h")))}
+    ${lin("Votos depois das 17h (fila)", (r) => n0(v(r, "votos_apos_17h")) + (v(r, "apos17_sem_biometria") == null ? "" : ` · <b${v(r, "apos17_sem_biometria") ? ' style="color:var(--up)"' : ""}>${n0(v(r, "apos17_sem_biometria"))} sem biometria</b>${v(r, "apos17_mesario") ? ` (${n0(v(r, "apos17_mesario"))} pelo mesário)` : ""}`))}
     ${lin("Tempo típico de votação", (r) => (v(r, "tempo_mediano_s") == null ? "—" : v(r, "tempo_mediano_s") + " s"))}
+    ${C.int_hist != null ? `
+    ${lin("Intervalo entre votos: típico · menor", (r) => (v(r, "int_mediano_s") == null ? "—" : `${n0(v(r, "int_mediano_s"))} s · <b${v(r, "int_menor_s") < 30 ? ' style="color:var(--up)"' : ""}>${n0(v(r, "int_menor_s"))} s</b>`))}
+    ${lin("Intervalos abaixo de 1 min · 30 s · 10 s", (r) => (v(r, "int_n") == null ? "—" : `${n0(v(r, "int_menos_1min"))} · ${n0(v(r, "int_menos_30s"))} · ${n0(v(r, "int_menos_10s"))} <span class="nota">de ${n0(v(r, "int_n"))}</span>`))}
+    ${lin("Distribuição dos intervalos (até 5 s → 30 min ou mais)", (r) => (v(r, "int_hist") == null ? "—" : barrasIntervalo(JSON.parse(v(r, "int_hist")), INT_BORDAS)))}
+    ${lin("Os 5 menores intervalos (voto → voto seguinte)", (r) => (v(r, "int_menores") == null ? "—" : JSON.parse(v(r, "int_menores")).map(([a, b, s]) => `<span class="mono">${a}→${b}</span> <b>${s} s</b>`).join("<br>")))}` : ""}
     ${lin("Reinícios durante a votação", (r) => n0(v(r, "ligadas_apos_pronta")))}
     ${lin("Erros (fora a rotina) · alertas", (r) => `${n0(v(r, "erros_relevantes"))} · ${n0(v(r, "alertas"))}`)}
     ${lin("Votos não registrados (erro)", (r) => (v(r, "voto_nao_registrado") ? `<b style="color:var(--up)">${v(r, "voto_nao_registrado")}</b>` : "0"))}
@@ -1634,6 +1641,165 @@ function desenharLogs(app, LG) {
 }
 
 // insights da extração ampliada dos logs (catálogo de mensagens)
+// ---------- logs: modelo de urna e intervalo entre votos ----------
+const INT_BORDAS = [0, 5, 10, 15, 20, 30, 45, 60, 90, 120, 180, 300, 600, 1800];
+const rotIntervalo = (b, i) => { const f = (s) => (s < 60 ? `${s} s` : `${s / 60} min`); return i === b.length - 1 ? `${f(b[i])} ou mais` : i === 0 ? `até ${f(b[1])}` : `${f(b[i])}–${f(b[i + 1])}`; };
+function htmlModelos(LG) {
+  if (!LG.modelos) return "";
+  return `<section class="bloco" id="log-modelos"><div class="bloco-cab"><div><span class="olho">Modelo de urna · log × boletim</span><h2>Resultado por modelo de urna</h2>
+      <p class="lead">Cada log informa o modelo da urna (UE2013 a UE2022). A tabela soma os votos das seções de cada modelo e os indicadores do log. Os modelos não estão distribuídos ao acaso: as urnas mais antigas ficam em outros lugares, com outro perfil de voto. Por isso a comparação justa é entre seções do mesmo município.</p></div>
+      <div class="seg" role="group" aria-label="Turno" id="seg-mod"><button aria-pressed="false" data-t="1">1º turno</button><button aria-pressed="true" data-t="2">2º turno</button></div></div>
+    <div id="mod-tab"></div>
+    <div class="grade2"><div class="grafico" data-g="mod-voto" style="height:260px"></div><div class="grafico" data-g="mod-ind" style="height:260px"></div></div>
+    <h3>Diferença entre modelos no mesmo município</h3>
+    <p class="nota">Diferença de Lula entre os finalistas em relação às urnas ${esc(LG.modelos.referencia)} (o modelo mais comum), comparando seções do mesmo município. Se o modelo de urna alterasse votos, a diferença apareceria no 2º turno e não no 1º. Ela aparece igual nos dois: vem de onde cada modelo foi instalado, não do equipamento.</p>
+    <div id="mod-ef"></div></section>`;
+}
+function desenharModelos(app, LG) {
+  const M = LG.modelos; if (!M) return;
+  let t = "2";
+  const desenhar = () => {
+    const L = M[t].filter((r) => r.modelo !== "não identificado" || r.secoes > 0);
+    const temInt = L.some((r) => r.intervalo_mediano_s != null);
+    tabela(app.querySelector("#mod-tab"), { porPagina: 10, linhas: L.map((r, i) => ({ id: i, r })),
+      colunas: [{ t: "Modelo", v: (l) => l.r.modelo }, { t: "Seções", n: 1, v: (l) => l.r.secoes, f: (l) => n0(l.r.secoes) },
+        { t: "Lula", n: 1, v: (l) => l.r.lula_pct, f: (l) => p1(l.r.lula_pct) }, { t: "Flávio", n: 1, v: (l) => l.r.flavio_pct, f: (l) => p1(l.r.flavio_pct) },
+        { t: "Seções no Nordeste", n: 1, v: (l) => l.r.nordeste_pct, f: (l) => p1(l.r.nordeste_pct, 0) },
+        { t: "Comparecimento", n: 1, v: (l) => l.r.comparecimento_pct, f: (l) => p1(l.r.comparecimento_pct) },
+        { t: "Troca de urna", n: 1, v: (l) => l.r.contingencia_pct, f: (l) => p1(l.r.contingencia_pct, 2) },
+        { t: "Erro fora da rotina", n: 1, v: (l) => l.r.erro_relevante_pct, f: (l) => p1(l.r.erro_relevante_pct, 2) },
+        { t: "Biometria", n: 1, v: (l) => l.r.biometria_pct, f: (l) => p1(l.r.biometria_pct) },
+        { t: "Tempo de votação", n: 1, v: (l) => l.r.tempo_mediano_s, f: (l) => `${n0(l.r.tempo_mediano_s)} s` },
+        ...(temInt ? [{ t: "Intervalo entre votos", n: 1, v: (l) => l.r.intervalo_mediano_s ?? -1, f: (l) => (l.r.intervalo_mediano_s == null ? "—" : `${n0(l.r.intervalo_mediano_s)} s`) }] : [])] });
+    const mods = L.filter((r) => r.modelo !== "não identificado");
+    const el1 = app.querySelector('[data-g="mod-voto"]');
+    trocarGrafico(el1, () => novoGrafico(el1, {
+      title: { text: `Votos válidos por modelo · ${t}º turno`, left: 0, top: 0, textStyle: { color: T.ink, fontSize: 13, fontWeight: 600 } },
+      legend: { top: 0, right: 0, textStyle: { color: T.ink2 } }, grid: { left: 8, right: 12, top: 34, bottom: 8, containLabel: true },
+      tooltip: { trigger: "axis", axisPointer: { type: "shadow" }, valueFormatter: (v) => p1(v) },
+      xAxis: { type: "category", data: mods.map((r) => r.modelo), ...eixo(), splitLine: { show: false } },
+      yAxis: { type: "value", min: 30, ...eixo(), axisLabel: { color: T.muted, formatter: "{value}%" } },
+      series: [["Lula", "lula_pct", "lula"], ["Flávio", "flavio_pct", "flavio"]].map(([n, k, c]) => ({ name: n, type: "bar", barGap: "10%", data: mods.map((r) => +r[k].toFixed(2)), itemStyle: { color: T[c], borderRadius: [3, 3, 0, 0] } })) }));
+    const el2 = app.querySelector('[data-g="mod-ind"]');
+    trocarGrafico(el2, () => novoGrafico(el2, {
+      title: { text: "Ocorrências no log por modelo (% das seções)", left: 0, top: 0, textStyle: { color: T.ink, fontSize: 13, fontWeight: 600 } },
+      legend: { top: 22, left: 0, textStyle: { color: T.ink2 } }, grid: { left: 8, right: 12, top: 56, bottom: 8, containLabel: true },
+      tooltip: { trigger: "axis", axisPointer: { type: "shadow" }, valueFormatter: (v) => p1(v, 2) },
+      xAxis: { type: "category", data: mods.map((r) => r.modelo), ...eixo(), splitLine: { show: false } },
+      yAxis: { type: "value", ...eixo(), axisLabel: { color: T.muted, formatter: "{value}%" } },
+      series: [["Troca de urna", "contingencia_pct", T.up], ["Erro fora da rotina", "erro_relevante_pct", T.ink2], ["Reinício", "reinicio_pct", T.muted]].map(([n, k, c]) => ({ name: n, type: "bar", barGap: "10%", data: mods.map((r) => +r[k].toFixed(2)), itemStyle: { color: c, borderRadius: [3, 3, 0, 0] } })) }));
+  };
+  const leitura = (e) => (Math.abs(e.efeito_pp) < 2 * e.erro_padrao ? status("ok", "Sem associação") : Math.abs(e.efeito_pp) < 0.1 ? status("ok", "Associação desprezível") : status("atencao", "Associação estatística"));
+  const fe = (e) => `${pp(e.efeito_pp, 2)} <span class="nota">±${(2 * e.erro_padrao).toFixed(2).replace(".", ",")}</span>`;
+  app.querySelector("#mod-ef").innerHTML = `<div class="tabela-wrap"><table><thead><tr><th style="cursor:default">Modelo × ${esc(M.referencia)}</th><th class="n" style="cursor:default">Lula no 1º turno</th><th class="n" style="cursor:default">Lula no 2º turno</th><th class="n" style="cursor:default">Variação entre os turnos</th><th style="cursor:default">Leitura da variação</th></tr></thead><tbody style="cursor:default">
+    ${Object.keys(M.efeito_variacao_lula).map((m) => `<tr><td>${esc(m)}</td><td class="n">${fe(M.efeito_lula_1t[m])}</td><td class="n">${fe(M.efeito_lula_2t[m])}</td><td class="n">${fe(M.efeito_variacao_lula[m])}</td><td>${leitura(M.efeito_variacao_lula[m])}</td></tr>`).join("")}
+    </tbody></table></div><p class="nota">Percentual de Lula entre os finalistas; seções agrupadas pelo modelo de urna do 2º turno; ± indica 2 erros-padrão.</p>`;
+  app.querySelectorAll("#seg-mod button").forEach((b) => (b.onclick = () => { t = b.dataset.t; app.querySelectorAll("#seg-mod button").forEach((x) => x.setAttribute("aria-pressed", x === b)); desenhar(); }));
+  desenhar();
+}
+function htmlIntervalos(LG) {
+  const I = LG.intervalos || {}, todas = Object.keys(D.resumo.ufs).length;
+  const cab = `<div><span class="olho">Intervalo entre votos · horário de cada voto no log</span><h2>Quanto tempo passou de um voto para o seguinte</h2>
+      <p class="lead">Para cada seção, o log registra o momento em que cada voto foi computado. O intervalo vai do voto de um eleitor ao voto do eleitor seguinte e inclui a identificação do próximo eleitor pelo mesário, a biometria e a votação na cabine.</p></div>`;
+  if (!I["1"] && !I["2"]) return `<section class="bloco" id="log-int"><div class="bloco-cab">${cab}</div><p class="aviso">Os logs estão sendo relidos para extrair o horário de cada voto; esta seção aparece quando o processamento terminar.</p></section>`;
+  const cob = Math.min(...["1", "2"].map((t) => (I[t] ? I[t].ufs.length : 0)));
+  return `<section class="bloco" id="log-int"><div class="bloco-cab">${cab}
+      <div class="seg" role="group" aria-label="Turno" id="seg-int"><button aria-pressed="false" data-t="1">1º turno</button><button aria-pressed="true" data-t="2">2º turno</button></div></div>
+    ${cob < todas ? `<p class="aviso">Processamento em andamento: ${cob} de ${todas} unidades com o horário de cada voto.</p>` : ""}
+    <div class="kpis" id="int-kpis"></div>
+    <div class="grade2"><div class="grafico" data-g="int-hist" style="height:280px"></div><div class="grafico" data-g="int-menor" style="height:280px"></div></div>
+    <h3>Seções com os menores intervalos entre dois votos</h3><p class="nota">Clique para abrir o boletim e o log da seção. Os horários são os locais da urna.</p><div id="int-top"></div></section>`;
+}
+function desenharIntervalos(app, LG) {
+  const I = LG.intervalos || {}; if (!I["1"] && !I["2"]) return;
+  let t = I["2"] ? "2" : "1";
+  const desenhar = () => {
+    const X = I[t]; if (!X) return;
+    const pctH = X.hist.map((v) => (100 * v) / X.intervalos);
+    app.querySelector("#int-kpis").innerHTML = `
+      <div class="kpi"><span class="rot">Intervalo típico entre dois votos</span><span class="val">${n0(X.mediano_s)} s</span><span class="sub">mediana das seções · ${n0(X.intervalos)} intervalos</span></div>
+      <div class="kpi"><span class="rot">Intervalos com menos de 1 minuto</span><span class="val">${p1(X.menos_1min_pct)}</span><span class="sub">em ${n0(X.secoes_menos_1min)} seções (${p1((100 * X.secoes_menos_1min) / X.secoes, 0)})</span></div>
+      <div class="kpi"><span class="rot">Intervalos com menos de 30 s</span><span class="val">${p1(X.menos_30s_pct, 2)}</span><span class="sub">em ${n0(X.secoes_menos_30s)} seções</span></div>
+      <div class="kpi"><span class="rot">Intervalos com menos de 10 s</span><span class="val">${n0(X.menos_10s)}</span><span class="sub">em ${n0(X.secoes_menos_10s)} seções · menor de todos: ${n0(X.menor_s)} s</span></div>`;
+    const el = app.querySelector('[data-g="int-hist"]');
+    trocarGrafico(el, () => novoGrafico(el, {
+      title: { text: `Intervalos entre votos consecutivos · ${t}º turno`, left: 0, top: 0, textStyle: { color: T.ink, fontSize: 13, fontWeight: 600 } },
+      grid: { left: 8, right: 12, top: 34, bottom: 8, containLabel: true },
+      tooltip: { trigger: "axis", axisPointer: { type: "shadow" }, formatter: (ps) => `${esc(ps[0].name)}: <b>${p1(ps[0].value, 2)}</b> dos intervalos (${n0(X.hist[ps[0].dataIndex])})` },
+      xAxis: { type: "category", data: X.bordas.map((_, i) => rotIntervalo(X.bordas, i)), ...eixo(), splitLine: { show: false }, axisLabel: { color: T.ink2, fontSize: 10, rotate: 40 } },
+      yAxis: { type: "value", ...eixo(), axisLabel: { color: T.muted, formatter: "{value}%" } },
+      series: [{ type: "bar", barCategoryGap: "12%", data: pctH.map((v, i) => ({ value: +v.toFixed(3), itemStyle: { color: X.bordas[i] < 60 ? T.up : T.ink2, borderRadius: [3, 3, 0, 0] } })) }] }));
+    const el2 = app.querySelector('[data-g="int-menor"]');
+    trocarGrafico(el2, () => novoGrafico(el2, {
+      title: { text: "Menor intervalo de cada seção", left: 0, top: 0, textStyle: { color: T.ink, fontSize: 13, fontWeight: 600 } },
+      grid: { left: 8, right: 12, top: 34, bottom: 22, containLabel: true },
+      tooltip: { trigger: "axis", axisPointer: { type: "shadow" }, formatter: (ps) => `Menor intervalo de ${esc(ps[0].name)}: <b>${n0(ps[0].value)}</b> seções` },
+      xAxis: { type: "category", name: "segundos", nameLocation: "middle", nameGap: 26, nameTextStyle: { color: T.muted }, data: X.hist_menor.map((_, i) => (i === X.hist_menor.length - 1 ? `${i * 5}+` : `${i * 5}–${i * 5 + 5}`)), ...eixo(), splitLine: { show: false }, axisLabel: { color: T.ink2, fontSize: 10 } },
+      yAxis: { type: "value", ...eixo(), axisLabel: { color: T.muted, formatter: (v) => mi(v) } },
+      series: [{ type: "bar", barCategoryGap: "8%", data: X.hist_menor.map((v, i) => ({ value: v, itemStyle: { color: i < 12 ? T.up : T.ink2, borderRadius: [2, 2, 0, 0] } })) }] }));
+    tabela(app.querySelector("#int-top"), { porPagina: 10, linhas: X.top.map((r, i) => ({ id: i, r })),
+      aoClicar: (l) => { alvoSecao = { uf: l.r[0], cod: l.r[1], zona: l.r[3], secao: l.r[4] }; location.hash = `mun-${l.r[0]}-${l.r[1]}`; },
+      colunas: [{ t: "UF", v: (l) => l.r[0] }, { t: "Município", v: (l) => l.r[2] || String(l.r[1]) }, { t: "Zona", v: (l) => l.r[3], f: (l) => `<span class="mono">${z4(l.r[3])}</span>` },
+        { t: "Seção", v: (l) => l.r[4], f: (l) => `<span class="mono">${z4(l.r[4])}</span>` },
+        { t: "Menor intervalo", n: 1, v: (l) => -l.r[5], f: (l) => `${n0(l.r[5])} s`, ordemPadrao: 1 },
+        { t: "Abaixo de 10 s · 30 s · 1 min", n: 1, v: (l) => l.r[6], f: (l) => `${n0(l.r[6])} · ${n0(l.r[7])} · ${n0(l.r[8])}` },
+        { t: "Intervalos", n: 1, v: (l) => l.r[9], f: (l) => n0(l.r[9]) },
+        { t: "Os menores (horário do voto → voto seguinte)", v: (l) => l.r[10], f: (l) => JSON.parse(l.r[10] || "[]").slice(0, 3).map(([a, b, s]) => `<span class="mono">${a.slice(0, 5)}→${b.slice(0, 5)}</span> ${s} s`).join(" · ") }] });
+  };
+  app.querySelectorAll("#seg-int button").forEach((b) => (b.onclick = () => { t = b.dataset.t; app.querySelectorAll("#seg-int button").forEach((x) => x.setAttribute("aria-pressed", x === b)); desenhar(); }));
+  app.querySelectorAll("#seg-int button").forEach((x) => x.setAttribute("aria-pressed", x.dataset.t === t));
+  desenhar();
+}
+function htmlDepois17(LG) {
+  const A = LG.depois_17h || {}, todas = Object.keys(D.resumo.ufs).length;
+  const cab = `<div><span class="olho">Fila depois das 17h · identificação do eleitor</span><h2>Quem votou depois das 17h sem biometria</h2>
+      <p class="lead">Quem está na fila às 17h recebe senha e vota depois do horário. A votação termina às 17h de Brasília em todo o país (15h no Acre, 16h nos estados com uma hora a menos). Para cada voto registrado depois desse horário, o log mostra se o eleitor foi identificado pela digital ou sem biometria (título ou documento conferido pelo mesário, que autoriza com o ano de nascimento e a própria digital quando a biometria não confere).</p></div>`;
+  if (!A["1"] && !A["2"]) return `<section class="bloco" id="log-17h"><div class="bloco-cab">${cab}</div><p class="aviso">Os logs estão sendo relidos para identificar a habilitação de cada voto; esta seção aparece quando o processamento terminar.</p></section>`;
+  const cob = Math.min(...["1", "2"].map((t) => (A[t] ? A[t].ufs.length : 0)));
+  return `<section class="bloco" id="log-17h"><div class="bloco-cab">${cab}
+      <div class="seg" role="group" aria-label="Turno" id="seg-17h"><button aria-pressed="true" data-t="1">1º turno</button><button aria-pressed="false" data-t="2">2º turno</button></div></div>
+    ${cob < todas - 1 ? `<p class="aviso">Processamento em andamento: ${cob} de ${todas - 1} estados com a habilitação de cada voto (o exterior fica fora deste recorte por ter fusos variados).</p>` : ""}
+    <div class="kpis" id="d17-kpis"></div>
+    <div class="grafico" data-g="d17-uf" style="height:300px"></div>
+    <h3>Seções com mais votos sem biometria depois das 17h</h3><p class="nota">Clique para abrir o boletim e o log da seção.</p><div id="d17-top"></div></section>`;
+}
+function desenharDepois17(app, LG) {
+  const A = LG.depois_17h || {}; if (!A["1"] && !A["2"]) return;
+  let t = A["1"] ? "1" : "2";
+  const desenhar = () => {
+    const X = A[t]; if (!X) return;
+    app.querySelector("#d17-kpis").innerHTML = `
+      <div class="kpi"><span class="rot">Votos depois das 17h</span><span class="val">${n0(X.votos)}</span><span class="sub">em ${n0(X.secoes_com_votos)} seções</span></div>
+      <div class="kpi"><span class="rot">Sem identificação biométrica</span><span class="val">${n0(X.sem_biometria)}</span><span class="sub">${p1(X.sem_biometria_pct)} dos votos depois das 17h · em ${n0(X.secoes_sem_biometria)} seções</span></div>
+      <div class="kpi"><span class="rot">Autorizados pelo mesário</span><span class="val">${n0(X.mesario)}</span><span class="sub">ano de nascimento + digital do mesário</span></div>
+      <div class="kpi"><span class="rot">Sem biometria no dia inteiro</span><span class="val">${p1(X.sem_biometria_dia_pct)}</span><span class="sub">referência: ${X.sem_biometria_pct > X.sem_biometria_dia_pct ? "depois das 17h a parcela é maior" : "depois das 17h a parcela é igual ou menor"}</span></div>`;
+    const U = X.por_uf.filter((r) => r[3] > 0).sort((a, b) => b[3] - a[3]);
+    const el = app.querySelector('[data-g="d17-uf"]');
+    trocarGrafico(el, () => novoGrafico(el, {
+      title: { text: `Votos depois das 17h por estado · ${t}º turno`, left: 0, top: 0, textStyle: { color: T.ink, fontSize: 13, fontWeight: 600 } },
+      legend: { top: 0, right: 0, textStyle: { color: T.ink2 } }, grid: { left: 8, right: 12, top: 34, bottom: 8, containLabel: true },
+      tooltip: { trigger: "axis", axisPointer: { type: "shadow" }, formatter: (ps) => { const r = U[ps[0].dataIndex]; return `<b>${r[0]}</b><br>${n0(r[3])} votos depois das 17h<br>sem biometria: <b>${n0(r[4])}</b> (${p1(r[6])})<br>autorizados pelo mesário: ${n0(r[5])}<br>sem biometria no dia todo: ${p1(r[7])}`; } },
+      xAxis: { type: "category", data: U.map((r) => r[0]), ...eixo(), splitLine: { show: false }, axisLabel: { color: T.ink2, interval: 0, fontSize: 10 } },
+      yAxis: { type: "value", ...eixo(), axisLabel: { color: T.muted, formatter: (v) => mi(v) } },
+      series: [{ name: "Com biometria", type: "bar", stack: "v", data: U.map((r) => r[3] - r[4]), itemStyle: { color: T.ink2 } },
+        { name: "Sem biometria", type: "bar", stack: "v", data: U.map((r) => r[4]), itemStyle: { color: T.up, borderRadius: [2, 2, 0, 0] } }] }));
+    tabela(app.querySelector("#d17-top"), { porPagina: 10, linhas: X.top.map((r, i) => ({ id: i, r })),
+      aoClicar: (l) => { alvoSecao = { uf: l.r[0], cod: l.r[1], zona: l.r[3], secao: l.r[4] }; location.hash = `mun-${l.r[0]}-${l.r[1]}`; },
+      colunas: [{ t: "UF", v: (l) => l.r[0] }, { t: "Município", v: (l) => l.r[2] || String(l.r[1]) }, { t: "Zona", v: (l) => l.r[3], f: (l) => `<span class="mono">${z4(l.r[3])}</span>` },
+        { t: "Seção", v: (l) => l.r[4], f: (l) => `<span class="mono">${z4(l.r[4])}</span>` },
+        { t: "Votos depois das 17h", n: 1, v: (l) => l.r[5], f: (l) => n0(l.r[5]) }, { t: "Sem biometria", n: 1, v: (l) => l.r[6], f: (l) => n0(l.r[6]), ordemPadrao: 1 },
+        { t: "Pelo mesário", n: 1, v: (l) => l.r[7], f: (l) => n0(l.r[7]) }, { t: "Último voto (hora local)", v: (l) => l.r[8] || "", f: (l) => `<span class="mono">${esc(l.r[8] || "—")}</span>` }] });
+  };
+  app.querySelectorAll("#seg-17h button").forEach((b) => (b.onclick = () => { t = b.dataset.t; app.querySelectorAll("#seg-17h button").forEach((x) => x.setAttribute("aria-pressed", x === b)); desenhar(); }));
+  app.querySelectorAll("#seg-17h button").forEach((x) => x.setAttribute("aria-pressed", x.dataset.t === t));
+  desenhar();
+}
+// mini-histograma do intervalo entre votos para o painel da seção
+function barrasIntervalo(hist, bordas) {
+  const tot = hist.reduce((a, b) => a + b, 0) || 1, mx = Math.max(...hist) || 1;
+  return `<div class="int-mini" role="img" aria-label="Distribuição dos intervalos entre votos">${hist.map((v, i) => `<i title="${rotIntervalo(bordas, i)}: ${n0(v)} (${p1((100 * v) / tot, 0)})" style="height:${Math.max(v ? 8 : 0, (100 * v) / mx)}%;background:${bordas[i] < 60 ? "var(--up)" : "var(--ink-2)"}"></i>`).join("")}</div>`;
+}
+
 function htmlAmpliada(LG) {
   const A = LG.ampliada || {};
   if (!A["1"] && !A["2"]) return `<section class="bloco"><div class="bloco-cab"><div><span class="olho">Mais do que dizem os logs</span><h2>Identificação dos eleitores, cabine, energia e encerramento</h2>
@@ -1738,6 +1904,9 @@ async function visaoLogs(app) {
     <p class="lead">Cada urna eletrônica grava um log com o horário de tudo o que acontece no dia: zerésima, abertura, habilitação de cada eleitor, troca de urna, mensagens de erro e encerramento. Esta página resume os ${n0(T1.secoes_com_log + T2.secoes_com_log)} logs dos dois turnos publicados pelo TSE. Para ver o log de uma seção, abra o município e clique na seção.${LG.ufs_processadas.length < todas ? ` <b>Cobertura parcial: ${LG.ufs_processadas.length} de ${todas} unidades.</b>` : ""}</p></div>
   <section class="bloco"><div class="bloco-cab"><div><span class="olho">1º × 2º turno · Brasil</span><h2>Os dois turnos lado a lado</h2></div></div><div id="log-comp"></div></section>
   ${htmlAmpliada(LG)}
+  ${htmlIntervalos(LG)}
+  ${htmlDepois17(LG)}
+  ${htmlModelos(LG)}
   ${secaoLogs(app, LG)}
   <section class="bloco" id="mapa-logs"><div class="bloco-cab"><div><span class="olho">Mapa · municípios</span><h2>Onde as ocorrências se concentram</h2>
     <p class="lead">Indicadores do log por município. Passe o mouse para ver os números e clique para abrir o município.</p></div>
@@ -1761,6 +1930,9 @@ async function visaoLogs(app) {
     </tbody></table></div><p class="nota">O 2º turno tem menos cargos (presidente e, em alguns estados, governador), o que explica o voto mais rápido e a fila menor.</p>`;
   desenharLogs(app, LG);
   desenharAmpliada(app, LG);
+  desenharIntervalos(app, LG);
+  desenharDepois17(app, LG);
+  desenharModelos(app, LG);
   // mapa municipal dos indicadores do log
   const el = app.querySelector('[data-g="mapa-logs"]'), sel = app.querySelector("#sel-mlog");
   let turnoM = "2";

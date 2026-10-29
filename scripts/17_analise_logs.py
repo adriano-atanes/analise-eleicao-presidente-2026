@@ -130,6 +130,111 @@ def insights_v3(g, votos_hora):
     }
 
 
+INT_BORDAS = [0, 5, 10, 15, 20, 30, 45, 60, 90, 120, 180, 300, 600, 1800]  # mesmas faixas de 16_logs_urnas.py
+
+
+def por_modelo(d, s):
+    """Resultado e indicadores do log por modelo de urna; efeito do modelo dentro do município (2º turno)."""
+    out = {}
+    cand1 = ["Lula_1", "Flávio_1", "Renan_1", "Cury_1", "Caiado_1", "Zema_1", "Outros_1"]
+    for t in (1, 2):
+        g = d[d.turno == t].merge(s, on=["uf", "mun", "zona", "secao"])
+        g["modelo"] = g.modelo.fillna("não identificado")
+        val = g[cand1].sum(axis=1) if t == 1 else g.Lula_2 + g["Flávio_2"]
+        g["val"], g["lula"], g["fla"] = val, g[f"Lula_{t}"], g[f"Flávio_{t}"]
+        g["nordeste"] = (g.REGIAO == "Nordeste").astype(float)
+        linhas = []
+        for mod, x in g.groupby("modelo"):
+            v = x.val.sum()
+            r = {"modelo": mod, "secoes": int(len(x)), "aptos": int(x[f"Aptos_{t}"].sum()), "comparecimento_pct": float(100 * x[f"Comp_{t}"].sum() / x[f"Aptos_{t}"].sum()),
+                 "lula_pct": float(100 * x.lula.sum() / v), "flavio_pct": float(100 * x.fla.sum() / v),
+                 "nordeste_pct": float(100 * x.nordeste.mean()), "contingencia_pct": float(100 * x.contingencia.fillna(False).mean()),
+                 "erro_relevante_pct": float(100 * (x.erros_relevantes > 0).mean()), "reinicio_pct": float(100 * (x.ligadas_apos_pronta > 0).mean()),
+                 "biometria_pct": float(100 * x.hab_biometrica.sum() / max(x.votos_log.sum(), 1)), "tempo_mediano_s": float(x.tempo_mediano_s.median()),
+                 "voto_nao_registrado": int(x.voto_nao_registrado.sum()), "atraso_15_pct": float(100 * (x.abertura_min > 15).mean())}
+            if "int_mediano_s" in x and x.int_mediano_s.notna().any():
+                r["intervalo_mediano_s"] = float(x.int_mediano_s.median())
+                r["int_menos_1min_pct"] = float(100 * x.int_menos_1min.sum() / max(x.int_n.sum(), 1))
+            linhas.append(r)
+        out[str(t)] = sorted(linhas, key=lambda r: r["modelo"])
+    # dentro do município: Lula entre os finalistas (2º turno) e variação entre os turnos, por modelo, com efeito fixo de município
+    g = d[d.turno == 2].merge(s, on=["uf", "mun", "zona", "secao"])
+    g = g[g.modelo.notna() & (g.Lula_2 + g["Flávio_2"] > 0) & (g.Lula_1 + g["Flávio_1"] > 0)]
+    g["l2"] = 100 * g.Lula_2 / (g.Lula_2 + g["Flávio_2"])
+    g["l1"] = 100 * g.Lula_1 / (g.Lula_1 + g["Flávio_1"])
+    g["dl"] = g.l2 - g.l1
+    ref = g.modelo.value_counts().idxmax()
+    X = pd.get_dummies(g.modelo).drop(columns=ref).astype(float)
+    X = X.loc[:, X.sum() >= 30]
+    chave = g.uf + "-" + g.mun.astype(str)
+    Xd = (X - X.groupby(chave).transform("mean")).to_numpy()
+    efeitos = {}
+    for y in ("l1", "l2", "dl"):
+        yd = (g[y] - g[y].groupby(chave).transform("mean")).to_numpy()
+        beta, *_ = np.linalg.lstsq(Xd, yd, rcond=None)
+        res = yd - Xd @ beta
+        se = np.sqrt(np.diag((res ** 2).sum() / (len(res) - X.shape[1]) * np.linalg.pinv(Xd.T @ Xd)))
+        efeitos[y] = {m: {"efeito_pp": float(b), "erro_padrao": float(e)} for m, b, e in zip(X.columns, beta, se)}
+    out["referencia"] = ref
+    out["efeito_lula_1t"] = efeitos["l1"]  # mesma seção, mesmo modelo do 2º turno: diferença que já existia no 1º turno
+    out["efeito_lula_2t"] = efeitos["l2"]
+    out["efeito_variacao_lula"] = efeitos["dl"]
+    return out
+
+
+def intervalos(d, nomes):
+    """Intervalo entre votos consecutivos em cada seção (extração com int_hist)."""
+    if "int_hist" not in d:
+        return {}
+    out = {}
+    for t in (1, 2):
+        g = d[(d.turno == t) & d.int_hist.notna()]
+        if not len(g):
+            continue
+        h = np.array([json.loads(x) for x in g.int_hist]).sum(axis=0)
+        n = int(g.int_n.sum())
+        top = g.sort_values(["int_menor_s", "int_menos_10s"], ascending=[True, False]).head(40)
+        out[str(t)] = {"secoes": int(len(g)), "intervalos": n, "bordas": INT_BORDAS, "hist": h.tolist(),
+                       "menos_1min_pct": float(100 * g.int_menos_1min.sum() / n), "menos_30s_pct": float(100 * g.int_menos_30s.sum() / n),
+                       "menos_10s": int(g.int_menos_10s.sum()),
+                       "secoes_menos_1min": int((g.int_menos_1min > 0).sum()), "secoes_menos_30s": int((g.int_menos_30s > 0).sum()),
+                       "secoes_menos_10s": int((g.int_menos_10s > 0).sum()),
+                       "menor_s": int(g.int_menor_s.min()), "mediano_s": float(g.int_mediano_s.median()),
+                       "hist_menor": np.histogram(g.int_menor_s.dropna().clip(0, 119), bins=np.arange(0, 121, 5))[0].tolist(),
+                       "ufs": sorted(g.uf.unique().tolist()),
+                       "top": [[r.uf, int(r.mun), nomes.get((r.uf, r.mun), ""), int(r.zona), int(r.secao), int(r.int_menor_s), int(r.int_menos_10s),
+                                int(r.int_menos_30s), int(r.int_menos_1min), int(r.int_n), r.int_menores] for r in top.itertuples()]}
+    return out
+
+
+def depois_17h(d, nomes):
+    """Votos registrados depois das 17h (fila) conforme a identificação do eleitor: biometria ou sem biometria."""
+    if "apos17_mesario" not in d:
+        return {}
+    out = {}
+    for t in (1, 2):
+        g = d[(d.turno == t) & d.apos17_mesario.notna() & (d.uf != "ZZ")]
+        if not len(g):
+            continue
+        v = int(g.votos_apos_17h.sum())
+        sem = int(g.apos17_sem_biometria.sum())
+        por_uf = []
+        for uf, x in g.groupby("uf"):
+            vu = int(x.votos_apos_17h.sum())
+            por_uf.append([uf, int(len(x)), int((x.votos_apos_17h > 0).sum()), vu, int(x.apos17_sem_biometria.sum()), int(x.apos17_mesario.sum()),
+                           float(100 * x.apos17_sem_biometria.sum() / vu) if vu else None, float(100 * x.hab_manual.sum() / max(x.votos_log.sum(), 1))])
+        top = g[g.apos17_sem_biometria > 0].sort_values("apos17_sem_biometria", ascending=False).head(40)
+        out[str(t)] = {"secoes": int(len(g)), "ufs": sorted(g.uf.unique().tolist()), "votos": v, "secoes_com_votos": int((g.votos_apos_17h > 0).sum()),
+                       "biometria": int(g.apos17_biometria.sum()), "sem_biometria": sem, "mesario": int(g.apos17_mesario.sum()),
+                       "secoes_sem_biometria": int((g.apos17_sem_biometria > 0).sum()),
+                       "sem_biometria_pct": float(100 * sem / v) if v else None,
+                       "sem_biometria_dia_pct": float(100 * g.hab_manual.sum() / g.votos_log.sum()),
+                       "por_uf": por_uf,
+                       "top": [[r.uf, int(r.mun), nomes.get((r.uf, r.mun), ""), int(r.zona), int(r.secao), int(r.votos_apos_17h), int(r.apos17_sem_biometria),
+                                int(r.apos17_mesario), r.t_ultimo_voto] for r in top.itertuples()]}
+    return out
+
+
 def cruzamentos(d, s, aud):
     """Ocorrências nas seções atípicas × demais; associação das ocorrências com a variação do voto (2º turno)."""
     col = {k: i for i, k in enumerate(aud["suspeitas"]["colunas"])}
@@ -233,6 +338,9 @@ def main():
     # listas para conferência: contingências durante a votação, votos não registrados, erros relevantes, encerramento antes das 17h
     lista = d[(d.contingencia.fillna(False)) | (d.voto_nao_registrado > 0) | (d.erros_relevantes >= 3) | (d.encerr_min < 0) | (d.ligadas_apos_pronta >= 2)]
     nomes = s.drop_duplicates(["uf", "mun"]).set_index(["uf", "mun"]).NM_MUNICIPIO
+    saida["modelos"] = por_modelo(d, s)
+    saida["intervalos"] = intervalos(d, nomes.to_dict())
+    saida["depois_17h"] = depois_17h(d, nomes.to_dict())
     saida["ocorrencias"] = {"colunas": ["turno", "uf", "mun", "nome", "zona", "secao", "contingencia", "t_contingencia", "voto_nao_registrado", "erros_relevantes",
                                         "reinicios", "t_pronta", "t_encerramento", "votos_log", "modelo"],
                             "linhas": [[int(r.turno), r.uf, int(r.mun), str(nomes.get((r.uf, r.mun), "")).title(), int(r.zona), int(r.secao), bool(r.contingencia),
@@ -262,7 +370,9 @@ def main():
               "votos_log", "hab_biometrica", "hab_manual", "contingencia", "t_contingencia", "erros_relevantes", "alertas", "voto_nao_registrado",
               "ligadas_apos_pronta", "votos_apos_17h", "tempo_mediano_s"]
     campos += [c for c in ("id_cpf", "ano_nasc_confere", "ano_nasc_diferente", "hab_por_mesario", "mesario_max_hab", "mesarios_que_habilitaram", "eleitor_ja_votou",
-                           "eleitor_impedido", "correcoes", "justificativas", "bateria_min", "encerr_cedo_tentativa", "encerr_com_presentes") if c in d]
+                           "eleitor_impedido", "correcoes", "justificativas", "bateria_min", "encerr_cedo_tentativa", "encerr_com_presentes",
+                           "int_n", "int_menor_s", "int_mediano_s", "int_menos_1min", "int_menos_30s", "int_menos_10s", "int_hist", "int_menores",
+                           "apos17_biometria", "apos17_sem_biometria", "apos17_mesario") if c in d]
     # cada UF é dividida em partes por município e zona ((mun + zona) % n), para o portal baixar só a parte da seção aberta
     partes = {}
     for uf, g in d.groupby("uf"):
