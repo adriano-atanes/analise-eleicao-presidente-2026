@@ -186,7 +186,7 @@ footer { max-width: 1180px; margin: 0 auto; color: var(--muted); font-size: 13px
 .ap-hud b, .vp-hud b { color: var(--ink); font-weight: 500; }
 .ap-ctrl { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; }
 .ap-play { border: 0; background: var(--accent); color: var(--accent-ink); font-weight: 600; padding: 8px 16px; border-radius: 7px; cursor: pointer; min-width: 132px; }
-#ap-scrub { flex: 1 1 220px; accent-color: var(--accent); min-width: 0; }
+#ap-scrub, #ai-scrub { flex: 1 1 220px; accent-color: var(--accent); min-width: 0; }
 .ap-chk { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
 .ap-h3 { margin: 0 0 8px; font-size: 14px; }
 .reg-lin { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 10px; align-items: center; font-size: 13px; color: var(--ink-2); margin-bottom: 6px; }
@@ -618,12 +618,71 @@ function montarAnalise(app, { rotulo, t1, t2, cand1, mig, migNota, nivel, sens, 
   if (hist) grafHistograma(app.querySelector('[data-g="hist"]'), R.hist_comparecimento.bordas, hist, "seções");
 }
 
+// versão compacta da apuração animada na página inicial (a análise completa fica em #apuracao)
+function secaoApuracaoInicio(app) {
+  app.insertAdjacentHTML("beforeend", `<section class="bloco" id="apur-inicio"><div class="bloco-cab"><div><span class="olho">Apuração · ordem de chegada dos boletins</span>
+      <h2 id="ai-tit">A parcial virou sem nenhum voto mudar de lado</h2>
+      <p class="lead">A parcial da noite da eleição, refeita seção a seção. A linha tracejada soma as mesmas seções em ordem sorteada.</p></div>
+      <div class="seg" role="group" aria-label="Turno" id="seg-ai"><button aria-pressed="true" data-t="1">1º turno</button><button aria-pressed="false" data-t="2">2º turno</button></div></div>
+    <div class="ap-palco"><div class="ap-hud"><span>HORA <b id="ai-hora">--</b></span><span><b id="ai-pct">0%</b> DAS SEÇÕES</span></div>
+      <div class="grafico" data-g="apur-inicio" style="height:380px"><p class="carregando">Carregando a apuração…</p></div></div>
+    <div class="ap-ctrl"><button class="ap-play" id="ai-play">▶ Reproduzir</button>
+      <input type="range" id="ai-scrub" min="0" max="1000" value="0" aria-label="Momento da apuração">
+      <a class="nav-aud" href="#apuracao">Análise completa da apuração</a></div>
+    <p class="nota" id="ai-leg"></p></section>`);
+  const sec = app.querySelector("#apur-inicio"), el = sec.querySelector('[data-g="apur-inicio"]'), btn = sec.querySelector("#ai-play");
+  let AP, P, M, t = "1", u = 0, tocando = false, raf = 0, ultimo = 0, iniciou = false;
+  const DUR = 16000;
+  const desenhar = () => {
+    if (!document.body.contains(el)) return;
+    const q = P.quadro(indicePorTempo(AP[t].real.pct_secoes, u));
+    sec.querySelector("#ai-hora").textContent = hhmm(q.hora);
+    sec.querySelector("#ai-pct").textContent = p1(q.pct, 1);
+    sec.querySelector("#ai-scrub").value = Math.round(u * 1000);
+    const atual = [...M].reverse().find((m) => m.i <= q.i + 0.01);
+    sec.querySelector("#ai-leg").innerHTML = atual ? `<b>${esc(atual.titulo)}</b> · ${esc(atual.texto)}` : "";
+  };
+  const setTocando = (v) => { tocando = v; btn.textContent = v ? "❚❚ Pausar" : u >= 1 ? "↺ Repetir" : "▶ Reproduzir"; if (v) { ultimo = performance.now(); raf = requestAnimationFrame(passo); } else cancelAnimationFrame(raf); };
+  function passo(agora) {
+    if (!tocando || !document.body.contains(el)) return;
+    u = Math.min(1, u + (agora - ultimo) / DUR); ultimo = agora; desenhar();
+    if (u >= 1) setTocando(false); else raf = requestAnimationFrame(passo);
+  }
+  const montar = () => {
+    const A = AP[t];
+    M = momentosApuracao(A, t);
+    M.forEach((m) => {
+      if (/para Flávio|abaixo de 50%/.test(m.titulo)) { m.marca = m.titulo.split(" · ")[1].replace(" para Flávio", "") + " · " + hhmm(A.real.hora[m.i]); m.serie = "flavio"; }
+      if (/passa à frente/.test(m.titulo)) { m.marca = m.titulo.split(" · ")[1].replace(" passa à frente", " à frente") + "\n" + hhmm(A.real.hora[m.i]); m.serie = /Lula/.test(m.titulo) ? "lula" : "flavio"; m.embaixo = true; }
+    });
+    el.innerHTML = "";
+    P = trocarGrafico(el, () => palcoApuracao(el, A, t, { sorteio: true, momentos: M }));
+    sec.querySelector("#ai-tit").textContent = t === "1" ? `Flávio chegou a ${p1(A.momentos.pico_flavio.valor)} na parcial e terminou com ${p1(A.final.flavio)}`
+      : "No 2º turno, a liderança trocou de mãos duas vezes durante a apuração";
+    desenhar();
+  };
+  btn.onclick = () => { if (u >= 1) u = 0; setTocando(!tocando); };
+  sec.querySelector("#ai-scrub").oninput = (e) => { setTocando(false); u = e.target.value / 1000; desenhar(); };
+  sec.querySelectorAll("#seg-ai button").forEach((b) => (b.onclick = () => { setTocando(false); t = b.dataset.t; u = 0;
+    sec.querySelectorAll("#seg-ai button").forEach((x) => x.setAttribute("aria-pressed", x === b)); montar(); setTocando(true); }));
+  (D.apur ? Promise.resolve(D.apur) : json("dados/apuracao.json")).then((dados) => {
+    D.apur = AP = dados;
+    if (!document.body.contains(el)) return;
+    const reduzir = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduzir) u = 1;
+    montar();
+    // começa a tocar quando a seção aparece na tela
+    new IntersectionObserver((ents, obs) => { if (ents[0].isIntersecting && !iniciou && !reduzir) { iniciou = true; setTocando(true); obs.disconnect(); } }, { threshold: 0.4 }).observe(sec);
+  }).catch(() => { el.innerHTML = `<p class="nota">Não foi possível carregar a apuração.</p>`; });
+}
+
 // ---------- visão Brasil ----------
 function visaoBrasil(app) {
   const R = D.resumo;
   app.innerHTML = `<div class="cabeca"><span class="olho">Eleição Geral Federal 2026 · Presidente da República</span>
     <h1>Como o Brasil votou nos dois turnos</h1>
     <p class="lead">Resultado oficial do TSE para ${n0(R.brasil.t1[10])} eleitores em ${n0(R.secoes)} seções, e a estimativa de como os votos migraram do 1º para o 2º turno. Clique num estado no mapa ou na tabela para detalhar até a seção eleitoral.</p></div>`;
+  secaoApuracaoInicio(app);
   montarAnalise(app, { rotulo: "Brasil", t1: R.brasil.t1, t2: R.brasil.t2, cand1: R.brasil.cand1, mig: R.migracao.brasil, sens: R.migracao.sensibilidade,
     hist: R.hist_comparecimento.brasil });
   secaoMapa(app, null);
