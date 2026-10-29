@@ -145,6 +145,69 @@ def parte_logs_ampliada(AMP):
     return out
 
 
+def parte_logs_extra(LG):
+    """Modelo de urna, intervalo entre votos consecutivos e votos sem biometria depois das 17h."""
+    out = []
+    M = LG.get("modelos")
+    if M:
+        tab = [["Modelo", "Seções", "Lula", "Flávio", "Seções no NE", "Troca de urna", "Erro relev.", "Biometria"]]
+        for r in M["2"]:
+            tab.append([r["modelo"], n0(r["secoes"]), p1(r["lula_pct"]), p1(r["flavio_pct"]), p1(r["nordeste_pct"], 0), p1(r["contingencia_pct"], 2),
+                        p1(r["erro_relevante_pct"], 2), p1(r["biometria_pct"])])
+        f2 = lambda e: (("+" if e["efeito_pp"] > 0 else "−") + f"{abs(e['efeito_pp']):.2f}".replace(".", ",") + f" ± {2 * e['erro_padrao']:.2f}".replace(".", ","))
+        ef = [[f"Modelo × {M['referencia']}", "Lula 1º turno", "Lula 2º turno", "Variação"]]
+        for m in M["efeito_variacao_lula"]:
+            ef.append([m, f2(M["efeito_lula_1t"][m]), f2(M["efeito_lula_2t"][m]), f2(M["efeito_variacao_lula"][m])])
+        out += [Spacer(1, 4), KeepTogether([P("Resultado por modelo de urna · 2º turno", "h2"),
+                P("Votos válidos e ocorrências do log por modelo de urna. Os modelos não estão distribuídos ao acaso (as urnas mais antigas ficam em outros "
+                  "lugares), por isso a comparação justa é entre seções do mesmo município.", "corpo"),
+                tabela(tab, [26 * mm, 22 * mm, 18 * mm, 18 * mm, 22 * mm, 24 * mm, 22 * mm, 22 * mm], numericas=range(1, 8))]), Spacer(1, 3),
+                KeepTogether([P("Diferença entre modelos no mesmo município (p.p., Lula entre os finalistas)", "h2"),
+                tabela(ef, [44 * mm, 43 * mm, 43 * mm, 44 * mm], numericas=(1, 2, 3)),
+                P("A diferença entre modelos aparece igual no 1º e no 2º turno: vem de onde cada modelo foi instalado, não do equipamento. A variação "
+                  "entre os turnos por modelo fica abaixo de 0,1 p.p. (± indica 2 erros-padrão).", "nota")])]
+    I = LG.get("intervalos") or {}
+    if I.get("1") or I.get("2"):
+        ts = [t for t in ("1", "2") if t in I]
+        lin = lambda rot, f: [rot] + [f(I[t]) for t in ts]
+        tab = [["Intervalo entre votos consecutivos"] + [f"{t}º turno" for t in ts],
+               lin("Seções · intervalos medidos", lambda x: f"{n0(x['secoes'])} · {n0(x['intervalos'])}"),
+               lin("Intervalo típico (mediana das seções)", lambda x: f"{n0(x['mediano_s'])} s"),
+               lin("Intervalos com menos de 1 min · seções", lambda x: f"{p1(x['menos_1min_pct'])} · {n0(x['secoes_menos_1min'])}"),
+               lin("Intervalos com menos de 30 s · seções", lambda x: f"{p1(x['menos_30s_pct'], 2)} · {n0(x['secoes_menos_30s'])}"),
+               lin("Intervalos com menos de 10 s · seções", lambda x: f"{n0(x['menos_10s'])} · {n0(x['secoes_menos_10s'])}"),
+               lin("Menor intervalo encontrado", lambda x: f"{n0(x['menor_s'])} s")]
+        ufs = sorted(set().union(*(I[t]["ufs"] for t in ts)))
+        t = ts[-1]
+        top = [["UF", "Município", "Zona", "Seção", "Menor", "< 30 s", "< 1 min", "Os menores (voto → voto seguinte)"]]
+        for r in I[t]["top"][:10]:
+            menores = " · ".join(f"{a[:5]}→{b[:5]} {x} s" for a, b, x in json.loads(r[10] or "[]")[:2])
+            top.append([r[0], (r[2] or str(r[1]))[:22], f"{r[3]:04d}", f"{r[4]:04d}", f"{r[5]} s", n0(r[7]), n0(r[8]), Paragraph(menores, R.estilo("mn", fontSize=7, leading=8.5))])
+        out += [Spacer(1, 4), KeepTogether([P("Intervalo entre um voto e o seguinte", "h2"),
+                P("Para cada seção, o tempo entre o voto computado de um eleitor e o do eleitor seguinte, que inclui a identificação do próximo eleitor e a "
+                  "votação." + ("" if len(ufs) >= 28 else f" <b>Cobertura: {len(ufs)} unidades.</b>"), "corpo"),
+                tabela(tab, [100 * mm] + [74 * mm / len(ts)] * len(ts), numericas=range(1, len(ts) + 1))]), Spacer(1, 3),
+                KeepTogether([P(f"Seções com os menores intervalos · {t}º turno", "h2"),
+                tabela(top, [10 * mm, 34 * mm, 13 * mm, 13 * mm, 14 * mm, 14 * mm, 16 * mm, 60 * mm], numericas=(2, 3, 4, 5, 6))])]
+    A = LG.get("depois_17h") or {}
+    if A.get("1") or A.get("2"):
+        ts = [t for t in ("1", "2") if t in A]
+        lin = lambda rot, f: [rot] + [f(A[t]) for t in ts]
+        tab = [["Votos depois das 17h de Brasília"] + [f"{t}º turno" for t in ts],
+               lin("Votos depois das 17h · seções", lambda x: f"{n0(x['votos'])} · {n0(x['secoes_com_votos'])}"),
+               lin("Com biometria", lambda x: n0(x["biometria"])),
+               lin("Sem identificação biométrica · seções", lambda x: f"{n0(x['sem_biometria'])} · {n0(x['secoes_sem_biometria'])}"),
+               lin("   dos quais autorizados pelo mesário", lambda x: n0(x["mesario"])),
+               lin("Parcela sem biometria: depois das 17h · no dia todo", lambda x: f"{p1(x['sem_biometria_pct'])} · {p1(x['sem_biometria_dia_pct'])}")]
+        ufs = sorted(set().union(*(A[t]["ufs"] for t in ts)))
+        out += [Spacer(1, 4), KeepTogether([P("Quem votou depois das 17h sem biometria", "h2"),
+                P("Quem está na fila às 17h recebe senha e vota depois do horário. O log indica, para cada voto, se o eleitor foi identificado pela digital "
+                  "ou sem biometria (documento conferido pelo mesário). Exterior fora do recorte (fusos variados)."
+                  + ("" if len(ufs) >= 27 else f" <b>Cobertura: {len(ufs)} estados.</b>"), "corpo"),
+                tabela(tab, [100 * mm] + [74 * mm / len(ts)] * len(ts), numericas=range(1, len(ts) + 1))])]
+    return out
+
+
 def parte_logs(LG):
     """Parte do relatório com os logs de todas as urnas."""
     T1, T2 = LG["turnos"]["1"], LG["turnos"]["2"]
@@ -193,6 +256,7 @@ def parte_logs(LG):
                           P(f"Correlação, dentro do município, entre o aumento da habilitação manual e o aumento do comparecimento: {dec(X['corr_dmanual_dcomp'], 3)}.", "nota")]),
             Spacer(1, 4)]
     out += parte_logs_ampliada(LG.get("ampliada") or {})
+    out += parte_logs_extra(LG)
     for t in ("1", "2"):
         msgs = [m for m in LG["mensagens"][t] if m[0] == "ERRO"][:12]
         tm = [["Mensagem de erro", "Ocorrências", "Estados"]] + [[Paragraph(m[1][:160], R.estilo("msg", fontSize=7.2, leading=9)), n0(m[2]), m[3]] for m in msgs]
