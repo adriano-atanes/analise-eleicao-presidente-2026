@@ -173,7 +173,7 @@ Valores q de Benjamini–Hochberg entre os municípios do país (e, separadament
 
 - Probabilidade em **1 em N** (1/p), com o valor numérico guardado no JSON.
 - **Mega-Sena:** P_mega = 1 / 50.063.860 (aposta simples). Razão R = P_mega / P_evento e expoente n = log P_evento / log P_mega.
-  A comparação só é exibida quando o evento ocorreu ao menos 10 vezes nas simulações (erro relativo ≲ 30%).
+  No portal, a comparação só aparece quando o evento é mais raro que acertar a Mega-Sena uma vez (P ≤ 1 / 50.063.860).
 
 ## 8. Contrato de dados (schema 1.0)
 

@@ -1990,12 +1990,11 @@ function umEmNlog(lp) {
   return `1 em 10<sup>${Math.floor(-lp)}</sup>`;
 }
 const LOG10_MEGA = Math.log10(1 / 50063860);
+// comparação com a Mega-Sena só quando o evento é mais raro que acertar a Mega-Sena uma vez (1 em 50.063.860)
 function megaLog(lp) {
-  if (lp == null || lp === -Infinity) return "—";
-  if (lp > -1) return `<span class="nota">acontece com frequência (mais de 1 em 10)</span>`;
+  if (lp == null || lp === -Infinity || lp > LOG10_MEGA) return "";
   const n = lp / LOG10_MEGA;
-  if (n >= 1) return `equivale a acertar a Mega-Sena <b>${fmtN(n, n < 10 ? 1 : 0)} vez${n >= 2 ? "es" : ""} seguida${n >= 2 ? "s" : ""}</b>`;
-  const R = Math.pow(10, lp - LOG10_MEGA); return `${R >= 1e6 ? fmtN(R / 1e6, 1) + (R >= 2e6 ? " milhões de" : " milhão de") : fmtN(R, R < 10 ? 1 : 0)} vezes mais provável que acertar a Mega-Sena`;
+  return `equivale a acertar a Mega-Sena <b>${fmtN(n, n < 10 ? 1 : 0)} vez${n >= 2 ? "es" : ""} seguida${n >= 2 ? "s" : ""}</b>`;
 }
 // μ (probabilidade de um eleitor dos eliminados votar em Lula) sob cada referência, K/E do recorte e posição no país
 function audTransferencia(ctx, TR) {
@@ -2051,7 +2050,7 @@ function htmlTransferencia(ctx, X) {
   const posTxt = X.pos != null && unid ? `${X.listada ? `<b>${n0(X.pos)}º</b> mais extrem${fem ? "a" : "o"} entre ${fem ? "as" : "os"} ${n0(X.nUnid)} ${unid[1]}${ctx.nivel === "secao" ? " mais extremas" : ""} do país` : `fora das ${n0(X.nUnid)} seções mais extremas do país`} nesta leitura${ctx.nivel === "secao" ? "." : `; ${n0(X.nMega)} ${unid[1]} têm chance menor que a de acertar a Mega-Sena uma vez.`}` : "";
   const veredito = (rot, lp, sub) => `<div class="veredito"><span class="rot">${rot}</span><b>${umEmNlog(lp)}</b><span class="mega">${megaLog(lp)}</span><small>${sub}</small></div>`;
   const linha = (rot, mu, ind, dis) => `<tr><td>${rot}<br><span class="nota">esperado: ${p1(100 * mu, 0)} dos eleitores dos eliminados para Lula (${n0(Math.round(mu * X.E))} votos)</span></td>
-      <td class="n">${umEmNlog(ind)}<br><span class="nota">${megaLog(ind)}</span></td><td class="n"><b>${umEmNlog(dis)}</b><br><span class="nota">${megaLog(dis)}</span></td></tr>`;
+      <td class="n">${umEmNlog(ind)}${megaLog(ind) ? `<br><span class="nota">${megaLog(ind)}</span>` : ""}</td><td class="n"><b>${umEmNlog(dis)}</b>${megaLog(dis) ? `<br><span class="nota">${megaLog(dis)}</span>` : ""}</td></tr>`;
   const plural = { secao: "seções", zona: "zonas", municipio: "municípios" }[ctx.nivel] || "estados";
   const corpo = X.K > X.E
     ? cab(`O ganho de Lula só fecha com eleitores de Flávio passando para Lula`,
@@ -2192,7 +2191,7 @@ function audPanorama(el, ctx) {
     { t: "Votos dos eliminados", n: 1, v: (x) => gt(x.l, "E"), f: (x) => n0(gt(x.l, "E")) },
     { t: "Mínimo para Lula", n: 1, v: (x) => gt(x.l, "r") ?? -1, f: (x) => `${n0(gt(x.l, "K"))} (${p1(100 * (gt(x.l, "r") || 0), 0)})` },
     { t: "Δ Flávio", n: 1, v: (x) => gt(x.l, "dF"), f: (x) => sinal(gt(x.l, "dF")) },
-    { t: "Chance · independente, 2022", n: 1, v: (x) => (gt(x.l, "K") > gt(x.l, "E") ? 1e6 + gt(x.l, "r") : -(gt(x.l, "ind22") ?? 0)), f: (x) => (gt(x.l, "K") > gt(x.l, "E") ? "só com migração de Flávio" : `${umEmNlog(gt(x.l, "ind22"))}<br><span class="nota">${megaLog(gt(x.l, "ind22"))}</span>`), ordemPadrao: 1 },
+    { t: "Chance · independente, 2022", n: 1, v: (x) => (gt(x.l, "K") > gt(x.l, "E") ? 1e6 + gt(x.l, "r") : -(gt(x.l, "ind22") ?? 0)), f: (x) => (gt(x.l, "K") > gt(x.l, "E") ? "só com migração de Flávio" : `${umEmNlog(gt(x.l, "ind22"))}${megaLog(gt(x.l, "ind22")) ? `<br><span class="nota">${megaLog(gt(x.l, "ind22"))}</span>` : ""}`), ordemPadrao: 1 },
     { t: "Chance · votos em bloco (estado)", n: 1, v: (x) => (gt(x.l, "K") > gt(x.l, "E") ? 1e6 + gt(x.l, "r") : -(gt(x.l, "disUF") ?? 0)), f: (x) => (gt(x.l, "K") > gt(x.l, "E") ? "—" : umEmNlog(gt(x.l, "disUF"))) },
     { t: "Classificação", v: (x) => gt(x.l, "classe"), f: (x) => classeTag(gt(x.l, "classe") === "Compatível" ? "Compatível com o modelo" : gt(x.l, "classe")) }];
   const desenharTR = (nivel) => {
@@ -2236,7 +2235,7 @@ function audPanorama(el, ctx) {
         classe: { min: 0, max: 3, cores: [T.grid, T.atencao || T.cury, T.up, T.ink], txt: ["Só com migração de Flávio", "Compatível"], nota: "Classificação com a variação real, após correção para múltiplas comparações (FDR)." } }[met];
       el.querySelector("#aud-mapa-nota").textContent = cfg.nota;
       const c = novoGrafico(elM, {
-        tooltip: { trigger: "item", formatter: (p) => { const l = dadosMun[p.name]; if (!l) return ""; return `<b>${esc(gm(l, "NM_MUNICIPIO"))}</b> · ${gm(l, "SG_UF")}<br>Lula precisava de ao menos ${n0(gm(l, "K"))} dos ${n0(gm(l, "E"))} votos dos eliminados (${p1(100 * (gm(l, "r") || 0), 0)})<br>${migra(l) ? "Só fecha com migração de Flávio para Lula" : `Chance (independente, 2022): ${umEmNlog(gm(l, "ind22"))}<br>${megaLog(gm(l, "ind22"))}`}`; } },
+        tooltip: { trigger: "item", formatter: (p) => { const l = dadosMun[p.name]; if (!l) return ""; return `<b>${esc(gm(l, "NM_MUNICIPIO"))}</b> · ${gm(l, "SG_UF")}<br>Lula precisava de ao menos ${n0(gm(l, "K"))} dos ${n0(gm(l, "E"))} votos dos eliminados (${p1(100 * (gm(l, "r") || 0), 0)})<br>${migra(l) ? "Só fecha com migração de Flávio para Lula" : `Chance (independente, 2022): ${umEmNlog(gm(l, "ind22"))}${megaLog(gm(l, "ind22")) ? "<br>" + megaLog(gm(l, "ind22")) : ""}`}`; } },
         visualMap: { min: cfg.min, max: cfg.max, inRange: { color: cfg.cores }, text: cfg.txt, calculable: false, orient: "horizontal", left: 8, bottom: 4, itemWidth: 12, itemHeight: 160, textStyle: { color: T.ink2 }, seriesIndex: 0 },
         geo: { map: reg.nome, roam: true, scaleLimit: { min: 1, max: 40 }, layoutCenter: ["50%", "48%"], layoutSize: "96%", itemStyle: { areaColor: T.grid, borderColor: st.uf ? T.surface : "transparent", borderWidth: st.uf ? 0.4 : 0 },
           emphasis: { label: { show: false }, itemStyle: { areaColor: T.ink, borderColor: T.ink } }, select: { disabled: true } },
