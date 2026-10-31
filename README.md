@@ -37,6 +37,7 @@ python 20_votos_eleitorado.py       # verificação: votos de Lula × eleitorado
 python 21_boletins.py               # boletim de urna: votos dos demais candidatos do 1º turno e endereço dos locais → portal/dados/bu/<UF>.json
 python 22_auditoria.py              # Auditoria: reconciliação, limites, cenários e Monte Carlo de todas as UFs, municípios e zonas
                                    #   (opções: --sim 100000 --sim-zona 20000 --seed 2026 --forcar; cache em dados/processados/auditoria_cache)
+python 23_transferencia.py          # teste de transferência dos eliminados (1º × 2º turno de cada UF, município, zona e seção) → portal/dados/auditoria/transferencia.json
 python -m unittest discover -s tests   # testes do motor da Auditoria (scripts/auditoria_motor.py)
 node 18b_video_apuracao.js apuracao-video-1-sorteio <pasta> 600 90   # quadros do vídeo (portal servido em localhost:8765);
 #   depois: ffmpeg -framerate 30 -i <pasta>/q%04d.png -c:v libx264 -pix_fmt yuv420p portal/apuracao_1turno.mp4

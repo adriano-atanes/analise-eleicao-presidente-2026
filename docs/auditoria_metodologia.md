@@ -119,6 +119,38 @@ com \*) e o limite superior de 95% de Clopper–Pearson é reportado. Nunca se r
 **Calibração (posterior predictive check).** Distribuição dos valores de probabilidade dos municípios. Sob um modelo
 bem especificado ela é aproximadamente uniforme: cerca de 5% abaixo de 0,05 e 1% abaixo de 0,01.
 
+## 5b. Teste de transferência dos eliminados (1º × 2º turno do próprio recorte)
+
+`scripts/23_transferencia.py`, para todos os estados, municípios, zonas e seções. No portal, o teste é recalculado na
+hora para qualquer recorte.
+
+**Contagens.**
+
+- E = votos dos eliminados no 1º turno.
+- K = mínimo desses votos que precisa ter ido para Lula, pelo saldo:
+
+  ```
+  K = ganho de Lula − brancos/nulos liberados − abstenção liberada
+  ```
+
+  A conta supõe que nenhum eleitor de Flávio migrou. Se K > E, o saldo só se explica com migração entre finalistas.
+
+**Probabilidade avaliada.** μ é a probabilidade de um eleitor dos eliminados votar em Lula: a fração que escolhe um
+finalista (matriz do estado em 2026) vezes a parcela de Lula entre esses. Referências: comportamento de 2022 por campo
+ideológico, ou do próprio estado em 2026. Calcula-se P(X ≥ K) por duas leituras:
+
+| Leitura | Modelo |
+|---|---|
+| Eleitor independente | Binomial(E, μ). É a leitura que leva a comparações como “acertar a Mega-Sena N vezes seguidas” (N = log P / log P_mega). |
+| Com variação real | Beta-Binomial(E, μ, ρ), com ρ (correlação entre eleitores do mesmo recorte) calibrado por método dos momentos por UF e por nível, com a variação observada de K/E entre as unidades irmãs. |
+
+Classificação com FDR sobre a leitura com variação real (referência: estado).
+
+**Limites.** K é um mínimo, não uma contagem observada: as mesmas variações líquidas aparecem com fluxos brutos
+compensatórios (eleitores de Flávio que faltaram no 2º turno, faltosos do 1º turno que votaram em Lula). A leitura
+independente ignora a correlação entre eleitores do mesmo lugar e por isso produz probabilidades extremamente pequenas
+para quase qualquer desvio.
+
 ## 6. Classificação e múltiplas comparações
 
 Valores q de Benjamini–Hochberg entre os municípios do país (e, separadamente, entre zonas e entre UFs):

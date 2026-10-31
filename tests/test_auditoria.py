@@ -147,6 +147,32 @@ class Apresentacao(unittest.TestCase):
         self.assertTrue(np.allclose(M.bh_fdr(p), stats.false_discovery_control(p)))
 
 
+class Transferencia(unittest.TestCase):
+    """scripts/23_transferencia.py: caudas exatas em log10."""
+    @classmethod
+    def setUpClass(cls):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("t23", RAIZ / "scripts" / "23_transferencia.py")
+        cls.T = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(cls.T)
+
+    def test_cauda_binomial_moderada(self):
+        v = self.T.cauda_binom(np.array([60.0]), np.array([100.0]), np.array([0.5]))[0]
+        self.assertAlmostEqual(v, math.log10(stats.binom.sf(59, 100, 0.5)), places=6)
+
+    def test_cauda_binomial_extrema_silva_jardim(self):
+        v = self.T.cauda_binom(np.array([792.0]), np.array([897.0]), np.array([0.25193]))[0]
+        self.assertTrue(-360 < v < -330, v)  # ~10^-348: “45 Mega-Senas” sob eleitores independentes
+
+    def test_betabinomial_mais_largo(self):
+        b = self.T.cauda_binom(np.array([600.0]), np.array([897.0]), np.array([0.46]))[0]
+        bb = self.T.cauda_betabinom(np.array([600.0]), np.array([897.0]), np.array([0.46]), 0.3)[0]
+        self.assertGreater(bb, b)
+
+    def test_impossivel_sem_migracao(self):
+        self.assertEqual(self.T.cauda_binom(np.array([10.0]), np.array([5.0]), np.array([0.5]))[0], -np.inf)
+
+
 class SaidaPublicada(unittest.TestCase):
     """Checa o contrato JSON gerado por 22_auditoria.py, se já existir."""
     ARQ = RAIZ / "portal" / "dados" / "auditoria" / "nacional.json"
