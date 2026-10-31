@@ -1992,10 +1992,10 @@ function umEmNlog(lp) {
 const LOG10_MEGA = Math.log10(1 / 50063860);
 function megaLog(lp) {
   if (lp == null || lp === -Infinity) return "—";
-  if (lp > -3) return `<span class="nota">evento comum</span>`;
+  if (lp > -1) return `<span class="nota">acontece com frequência (mais de 1 em 10)</span>`;
   const n = lp / LOG10_MEGA;
   if (n >= 1) return `equivale a acertar a Mega-Sena <b>${fmtN(n, n < 10 ? 1 : 0)} vez${n >= 2 ? "es" : ""} seguida${n >= 2 ? "s" : ""}</b>`;
-  const R = Math.pow(10, LOG10_MEGA - lp); return `${fmtN(R, R < 10 ? 1 : 0)}× mais provável que acertar a Mega-Sena`;
+  const R = Math.pow(10, lp - LOG10_MEGA); return `${R >= 1e6 ? fmtN(R / 1e6, 1) + (R >= 2e6 ? " milhões de" : " milhão de") : fmtN(R, R < 10 ? 1 : 0)} vezes mais provável que acertar a Mega-Sena`;
 }
 // μ (probabilidade de um eleitor dos eliminados votar em Lula) sob cada referência, K/E do recorte e posição no país
 function audTransferencia(ctx, TR) {
@@ -2019,6 +2019,16 @@ function audTransferencia(ctx, TR) {
     X.nUnid = T.linhas.length; X.nMigra = T.linhas.filter(migra).length;
     X.nMega = T.linhas.filter((l) => migra(l) || (l[ci.ind22] != null && l[ci.ind22] <= LOG10_MEGA)).length;
     X.pos = X.K > X.E ? null : 1 + X.nMigra + T.linhas.filter((l) => !migra(l) && l[ci.ind22] != null && l[ci.ind22] < X.ind22 - 1e-9).length;
+    // vizinhos: mesma UF e mesmo nível (estados: todos), só unidades com votos suficientes nos eliminados
+    const minE = { uf: 0, municipio: 200, zona: 200, secao: 30 }[ctx.nivel];
+    let viz;
+    if (ctx.nivel === "secao" && ctx.S) viz = ctx.S.linhas.map((l) => { const rr = audReconciliar(l.slice(4, 15), l.slice(15, 21)); return [rr.E, rr.E ? Math.max(0, rr.gL - rr.bnLib - rr.abLib) / rr.E : null]; });
+    else if (ctx.nivel !== "secao") viz = T.linhas.filter((l) => ctx.nivel === "uf" || l[ci.SG_UF] === st.uf).map((l) => [l[ci.E], l[ci.r]]);
+    if (viz && X.r != null) {
+      viz = viz.filter(([e, rr]) => e >= minE && rr != null);
+      const conta = X.E >= minE, maiores = viz.filter(([, rr]) => rr >= X.r - 1e-9).length - (conta ? 1 : 0);
+      X.viz = { total: viz.length + (conta ? 0 : 1), outros: Math.max(0, maiores), minE };
+    }
     X.listada = ctx.nivel !== "secao" || T.linhas.some((l) => l[ci.SG_UF] === st.uf && l[ci.CD_MUNICIPIO] === st.mun && l[ci.NR_ZONA] === st.zona && l[ci.NR_SECAO] === st.secao);
   }
   return X;
@@ -2037,7 +2047,8 @@ function htmlTransferencia(ctx, X) {
   const cab = (h2, txt) => `<div><span class="olho">Resultado pronto · 1º × 2º turno de ${nome}</span><h2>${h2}</h2><p class="lead">${txt}</p></div>${fatos}`;
   if (X.K === 0) return cab("Lula não precisou de votos dos eliminados",
     `Entre os turnos, Lula ${r.gL >= 0 ? "ganhou" : "perdeu"} ${n0(Math.abs(r.gL))} votos e Flávio ${r.gF >= 0 ? "ganhou" : "perdeu"} ${n0(Math.abs(r.gF))}. ${liberados}: o ganho de Lula cabe nesses votos, sem exigir nada dos ${n0(X.E)} eleitores dos candidatos eliminados. Nada a apontar neste teste.`);
-  const posTxt = X.pos != null && unid ? `${X.listada ? `<b>${n0(X.pos)}º</b> mais extremo entre os ${n0(X.nUnid)} ${unid[1]}${ctx.nivel === "secao" ? " mais extremas" : ""} do país` : `fora das ${n0(X.nUnid)} seções mais extremas do país`} nesta leitura; ${n0(X.nMega)} ${unid[1]} têm chance menor que a de acertar a Mega-Sena uma vez.` : "";
+  const fem = ctx.nivel === "zona" || ctx.nivel === "secao";
+  const posTxt = X.pos != null && unid ? `${X.listada ? `<b>${n0(X.pos)}º</b> mais extrem${fem ? "a" : "o"} entre ${fem ? "as" : "os"} ${n0(X.nUnid)} ${unid[1]}${ctx.nivel === "secao" ? " mais extremas" : ""} do país` : `fora das ${n0(X.nUnid)} seções mais extremas do país`} nesta leitura${ctx.nivel === "secao" ? "." : `; ${n0(X.nMega)} ${unid[1]} têm chance menor que a de acertar a Mega-Sena uma vez.`}` : "";
   const veredito = (rot, lp, sub) => `<div class="veredito"><span class="rot">${rot}</span><b>${umEmNlog(lp)}</b><span class="mega">${megaLog(lp)}</span><small>${sub}</small></div>`;
   const linha = (rot, mu, ind, dis) => `<tr><td>${rot}<br><span class="nota">esperado: ${p1(100 * mu, 0)} dos eleitores dos eliminados para Lula (${n0(Math.round(mu * X.E))} votos)</span></td>
       <td class="n">${umEmNlog(ind)}<br><span class="nota">${megaLog(ind)}</span></td><td class="n"><b>${umEmNlog(dis)}</b><br><span class="nota">${megaLog(dis)}</span></td></tr>`;
@@ -2048,11 +2059,14 @@ function htmlTransferencia(ctx, X) {
     : cab(`Lula precisava de ao menos ${n0(X.K)} dos ${n0(X.E)} votos dos eliminados (${p1(100 * X.r, 1)}). Pelo comportamento de 2022, o esperado era ${p1(100 * X.mu22, 0)}.`,
       `Entre os turnos, Lula ${r.gL >= 0 ? "ganhou" : "perdeu"} ${n0(Math.abs(r.gL))} votos e Flávio ${r.gF >= 0 ? "ganhou" : "perdeu"} ${n0(Math.abs(r.gF))}. ${liberados}. Mesmo que todos esses votos tivessem ido para Lula, pelo menos ${n0(X.K)} dos ${n0(X.E)} eleitores dos candidatos eliminados votaram nele (supondo que nenhum eleitor de Flávio mudou de lado). Em 2022, eleitores com o mesmo perfil deram ${p1(100 * X.mu22, 0)} ao candidato do PT: cerca de ${n0(Math.round(X.mu22 * X.E))} votos aqui.`)
       + `<div class="vereditos">${veredito("Chance de acontecer · eleitores decidindo de forma independente, como em 2022", X.ind22, posTxt)}
-        ${veredito(`Chance de acontecer · com a variação real entre ${plural} do estado`, X.disUF, `referência: o próprio estado em 2026 (${p1(100 * X.muUF, 0)} para Lula), eleitores do mesmo lugar decidindo de forma parecida (ρ = ${fmtN(X.rho, 2)}). É a leitura mais conservadora.`)}</div>`;
-  return corpo + (X.K > X.E ? "" : `<details class="bloco-det"><summary>Todas as combinações de referência e modelo</summary><div class="tabela-wrap"><table class="tab-quebra"><thead><tr><th>Referência (comportamento esperado)</th><th class="n">Se cada eleitor decidisse sozinho</th><th class="n">Com a variação real entre ${plural} (ρ = ${fmtN(X.rho, 2)})</th></tr></thead><tbody>
+        ${X.viz ? (() => { const v = X.viz, ondeUF = ctx.nivel === "uf" ? "do Brasil" : `do estado (${esc(D.resumo.ufs[ctx.st.uf]?.nome || ctx.st.uf)})`;
+          return `<div class="veredito"><span class="rot">Comparação com ${fem ? "as" : "os"} ${plural} ${ondeUF}</span><b>${n0(v.outros + 1)}º de ${n0(v.total)}</b>
+          <span class="mega">${v.outros === 0 ? `Nenhum${fem ? "a outra" : " outro"} ${unid[0]} ${ondeUF} teve resultado tão extremo.` : `Em <b>${n0(v.outros)}</b> outr${fem ? "as" : "os"} ${v.outros === 1 ? unid[0] : plural}, Lula também precisou de ${p1(100 * X.r, 0)} ou mais dos votos dos eliminados.`}</span>
+          <small>Contagem direta, sem modelo${v.minE ? `, entre ${plural} com ao menos ${n0(v.minE)} votos nos eliminados` : ""}. Quando ${fem ? "muitas" : "muitos"} ${plural} ${fem ? "vizinhas" : "vizinhos"} têm o mesmo padrão, ele não é exclusivo deste local, o que não quer dizer que seja normal.</small></div>`; })() : ""}</div>`;
+  return corpo + (X.K > X.E ? "" : `<details class="bloco-det"><summary>Todas as combinações de referência e modelo</summary><div class="tabela-wrap"><table class="tab-quebra"><thead><tr><th>Referência (comportamento esperado)</th><th class="n">Se cada eleitor decidisse sozinho</th><th class="n">Supondo que eleitores do mesmo lugar votam em bloco (ρ = ${fmtN(X.rho, 2)})</th></tr></thead><tbody>
       ${linha("Eliminados votando como em 2022 (direita, centro e esquerda)", X.mu22, X.ind22, X.dis22)}
       ${linha("Eliminados votando como no estado em 2026", X.muUF, X.indUF, X.disUF)}</tbody></table></div></details>`)
-    + `<div class="aud-premissas"><b>Premissas e limites.</b> (1) O cálculo é exato, com 100% dos votos do recorte: não há simulação nem sorteio. (2) ${n0(X.K)} é um mínimo calculado pelo saldo: se eleitores de Flávio faltaram no 2º turno e faltosos do 1º turno votaram em Lula, o mesmo saldo aparece com menos votos dos eliminados indo para Lula. (3) “Eleitores decidindo de forma independente” trata cada voto como uma moeda; na prática, eleitores do mesmo lugar decidem de forma parecida (vizinhança, igreja, lideranças), e a leitura com variação real mede isso pelas diferenças entre ${({ secao: "as seções", zona: "as zonas", municipio: "os municípios" }[ctx.nivel] || "os estados")}. (4) Nenhuma probabilidade é, isoladamente, evidência de irregularidade.</div>`;
+    + `<div class="aud-premissas"><b>Premissas e limites.</b> (1) O cálculo é exato, com 100% dos votos do recorte: não há simulação nem sorteio. (2) ${n0(X.K)} é um mínimo calculado pelo saldo: se eleitores de Flávio faltaram no 2º turno e faltosos do 1º turno votaram em Lula, o mesmo saldo aparece com menos votos dos eliminados indo para Lula. (3) “Eleitores decidindo de forma independente” trata cada voto como uma moeda; na prática, eleitores do mesmo lugar decidem de forma parecida (vizinhança, igreja, lideranças), e por isso a comparação com os vizinhos do estado é mostrada ao lado. (4) Nenhuma probabilidade é, isoladamente, evidência de irregularidade.</div>`;
 }
 // ---- contexto do recorte ativo
 async function audContexto(st) {
@@ -2074,7 +2088,7 @@ async function audContexto(st) {
             const l = S.linhas.find((x) => x[0] === st.mun && x[1] === st.zona && x[2] === st.secao);
             if (l) {
               ctx.partes.push([`Seção ${z4(st.secao)}`, { secao: st.secao }]);
-              return Object.assign(ctx, { nivel: "secao", rotulo: `Seção ${z4(st.secao)} · zona ${z4(st.zona)} · ${mU.nome} (${st.uf})`, t1: l.slice(4, 15), t2: l.slice(15, 21),
+              return Object.assign(ctx, { S, nivel: "secao", rotulo: `Seção ${z4(st.secao)} · zona ${z4(st.zona)} · ${mU.nome} (${st.uf})`, t1: l.slice(4, 15), t2: l.slice(15, 21),
                 pct: mU.mig.pct, pctRef: mU.mig.pct, alpha: N.alpha.por_uf[st.uf]?.secao, aud: null, refTxt: `matriz municipal (${mU.nome})` });
             }
           }
@@ -2164,7 +2178,7 @@ function audPanorama(el, ctx) {
     </div></section>
   <section class="bloco"><div class="bloco-cab"><div><span class="olho">Mapa · municípios</span><h2>Onde o ganho de Lula exigiu mais dos votos dos eliminados</h2>
       <p class="lead">Cada município comparado com o seu próprio 1º turno. Clique para abrir o resultado pronto.</p></div>
-      <label class="nota">Indicador <select id="aud-met"><option value="mega">Mega-Senas seguidas (eleitores independentes, 2022)</option><option value="r">Mínimo dos eliminados para Lula</option><option value="dis">Chance com a variação real (estado)</option><option value="classe">Classificação</option></select></label></div>
+      <label class="nota">Indicador <select id="aud-met"><option value="mega">Mega-Senas seguidas (eleitores independentes, 2022)</option><option value="r">Mínimo dos eliminados para Lula</option><option value="dis">Chance supondo votos em bloco (estado)</option><option value="classe">Classificação</option></select></label></div>
     <div class="grafico" data-g="aud-mapa" style="height:560px"><p class="carregando">Carregando mapa…</p></div>
     <p class="nota" id="aud-mapa-nota"></p></section>
   <section class="bloco"><div class="bloco-cab"><div><span class="olho">Ranking · 1º × 2º turno de cada recorte</span><h2>Resultados prontos, do mais extremo ao menos extremo</h2>
@@ -2179,7 +2193,7 @@ function audPanorama(el, ctx) {
     { t: "Mínimo para Lula", n: 1, v: (x) => gt(x.l, "r") ?? -1, f: (x) => `${n0(gt(x.l, "K"))} (${p1(100 * (gt(x.l, "r") || 0), 0)})` },
     { t: "Δ Flávio", n: 1, v: (x) => gt(x.l, "dF"), f: (x) => sinal(gt(x.l, "dF")) },
     { t: "Chance · independente, 2022", n: 1, v: (x) => (gt(x.l, "K") > gt(x.l, "E") ? 1e6 + gt(x.l, "r") : -(gt(x.l, "ind22") ?? 0)), f: (x) => (gt(x.l, "K") > gt(x.l, "E") ? "só com migração de Flávio" : `${umEmNlog(gt(x.l, "ind22"))}<br><span class="nota">${megaLog(gt(x.l, "ind22"))}</span>`), ordemPadrao: 1 },
-    { t: "Chance · com variação, estado", n: 1, v: (x) => (gt(x.l, "K") > gt(x.l, "E") ? 1e6 + gt(x.l, "r") : -(gt(x.l, "disUF") ?? 0)), f: (x) => (gt(x.l, "K") > gt(x.l, "E") ? "—" : umEmNlog(gt(x.l, "disUF"))) },
+    { t: "Chance · votos em bloco (estado)", n: 1, v: (x) => (gt(x.l, "K") > gt(x.l, "E") ? 1e6 + gt(x.l, "r") : -(gt(x.l, "disUF") ?? 0)), f: (x) => (gt(x.l, "K") > gt(x.l, "E") ? "—" : umEmNlog(gt(x.l, "disUF"))) },
     { t: "Classificação", v: (x) => gt(x.l, "classe"), f: (x) => classeTag(gt(x.l, "classe") === "Compatível" ? "Compatível com o modelo" : gt(x.l, "classe")) }];
   const desenharTR = (nivel) => {
     const T = TR.niveis[nivel], ci = idx(T), gt = (l, k) => l[ci[k]];

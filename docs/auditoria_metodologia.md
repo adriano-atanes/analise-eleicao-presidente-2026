@@ -126,7 +126,9 @@ bem especificado ela é aproximadamente uniforme: cerca de 5% abaixo de 0,05 e 1
 hora, de forma exata, para qualquer recorte e aparece no topo da visão “Resultado do recorte” como uma ficha pronta: variação
 de Lula, Flávio e comparecimento; votos dos eliminados; mínimo que precisa ter ido para Lula; chance sob eleitores
 independentes (referência 2022), com a comparação com a Mega-Sena e a posição no país; e chance com a variação real
-(referência do estado).
+(referência do estado). O segundo cartão da ficha não mostra essa chance: mostra a contagem direta, sem modelo, da posição do
+recorte entre as unidades do mesmo nível no estado (por exemplo, “15º de 92 municípios”), contando quantas tiveram K/E igual
+ou maior. A chance com variação real fica na tabela de detalhes.
 
 **Contagens.**
 
