@@ -316,6 +316,43 @@ section.bloco { scroll-margin-top: calc(var(--topo-h, 96px) + 60px); }
   .tabbar a[aria-current="page"] { color: var(--accent); font-weight: 600; }
   main { padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px)) !important; }
 }
+/* auditoria */
+.aud-barra { position: sticky; top: var(--topo-h, 96px); z-index: 4; background: var(--bg); display: grid; gap: 10px; padding: 8px 0 0; border-bottom: 1px solid var(--line); }
+.aud-trilha { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 13px; color: var(--muted); }
+.aud-trilha a { color: var(--ink-2); text-decoration: none; padding: 1px 4px; border-radius: 4px; } .aud-trilha a:hover { background: var(--surface-2); }
+.aud-filtros { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.aud-filtros label { display: grid; gap: 3px; font-size: 12px; color: var(--muted); min-width: 0; }
+.aud-filtros select { padding: 7px 8px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); min-width: 0; width: 100%; }
+.aud-filtros select:disabled { opacity: .5; }
+.aud-abas { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; }
+.aud-abas a { display: inline-flex; gap: 8px; align-items: center; padding: 9px 14px 10px; font-size: 14px; font-weight: 600; color: var(--ink-2); text-decoration: none; border-bottom: 2px solid transparent; white-space: nowrap; }
+.aud-abas a[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+.aud-abas a[aria-selected="true"] .aba-n { background: var(--accent); color: var(--accent-ink); }
+#aud-corpo { display: grid; grid-template-columns: minmax(0, 1fr); gap: 28px; }
+.aud-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.aud-kpis > div { background: var(--surface); padding: 12px 14px; display: grid; gap: 3px; align-content: start; }
+.aud-kpis .rot { font-size: 12.5px; color: var(--ink-2); }
+.aud-kpis b { font-family: var(--f-display); font-stretch: 85%; font-size: 22px; line-height: 1.15; }
+.aud-kpis small { font-size: 12px; color: var(--muted); }
+.aud-kpis .kpi-destaque { background: color-mix(in srgb, var(--accent) 8%, var(--surface)); }
+.aud-num { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-bottom: 8px; }
+.aud-num div { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; display: grid; gap: 2px; }
+.aud-num span { font-size: 12px; color: var(--muted); } .aud-num b { font-size: 18px; font-family: var(--f-display); font-stretch: 85%; }
+.aud-ident { display: flex; flex-wrap: wrap; gap: 8px 16px; margin-top: 10px; font-size: 13px; color: var(--ink-2); }
+.aud-qa { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 10px; margin: 0; }
+.aud-qa > div { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; background: var(--bg); }
+.aud-qa dt { font-weight: 600; font-size: 14px; margin-bottom: 4px; } .aud-qa dd { margin: 0; font-size: 13.5px; color: var(--ink-2); line-height: 1.5; }
+.tag-classe { display: inline-block; font-size: 11.5px; font-weight: 600; padding: 2px 8px; border-radius: 999px; white-space: nowrap; background: var(--surface-2); color: var(--ink-2); }
+.tag-atencao { background: color-mix(in srgb, var(--atencao) 22%, transparent); color: var(--ink); }
+.tag-grave { background: color-mix(in srgb, var(--grave) 18%, transparent); color: var(--grave); }
+.tag-ok { background: color-mix(in srgb, var(--ok) 12%, transparent); color: var(--ink-2); }
+.aud-matriz-ed input { width: 72px; text-align: right; padding: 4px 6px; border: 1px solid var(--line); border-radius: 5px; background: var(--bg); }
+.aud-presets { margin-bottom: 4px; }
+details.bloco { display: block; }
+.tab-quebra td { white-space: normal; vertical-align: top; }
+details.metodo summary { cursor: pointer; list-style: none; } details.metodo summary::-webkit-details-marker { display: none; }
+details.metodo[open] summary { margin-bottom: 10px; }
+@media (max-width: 760px) { .aud-filtros { grid-template-columns: repeat(2, minmax(0, 1fr)); } .aud-barra { position: static; } .aud-num { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 560px) { .grafico { height: 320px; } .bloco { padding: 14px; } .placar { padding: 14px; } }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 </style>
@@ -425,7 +462,6 @@ async function jsonGz(url) {
 }
 async function json(url) { const r = await fetch(url); if (!r.ok) throw new Error(url + ": " + r.status); return r.json(); }
 async function carregarUF(uf) { return (D.uf[uf] ||= await json(`dados/uf/${uf}.json`)); }
-async function carregarAuditoria() { D.comp ||= await json("dados/comportamento.json"); D.ins ||= await json("dados/insights.json"); D.logs ||= await json("dados/logs.json").catch(() => null); D.ideo ||= await json("dados/ideologia.json"); return (D.aud ||= await json("dados/auditoria.json")); }
 async function carregarSecoes(uf) { return (D.secoes[uf] ||= await json(`dados/secoes/${uf}.json`)); }
 
 // ---------- componentes ----------
@@ -938,371 +974,12 @@ async function visaoMunicipio(app, uf, cod) {
 }
 
 // ---------- auditoria ----------
-const MOTIVOS = {
-  res_lula: "Lula acima do previsto", res_fla: "Flávio acima do previsto", lim_lula: "Ganho de Lula acima das fontes",
-  lim_fla: "Ganho de Flávio acima das fontes", comp_alto: "Comparecimento ≥ 98%", salto_comp: "Comparecimento subiu ≥ 25 p.p.",
-};
-const CHI2_9 = { p05: 16.92, p01: 21.67 }; // valores críticos do qui-quadrado com 9 graus de liberdade
-const qui2 = (cont) => { const t = cont.reduce((a, b) => a + b, 0), e = t / 10; return cont.reduce((s, o) => s + ((o - e) ** 2) / e, 0); };
 function status(tipo, texto) {
   const m = { ok: ["ok", "✓"], atencao: ["atencao", "!"], grave: ["grave", "×"] }[tipo];
   return `<span class="status" style="--c:var(--${m[0]})"><i aria-hidden="true">${m[1]}</i>${esc(texto)}</span>`;
 }
 function trocarGrafico(el, fn) { const c = echarts.getInstanceByDom(el); if (c) { charts.splice(charts.indexOf(c), 1); c.dispose(); } return fn(); }
 
-async function visaoAuditoria(app) {
-  app.innerHTML = `<p class="carregando">Carregando dados da auditoria…</p>`;
-  const A = await carregarAuditoria(), CP = D.comp, ID = D.ideo;
-  if (location.hash !== "#auditoria") return;
-  const R = D.resumo, c = A.contabilidade, hist = A.historico, h22 = hist.find((x) => x.ano === 2022), h26 = hist[hist.length - 1];
-  const K = A.brasil.k;
-  const menorAnterior = Math.min(...hist.filter((x) => x.ano < 2026).map((x) => x.gap_pp));
-  const dig2 = A.digitos;
-  const urnaMax = Math.max(...Object.values(A.urnas.dentro_do_municipio).map((v) => Math.abs(v.efeito_pp)));
-  app.innerHTML = `<div class="cabeca"><span class="olho">Auditoria estatística · 1º e 2º turno</span>
-    <h1>Auditoria de dados e comportamento eleitoral</h1>
-    <p class="lead">Flávio liderou o 1º turno por ${n0(c.vantagem_flavio_1)} votos e Lula venceu o 2º. É a primeira virada numa eleição presidencial desde 1989. Esta página compara o comportamento do eleitorado em 2026 com o das seis eleições anteriores (2002 a 2022), verifica a consistência dos boletins das ${n0(R.secoes)} seções e lista as seções atípicas para conferência. Todos os números vêm dos boletins de urna publicados pelo TSE.</p></div>
-  <section class="bloco"><div class="bloco-cab"><div><span class="olho">Resultado dos testes · Brasil</span><h2>O que cada teste procurou e o que encontrou</h2>
-    <p class="lead">Cada teste compara os dados com o comportamento esperado para contagens de votos. Um resultado fora do esperado não é conclusão; indica onde aprofundar a conferência.</p></div></div>
-    <div class="testes">
-      <div class="teste"><h3>Integridade dos boletins ${status("ok", "Consistente")}</h3><p>Em ${n0(R.secoes)} seções, ${A.integridade.comparecimento_maior_que_aptos} com mais votantes que eleitores e ${A.integridade.soma_votos_diferente_do_comparecimento_t2} com votos que não somam o comparecimento.</p></div>
-      <div class="teste"><h3>Contabilidade da virada ${status("ok", "Fecha exatamente")}</h3><p>Os ${mi(c.ganho_total)} votos ganhos pelos finalistas são, voto a voto, a soma dos eliminados, da queda de brancos e nulos e do aumento do comparecimento.</p></div>
-      <div class="teste"><h3>Comportamento em 2002–2022 ${status("ok", `${CP.indicadores.filter((i) => ["dentro", "tendencia"].includes(i.status)).length} de ${CP.indicadores.filter((i) => i.status !== "inedito").length} no padrão`)}</h3><p>Viradas em estados e municípios, brancos e nulos e a previsibilidade do 2º turno ficaram dentro da faixa de 2002 a 2022; a captação de votos novos ficou na tendência. O inédito foi a diferença de 1º turno: ${p1(h26.gap_pp)}, contra ${p1(menorAnterior)} na menor anterior.</p></div>
-      <div class="teste"><h3>Aumento do comparecimento ${status("atencao", "Incomum")}</h3><p>${sinal(c.fontes_liquidas["aumento do comparecimento"])} eleitores no 2º turno; de 2002 a 2018 o comparecimento sempre caiu. O aumento foi espalhado pelas seções, sem concentração atípica (ver abaixo).</p></div>
-      <div class="teste"><h3>Votos que o 1º turno não explica ${status("ok", "Consistente")}</h3><p>Seções muito acima do previsto: ${n0(K.res_lula_acima10)} para Lula e ${n0(K.res_fla_acima10)} para Flávio, contra ${n0(K.res_lula_abaixo10)} e ${n0(K.res_fla_abaixo10)} muito abaixo. A cauda não favorece ninguém.</p></div>
-      <div class="teste"><h3>Ganhos acima das fontes ${status("ok", "Irrelevante")}</h3><p>${n0(K.limite_lula_10)} seções com ganho de Lula 10 ou mais votos acima de tudo o que poderia vir sem tirar eleitores de Flávio (${n0(K.limite_fla_10)} no caso inverso). Excesso total: ${n0(K.limite_lula_votos)} votos.</p></div>
-      <div class="teste"><h3>Comparecimento × voto (Klimek) ${status("ok", "Consistente")}</h3><p>Sem aglomerado de seções com comparecimento perto de 100% e voto quase todo num candidato. Seções com 100%: ${K.comp100_1} no 1º turno e ${K.comp100_2} no 2º.</p></div>
-      <div class="teste"><h3>Último dígito ${status("ok", "Uniforme")}</h3><p>Cada dígito final aparece em cerca de 10% das seções para os dois candidatos (p = ${dig2.Lula_2.ultimo_p.toFixed(2).replace(".", ",")} Lula e ${dig2["Flávio_2"].ultimo_p.toFixed(2).replace(".", ",")} Flávio no 2º turno).</p></div>
-      <div class="teste"><h3>Modelo de urna ${status("ok", "Sem efeito")}</h3><p>Dentro do mesmo município, a variação de Lula difere no máximo ${p1(urnaMax, 2).replace("%", "")} ponto entre urnas de 2013, 2015, 2020 e 2022.</p></div>
-      <div class="teste"><h3>Relação com o 1º turno ${status("ok", "Coerente")}</h3><p>A composição do 1º turno explica ${p1(100 * A.eliminados.r2, 0)} da variação de Lula entre municípios; ele cresceu mais onde Augusto Cury foi forte.</p></div>
-    </div></section>
-
-  <section class="bloco" id="comportamento"><div class="bloco-cab"><div><span class="olho">Comportamento do eleitorado · TSE 2002–2026</span><h2>2026 comparado com as seis eleições anteriores</h2>
-    <p class="lead">Cada indicador mede como o voto mudou do 1º para o 2º turno, com os dados oficiais do TSE de cada ano, no Brasil e nos municípios. O valor de 2026 é comparado com a faixa de 2002 a 2022 e, quando a série tem tendência clara, com a projeção dela. "2º colocado" é quem ficou em segundo no 1º turno nacional de cada ano.</p></div></div>
-    <div id="tab-comp"></div>
-    <div class="grade2"><div style="display:grid;gap:6px"><h3>Variação do comparecimento entre os turnos</h3><p class="nota">Pontos percentuais dos aptos. Losango: tendência de 2010 a 2022 projetada para 2026.</p><div class="grafico" data-g="hcomp" style="height:260px"></div></div>
-      <div style="display:grid;gap:6px"><h3>Votos novos captados pelo 2º colocado</h3><p class="nota">Em 2006 o 2º colocado perdeu votos. Losango: tendência de 2002 a 2022 projetada para 2026.</p><div class="grafico" data-g="hcap" style="height:260px"></div></div></div>
-    <h3>O resultado de 2026 com o comportamento de cada eleição anterior</h3>
-    <p class="nota">Captação: os ${mi(CP.pool_2026)} votos novos de 2026 divididos entre os finalistas na proporção daquele ano. Comparecimento: aumento ou queda do comparecimento igual ao daquele ano, com os eleitores a mais ou a menos votando como os eleitores adicionais de 2026 (${p1(100 * CP.inclinacoes.lula, 0)} Lula, ${p1(100 * CP.inclinacoes.flavio, 0)} Flávio). São cenários aproximados.</p>
-    <div id="tab-cen"></div>
-    <h3>Comparecimento, brancos e nulos por estado</h3><p class="nota">Variação de 2026 comparada com a faixa do próprio estado de 2002 a 2022. Clique num estado para abrir o resultado dele.</p><div id="tab-uf-comp"></div>
-    <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between"><h3>Variação do 2º colocado nos municípios</h3>
-      <label class="nota">Comparar 2026 com <select id="sel-ano-mun">${CP.anos.filter((a) => a < 2026).map((a) => `<option value="${a}" ${a === 2022 ? "selected" : ""}>${a}</option>`).join("")}</select></label></div>
-    <div class="grafico" data-g="hmun" style="height:300px"></div>
-  </section>
-
-  <section class="bloco" id="campos"><div class="bloco-cab"><div><span class="olho">Eleitores de cada campo · TSE 2002–2026</span><h2>Os votos que Lula ganhou vieram da direita?</h2>
-    <p class="lead">Lula ficou com ${p1(CP.nacional[2026].captacao_segundo, 0)} dos ${mi(CP.pool_2026)} votos novos do 2º turno, cerca de 3 em cada 4. Esses votos novos não vieram só dos candidatos de direita eliminados: vieram também de quem votou branco ou nulo, de quem não tinha votado e dos eleitores de Augusto Cury, de centro. Pela estimativa de migração, só ${p1(ID.anos[2026].grupos.composicao_ganho_pt.direita, 0)} do crescimento de Lula veio de eleitores da direita.</p></div></div>
-    <div class="grade2"><div style="display:grid;gap:6px"><h3>De onde veio o crescimento do candidato do PT</h3><p class="nota">Composição estimada dos votos que o PT ganhou entre os turnos.</p><div class="grafico" data-g="ideo-comp" style="height:240px"></div></div>
-      <div style="display:grid;gap:6px"><h3>Eleitores dos eliminados que foram para o PT</h3><p class="nota">Entre os que votaram num finalista, por campo do candidato eliminado. Centro: anos com mais de 1 milhão de votos no campo. Direita: anos em que o PT enfrentou a direita no 2º turno.</p><div class="grafico" data-g="ideo" style="height:240px"></div></div></div>
-    <p class="aviso">Em 2026, ${p1(ID.anos[2026].grupos.direita.pt_entre_finalistas, 0)} dos eleitores dos eliminados de direita que votaram num finalista escolheram Lula, contra ${p1(ID.anos[2018].grupos.direita.pt_entre_finalistas, 0)} em 2018 e ${p1(ID.anos[2022].grupos.direita.pt_entre_finalistas, 0)} em 2022. É um comportamento acima do histórico. Os candidatos de direita de 2026 (Renan Santos, Ronaldo Caiado, Zema) disputavam o mesmo campo de Flávio, e a estimativa é menos estável para os eleitores de Renan Santos. O teste abaixo mostra que esse comportamento não decidiu o resultado.</p>
-    <h3>O resultado com os eleitores de direita votando de outro jeito</h3><div id="tab-ideo-cen"></div>
-    <details><summary class="nota" style="cursor:pointer">Classificação dos candidatos eliminados por campo (critério do analista, pelo partido)</summary><div id="tab-ideo-cls"></div></details>
-  </section>
-
-  <section class="bloco"><div class="bloco-cab"><div><span class="olho">Histórico · TSE 2002–2022</span><h2>A conversão de votos foi fora do comum?</h2>
-    <p class="lead">Barra cinza: parcela dos votos novos do 2º turno que o 2º colocado precisava captar para virar. Barra escura: parcela que ele captou. Desde 2010 o 2º colocado sempre ficou com a maioria; até 2022, a vantagem do líder era grande demais.</p></div></div>
-    <div class="grafico" data-g="hist" style="height:320px"></div><div id="tab-hist"></div></section>
-
-  <section class="bloco"><div class="bloco-cab"><div><span class="olho">Contabilidade · Brasil</span><h2>De onde vieram os ${mi(c.ganho_total)} votos novos</h2>
-    <p class="lead">À esquerda, as fontes líquidas de votos no 2º turno; à direita, para quem foram. Para virar, Lula precisava de ${p1(c.parcela_minima_para_virar)} do total; ficou com ${p1(c.parcela_lula_do_ganho)}.</p></div></div>
-    <div class="grafico" data-g="conta" style="height:200px"></div></section>
-
-  <nav class="explorar explorar-2" aria-label="Análises relacionadas"><a href="#apuracao"><span class="exp-ic">${icone("apuracao")}</span><span><b>Como a contagem evoluiu</b><small>A parcial minuto a minuto e a verificação das falhas durante a virada</small></span><span class="exp-seta" aria-hidden="true">→</span></a><a href="#logs"><span class="exp-ic">${icone("logs")}</span><span><b>O que as urnas registraram</b><small>Logs de todas as urnas: trocas, erros, biometria e intervalo entre votos</small></span><span class="exp-seta" aria-hidden="true">→</span></a></nav>
-  <div class="filtro-uf"><label for="sel-uf"><b>Recorte dos testes abaixo:</b></label>
-    <select id="sel-uf"><option value="">Brasil</option>${Object.entries(R.ufs).map(([uf, u]) => `<option value="${uf}">${esc(u.nome)}</option>`).join("")}</select>
-    <span class="nota" id="uf-info"></span></div>
-
-  <section class="bloco"><div class="bloco-cab"><div><span class="olho">Teste de Klimek et al. (2012)</span><h2>Comparecimento × voto em cada seção</h2>
-    <p class="lead">Cada célula soma os votos do candidato nas seções com aquele comparecimento (eixo horizontal) e aquela porcentagem do candidato (eixo vertical). Um comparecimento atípico concentrado num candidato apareceria como uma mancha separada no canto superior direito. Compare o 1º com o 2º turno.</p></div>
-    <div class="seg" role="group" aria-label="Candidato" id="seg-fp"><button aria-pressed="true" data-c="Lula">Lula</button><button aria-pressed="false" data-c="Flávio">Flávio</button></div></div>
-    <div class="grade2"><div class="grafico" data-g="fp1" style="height:340px"></div><div class="grafico" data-g="fp2" style="height:340px"></div></div>
-    <p class="nota" id="fp-nota"></p></section>
-
-  <section class="bloco"><div class="bloco-cab"><div><span class="olho">Modelo de migração</span><h2>Votos que o 1º turno da seção não explica</h2>
-    <p class="lead">Para cada seção, o 2º turno real menos o previsto a partir do 1º turno dela, em pontos percentuais do eleitorado. Um excesso sistemático de votos para um candidato formaria uma cauda à direita na curva dele.</p></div></div>
-    <div class="grafico" data-g="res" style="height:300px"></div><p class="nota" id="res-nota"></p></section>
-
-  <div class="grade2">
-    <section class="bloco"><div class="bloco-cab"><div><span class="olho">Teste do último dígito</span><h2>Dígito final dos votos por seção</h2>
-      <p class="lead">Em contagens reais, cada dígito de 0 a 9 aparece em cerca de 10% das seções. Desvios indicam contagens com padrão não aleatório.</p></div>
-      <div class="seg" role="group" aria-label="Turno" id="seg-dig"><button aria-pressed="false" data-t="1">1º turno</button><button aria-pressed="true" data-t="2">2º turno</button></div></div>
-      <div class="grafico" data-g="dig" style="height:260px"></div><p class="nota" id="dig-nota"></p></section>
-    <section class="bloco"><div class="bloco-cab"><div><span class="olho">Comparecimento</span><h2>Variação do comparecimento por seção</h2>
-      <p class="lead">Seções com mais (verde) ou menos (cinza) eleitores votando no 2º turno, em pontos percentuais dos aptos.</p></div></div>
-      <div class="grafico" data-g="dcomp" style="height:260px"></div><p class="nota" id="dcomp-nota"></p></section>
-  </div>
-
-  <section class="bloco"><div class="bloco-cab"><div><span class="olho">Modelo de urna · Brasil</span><h2>A variação muda com o equipamento?</h2>
-    <p class="lead">Variação de Lula entre os turnos (pontos percentuais dos válidos) por modelo de urna, e a diferença em relação à UE 2020 dentro do mesmo município.</p></div></div><div id="tab-urna"></div></section>
-
-  <section class="bloco"><div class="bloco-cab"><div><span class="olho">27 estados e exterior</span><h2>Indicadores por estado</h2>
-    <p class="lead">Clique num estado para aplicar o recorte aos testes acima. χ² do último dígito acima de ${String(CHI2_9.p01).replace(".", ",")} indicaria desvio significativo a 1%.</p></div></div><div id="tab-ind"></div></section>
-
-  <section class="bloco" id="lista-secoes"><div class="bloco-cab"><div><span class="olho">Para conferência</span><h2>Seções atípicas</h2>
-    <p class="lead">Seções que se destacam em algum teste. Atípica quer dizer fora do padrão estatístico: são as primeiras a conferir. Clique numa linha para abrir o boletim da seção e compare-o com o boletim impresso afixado na seção ou com o QR code do boletim.</p></div></div>
-    <div class="leg">${Object.entries(MOTIVOS).map(([k, t]) => `<span class="chip">${esc(t)}: <b>${n0(A.suspeitas.linhas.filter((l) => l[19].includes(k)).length)}</b></span>`).join("")}</div>
-    <div id="tab-susp"></div></section>
-
-  <section class="bloco"><div class="bloco-cab"><div><span class="olho">Como verificar</span><h2>O que a estatística não alcança e como aprofundar</h2></div></div>
-    <div class="metodo">
-      <p>Os testes acima procuram inconsistências nos dados: excesso de votos em parte das seções, contagens com padrão não aleatório, efeito concentrado num tipo de urna. Uma alteração pequena e distribuída de forma proporcional por todas as seções seria difícil de distinguir de mudança real de voto. Esse tipo de verificação é documental:</p>
-      <ol class="passos">
-        <li>Conferir o boletim publicado de uma seção com o boletim impresso, afixado na seção ao fim da votação e entregue aos fiscais dos partidos (o QR code do boletim permite conferir pelo celular).</li>
-        <li>Consultar os arquivos de cada urna publicados pelo TSE (boletim, registro digital do voto e log) para as seções da lista acima.</li>
-        <li>Consultar os relatórios do teste de integridade das urnas e do teste público de segurança, feitos por amostragem com acompanhamento de entidades fiscalizadoras.</li>
-      </ol>
-      <p>Código e dados desta análise: <a href="https://github.com/adriano-atanes/analise-eleicao-presidente-2026" target="_blank" rel="noopener">github.com/adriano-atanes/analise-eleicao-presidente-2026</a>.</p>
-    </div></section>`;
-
-  // comportamento comparado com 2002–2022
-  {
-    const anos = CP.anos, anosAnt = anos.filter((a) => a < 2026);
-    const fmtInd = (i, v) => (v == null ? "—" : i.id === "virada" ? (v ? "sim" : "não") : i.id === "estados_virada" ? String(v)
-      : i.id === "r2_previsao" ? v.toFixed(3).replace(".", ",") : (v > 0 && ["dcomp_pp", "dbn_pp"].includes(i.id) ? "+" : "") + v.toFixed(1).replace(".", ",") + (i.unidade.startsWith("%") ? "%" : ""));
-    const ST = { dentro: ["ok", "Dentro do histórico"], tendencia: ["ok", "Na tendência"], acima: ["atencao", "Acima do histórico"], inedito: ["atencao", null] };
-    app.querySelector("#tab-comp").innerHTML = `<div class="tabela-wrap"><table><thead><tr><th style="cursor:default">Indicador</th>${anos.map((a) => `<th class="n" style="cursor:default">${a}</th>`).join("")}<th style="cursor:default">Situação de 2026</th></tr></thead>
-      <tbody style="cursor:default">${CP.indicadores.map((i) => `<tr><td style="white-space:normal;min-width:260px"><b>${esc(i.nome)}</b>${i.unidade ? ` <span class="nota">(${esc(i.unidade)})</span>` : ""}<br><span class="nota">${esc(i.leitura)}</span></td>
-        ${anosAnt.map((a) => `<td class="n">${fmtInd(i, i.serie[a])}</td>`).join("")}<td class="n"><b>${fmtInd(i, i.valor_2026)}</b></td>
-        <td>${status(ST[i.status][0], ST[i.status][1] || i.status_texto)}</td></tr>`).join("")}</tbody></table></div>`;
-    const N = CP.nacional, td = CP.tendencias;
-    const barras = (el, chave, tend, sufixo, nomeTend) => novoGrafico(el, {
-      grid: { left: 8, right: 8, top: 24, bottom: 8, containLabel: true },
-      tooltip: { trigger: "item", formatter: (p) => (p.seriesType === "scatter" ? `${nomeTend}<br><b>${p1(p.value[1], 1).replace("%", sufixo)}</b> (± ${tend.erro.toFixed(1).replace(".", ",")})` : `<b>${p.name}</b>: ${p1(p.value, 1).replace("%", sufixo)}`) },
-      xAxis: { type: "category", data: anos.map(String), ...eixo(), splitLine: { show: false } },
-      yAxis: { type: "value", ...eixo(), axisLabel: { color: T.muted, formatter: (v) => v + sufixo } },
-      series: [
-        { type: "bar", barWidth: "55%", data: anos.map((a) => ({ value: +N[a][chave].toFixed(2), itemStyle: { color: a === 2026 ? T.accent : T.ink2, borderRadius: 3 } })),
-          label: { show: true, position: "top", color: T.ink, fontSize: 11, formatter: (p) => p.value.toFixed(1).replace(".", ",") + sufixo } },
-        { type: "scatter", symbol: "diamond", symbolSize: 13, itemStyle: { color: T.cury, borderColor: T.surface, borderWidth: 1 }, data: [[String(2026), +tend.previsto_2026.toFixed(2)]], z: 5 },
-      ],
-    });
-    barras(app.querySelector('[data-g="hcomp"]'), "dcomp_pp", td.dcomp_pp_recente, " p.p.", "Tendência 2010–2022 prevista para 2026");
-    barras(app.querySelector('[data-g="hcap"]'), "captacao_segundo", td.captacao_segundo, "%", "Tendência 2002–2022 prevista para 2026");
-    const venc = (m) => (m == null ? "—" : m > 0 ? `<span style="color:var(--lula)"><b>Lula</b></span> por ${n0(m)}` : `<span style="color:var(--flavio)"><b>Flávio</b></span> por ${n0(-m)}`);
-    app.querySelector("#tab-cen").innerHTML = `<div class="tabela-wrap"><table><thead><tr><th style="cursor:default">Comportamento de</th><th class="n" style="cursor:default">Captação do 2º colocado</th><th style="cursor:default">Resultado de 2026 com essa captação</th><th class="n" style="cursor:default">Variação do comparecimento</th><th style="cursor:default">Resultado de 2026 com esse comparecimento</th></tr></thead><tbody style="cursor:default">
-      ${CP.cenario_captacao.map((cc, k) => { const cm = CP.cenario_comparecimento[k];
-        return `<tr><td>${cc.ano}</td><td class="n">${cc.captacao > 0 ? p1(cc.captacao) : "perdeu votos"}</td><td>${cc.margem_segundo == null ? "—" : venc(cc.margem_segundo)}</td><td class="n">${pp(cm.dcomp_pp)}</td><td>${venc(cm.margem_segundo)}</td></tr>`; }).join("")}
-      <tr><td><b>2026 (real)</b></td><td class="n"><b>${p1(N[2026].captacao_segundo)}</b></td><td>${venc(CP.margem_real)}</td><td class="n"><b>${pp(N[2026].dcomp_pp)}</b></td><td>${venc(CP.margem_real)}</td></tr></tbody></table></div>`;
-    const PE = CP.por_estado;
-    tabela(app.querySelector("#tab-uf-comp"), { porPagina: 30, linhas: Object.entries(PE).map(([uf, e]) => ({ id: uf, uf, ...e })),
-      aoClicar: (l) => { location.hash = "uf-" + l.uf; },
-      colunas: [{ t: "Estado", v: (l) => l.nome },
-        { t: "Δ comparec. 2026", n: 1, v: (l) => l.dcomp_pp.valor, f: (l) => pp(l.dcomp_pp.valor), ordemPadrao: 1 },
-        { t: "Faixa 2002–2022", n: 1, v: (l) => l.dcomp_pp.max, f: (l) => `${pp(l.dcomp_pp.min)} a ${pp(l.dcomp_pp.max)}` },
-        { t: "Comparecimento", v: (l) => (l.dcomp_pp.acima ? 2 : l.dcomp_pp.abaixo ? 0 : 1), f: (l) => (l.dcomp_pp.dentro ? status("ok", "Dentro") : status("atencao", l.dcomp_pp.acima ? "Acima" : "Abaixo")) },
-        { t: "Δ brancos+nulos 2026", n: 1, v: (l) => l.dbn_pp.valor, f: (l) => pp(l.dbn_pp.valor) },
-        { t: "Faixa 2002–2022", n: 1, v: (l) => l.dbn_pp.max, f: (l) => `${pp(l.dbn_pp.min)} a ${pp(l.dbn_pp.max)}` },
-        { t: "Brancos e nulos", v: (l) => (l.dbn_pp.dentro ? 1 : 2), f: (l) => (l.dbn_pp.dentro ? status("ok", "Dentro") : status("atencao", l.dbn_pp.acima ? "Acima" : "Abaixo")) },
-        { t: "Viradas 2002–2022", n: 1, v: (l) => l.viradas_hist, f: (l) => String(l.viradas_hist) },
-        { t: "Virada em 2026", v: (l) => (l.virou_2026 ? 1 : 0), f: (l) => (l.virou_2026 ? "sim" : "não") }] });
-    const elMun = app.querySelector('[data-g="hmun"]'), selAno = app.querySelector("#sel-ano-mun");
-    const desenharMun = () => trocarGrafico(elMun, () => { const a = +selAno.value, B2 = CP.bordas.dseg;
-      const pct = (h) => { const t = h.reduce((x, y) => x + y, 0); return h.map((v) => +((100 * v) / t).toFixed(2)); };
-      return novoGrafico(elMun, {
-        legend: { top: 0, left: 0, textStyle: { color: T.ink2 } }, grid: { left: 8, right: 16, top: 34, bottom: 30, containLabel: true },
-        tooltip: { trigger: "axis", formatter: (ps) => `Variação de ${B2[ps[0].dataIndex]} a ${B2[ps[0].dataIndex] + 1} p.p.<br>` + ps.map((p) => `${p.marker}${p.seriesName}: <b>${p1(p.value, 1)}</b> dos municípios`).join("<br>") },
-        xAxis: { type: "category", data: B2.slice(0, -1).map((v) => (v > 0 ? "+" : "") + v), name: "variação do 2º colocado entre os turnos (p.p. dos votos nos finalistas)", nameLocation: "middle", nameGap: 26, nameTextStyle: { color: T.muted }, ...eixo(), axisLabel: { color: T.muted, interval: 4 } },
-        yAxis: { type: "value", ...eixo(), axisLabel: { color: T.muted, formatter: "{value}%" } },
-        series: [[`${a} (${CP.nacional[a].segundo})`, CP.municipal[a].hist_dseg, T.ink2], ["2026 (Lula)", CP.municipal[2026].hist_dseg, T.lula]].map(([nome, h, cor]) => ({
-          name: nome, type: "line", step: "middle", symbol: "none", lineStyle: { width: 2, color: cor }, itemStyle: { color: cor }, data: pct(h) })),
-      }); });
-    selAno.addEventListener("change", desenharMun);
-    desenharMun();
-  }
-
-  // eleitores por campo ideológico
-  {
-    const IA = ID.anos, anosI = Object.keys(IA).map(Number);
-    const comp26 = IA[2026].grupos.composicao_ganho_pt, cd = ID.cenarios_direita;
-    const elG = app.querySelector('[data-g="ideo"]');
-    novoGrafico(elG, {
-      legend: { top: 0, left: 0, textStyle: { color: T.ink2 } }, grid: { left: 8, right: 8, top: 34, bottom: 8, containLabel: true },
-      tooltip: { trigger: "axis", axisPointer: { type: "shadow" }, formatter: (ps) => `<b>${ps[0].name}</b> · ${esc(IA[ps[0].name].pt)} (PT) × ${esc(IA[ps[0].name].outro)}<br>` +
-        ps.filter((p) => p.value != null).map((p) => `${p.marker}${p.seriesName}: <b>${p1(p.value)}</b> foi para o PT`).join("<br>") },
-      xAxis: { type: "category", data: anosI.map(String), ...eixo(), splitLine: { show: false } },
-      yAxis: { type: "value", max: 100, ...eixo(), axisLabel: { color: T.muted, formatter: "{value}%" } },
-      series: [["Eliminados de direita", "direita", T.flavio], ["Eliminados de centro", "centro", T.cury]].map(([nome, g, cor]) => ({
-        name: nome, type: "bar", barGap: "15%", itemStyle: { color: cor, borderRadius: [3, 3, 0, 0] },
-        label: { show: true, position: "top", color: T.ink, fontSize: 11, formatter: (p) => (p.value == null ? "" : p1(p.value, 0)) },
-        data: anosI.map((a) => { const v = IA[a].grupos[g].pt_entre_finalistas;
-          // direita: só anos em que o adversário do PT no 2º turno era de direita (2018, 2022, 2026)
-          return v == null || IA[a].grupos[g].votos < 1e6 || (g === "direita" && a < 2018) ? null : +v.toFixed(1); }) })),
-    });
-    const ORD = [["direita", "Eliminados de direita", T.flavio], ["centro", "Eliminados de centro", T.cury], ["esquerda", "Eliminados de esquerda", T.renan],
-      ["BN", "Brancos e nulos no 1º turno", T.nulo], ["Abst", "Não votaram no 1º turno", T.abst]];
-    novoGrafico(app.querySelector('[data-g="ideo-comp"]'), {
-      legend: { top: 0, left: 0, textStyle: { color: T.ink2 } }, grid: { left: 8, right: 16, top: 56, bottom: 8, containLabel: true },
-      tooltip: { trigger: "item", formatter: (p) => `${esc(p.seriesName)}: <b>${p1(p.value)}</b> do crescimento do PT em ${p.name}` },
-      xAxis: { type: "value", max: 100, ...eixo(), axisLabel: { color: T.muted, formatter: "{value}%" } },
-      yAxis: { type: "category", data: ["2018", "2022", "2026"].reverse(), ...eixo(), splitLine: { show: false } },
-      series: ORD.map(([k, nome, cor]) => ({ name: nome, type: "bar", stack: "t", barWidth: 22, itemStyle: { color: cor, borderColor: T.surface, borderWidth: 1 },
-        label: { show: true, color: k === "BN" || k === "Abst" ? T.surface : "#fff", fontSize: 11, formatter: (p) => (p.value >= 6 ? p1(p.value, 0) : "") },
-        data: ["2026", "2022", "2018"].map((a) => +Math.max(0, IA[a].grupos.composicao_ganho_pt[k] || 0).toFixed(1)) })),
-    });
-    const venc = (m) => (m > 0 ? `<span style="color:var(--lula)"><b>Lula</b></span> por ${n0(m)}` : `<span style="color:var(--flavio)"><b>Flávio</b></span> por ${n0(-m)}`);
-    app.querySelector("#tab-ideo-cen").innerHTML = `<div class="tabela-wrap"><table><thead><tr><th style="cursor:default">Eleitores de direita de 2026 (${mi(cd.eleitores_direita)}) votando…</th><th class="n" style="cursor:default">PT</th><th class="n" style="cursor:default">Outro finalista</th><th style="cursor:default">Resultado</th></tr></thead><tbody style="cursor:default">
-      <tr><td><b>como estimado para 2026</b></td><td class="n">${p1(IA[2026].pct[4][0])}</td><td class="n">${p1(IA[2026].pct[4][1])}</td><td>${venc(cd.margem_real_estimada)}</td></tr>
-      ${cd.lista.map((c) => `<tr><td>${esc(c.cenario)}</td><td class="n">${p1(c.pct_pt)}</td><td class="n">${p1(c.pct_outro)}</td><td>${venc(c.margem_pt)}</td></tr>`).join("")}</tbody></table></div>`;
-    const cls = [];
-    Object.entries(ID.classificacao).forEach(([a, d]) => Object.entries(d).forEach(([n, [nome, part, campo]]) => { if (!["PT", "outro"].includes(campo)) cls.push({ id: `${a}-${n}`, a: +a, nome, part, campo }); }));
-    tabela(app.querySelector("#tab-ideo-cls"), { porPagina: 15, linhas: cls, colunas: [{ t: "Ano", v: (l) => l.a, ordemPadrao: 1 }, { t: "Candidato", v: (l) => l.nome },
-      { t: "Partido", v: (l) => l.part }, { t: "Campo", v: (l) => l.campo }] });
-  }
-
-  // histórico
-  novoGrafico(app.querySelector('[data-g="hist"]'), {
-    legend: { top: 0, left: 0, textStyle: { color: T.ink2 } }, grid: { left: 8, right: 8, top: 36, bottom: 8, containLabel: true },
-    tooltip: { trigger: "axis", axisPointer: { type: "shadow" }, formatter: (ps) => { const x = hist[ps[0].dataIndex];
-      return `<b>${x.ano}</b>: ${esc(x.lider)} liderou por ${p1(x.gap_pp)} (${mi(x.gap)})<br>Necessária para ${esc(x.segundo)} virar: ${p1(x.necessaria)}<br>Captada: ${x.parcela > 0 ? p1(x.parcela) : "perdeu votos"}`; } },
-    xAxis: { type: "category", data: hist.map((x) => String(x.ano)), ...eixo(), splitLine: { show: false } },
-    yAxis: { type: "value", max: 100, ...eixo(), axisLabel: { color: T.muted, formatter: "{value}%" } },
-    series: [
-      { name: "Necessária para virar", type: "bar", barGap: "10%", itemStyle: { color: T.axis, borderRadius: [4, 4, 0, 0] }, label: { show: true, position: "top", color: T.muted, formatter: (p) => p1(p.value, 0) }, data: hist.map((x) => +x.necessaria.toFixed(1)) },
-      { name: "Captada pelo 2º colocado", type: "bar", itemStyle: { color: T.ink2, borderRadius: [4, 4, 0, 0] }, label: { show: true, position: "top", color: T.ink, formatter: (p) => (p.value > 0 ? p1(p.value, 0) : "") },
-        data: hist.map((x) => ({ value: Math.max(0, +x.parcela.toFixed(1)), itemStyle: { color: x.parcela > x.necessaria ? T.accent : T.ink2 } })) },
-    ],
-  });
-  tabela(app.querySelector("#tab-hist"), { linhas: hist.map((x) => ({ id: x.ano, ...x })), porPagina: 10, colunas: [
-    { t: "Ano", v: (l) => l.ano, ordemPadrao: 1 }, { t: "Líder no 1º turno", v: (l) => l.lider }, { t: "2º colocado", v: (l) => l.segundo },
-    { t: "Diferença 1º turno", n: 1, v: (l) => l.gap_pp, f: (l) => `${p1(l.gap_pp)} · ${mi(l.gap)}` },
-    { t: "Votos dos eliminados", n: 1, v: (l) => l.elim_pct, f: (l) => p1(l.elim_pct) },
-    { t: "Cresc. líder", n: 1, v: (l) => l.g_lider, f: (l) => (l.g_lider > 0 ? "+" : "") + mi(l.g_lider) },
-    { t: "Cresc. 2º", n: 1, v: (l) => l.g_seg, f: (l) => (l.g_seg > 0 ? "+" : "") + mi(l.g_seg) },
-    { t: "Δ comparecimento", n: 1, v: (l) => l.dcomp, f: (l) => sinal(l.dcomp) },
-  ] });
-
-  // contabilidade
-  const fl = c.fontes_liquidas;
-  novoGrafico(app.querySelector('[data-g="conta"]'), {
-    legend: { top: 0, left: 0, textStyle: { color: T.ink2 } }, grid: { left: 8, right: 16, top: 36, bottom: 8, containLabel: true },
-    tooltip: { trigger: "item", formatter: (p) => `${esc(p.seriesName)}: <b>${n0(p.value)}</b> votos` },
-    xAxis: { type: "value", ...eixo(), axisLabel: { color: T.muted, formatter: (v) => mi(v) } },
-    yAxis: { type: "category", data: ["Para quem foram", "De onde vieram"], ...eixo(), splitLine: { show: false } },
-    series: [
-      ["Votos dos eliminados", fl["votos dos eliminados"], 0, T.caiado], ["Queda de brancos e nulos", fl["queda de brancos e nulos"], 0, T.nulo],
-      ["Aumento do comparecimento", fl["aumento do comparecimento"], 0, T.abst], ["Lula", c.ganho_lula, 1, T.lula], ["Flávio", c.ganho_flavio, 1, T.flavio],
-    ].map(([nome, v, lado, cor]) => ({ name: nome, type: "bar", stack: "t", barWidth: 26, itemStyle: { color: cor, borderColor: T.surface, borderWidth: 1 },
-      label: { show: true, color: "#fff", fontSize: 11, formatter: () => mi(v) }, data: lado === 0 ? ["-", v] : [v, "-"] })),
-  });
-
-  // recortes por estado
-  const elFp1 = app.querySelector('[data-g="fp1"]'), elFp2 = app.querySelector('[data-g="fp2"]'), elRes = app.querySelector('[data-g="res"]');
-  const elDig = app.querySelector('[data-g="dig"]'), elDc = app.querySelector('[data-g="dcomp"]');
-  let cand = "Lula", turnoDig = 2, ufSel = "";
-  const B = A.bordas;
-  function fp(el, t) {
-    const X = (ufSel ? A.ufs[ufSel] : A.brasil).fp[`${cand}_${t}`];
-    const dados = []; let max = 0;
-    X.forEach((linha, i) => linha.forEach((v, j) => { if (v > 0) { dados.push([i, j, v]); max = Math.max(max, v); } }));
-    const corC = T[COR[cand]];
-    novoGrafico(el, {
-      title: { text: `${cand} · ${t}º turno`, left: "center", top: 0, textStyle: { color: T.ink, fontSize: 13, fontWeight: 600 } },
-      grid: { left: 8, right: 12, top: 30, bottom: 34, containLabel: true },
-      tooltip: { formatter: (p) => `Comparecimento ${B.comp[p.data[0]]}–${B.comp[p.data[0] + 1]}%<br>${cand} com ${B.share[p.data[1]]}–${B.share[p.data[1] + 1]}% dos válidos<br><b>${n0(p.data[2])}</b> votos` },
-      xAxis: { type: "category", data: B.comp.slice(0, -1), name: "comparecimento (%)", nameLocation: "middle", nameGap: 24, nameTextStyle: { color: T.muted }, ...eixo(), splitLine: { show: false }, axisLabel: { color: T.muted, interval: 4 } },
-      yAxis: { type: "category", data: B.share.slice(0, -1), name: `% de ${cand}`, nameTextStyle: { color: T.muted }, ...eixo(), splitLine: { show: false }, axisLabel: { color: T.muted, interval: 9 } },
-      visualMap: { show: false, min: 0, max: max * 0.6, inRange: { color: [misturar(T.surface, corC, 0.04), misturar(T.surface, corC, 0.45), corC] } },
-      series: [{ type: "heatmap", data: dados, progressive: 0 }],
-    });
-  }
-  function desenharRecorte() {
-    const S = ufSel ? A.ufs[ufSel] : A.brasil, k = S.k;
-    app.querySelector("#uf-info").textContent = `${n0(S.secoes)} seções`;
-    trocarGrafico(elFp1, () => fp(elFp1, 1)); trocarGrafico(elFp2, () => fp(elFp2, 2));
-    app.querySelector("#fp-nota").textContent = `Seções com comparecimento de 100%: ${k.comp100_1} no 1º turno e ${k.comp100_2} no 2º. Com 95% ou mais: ${n0(k.comp95_1)} e ${n0(k.comp95_2)}.`;
-    trocarGrafico(elRes, () => novoGrafico(elRes, {
-      legend: { top: 0, left: 0, textStyle: { color: T.ink2 } }, grid: { left: 8, right: 16, top: 34, bottom: 30, containLabel: true },
-      tooltip: { trigger: "axis", formatter: (ps) => `Resíduo de ${B.res[ps[0].dataIndex]} a ${B.res[ps[0].dataIndex] + 1} p.p.<br>` + ps.map((p) => `${p.marker}${p.seriesName}: <b>${n0(p.value)}</b> seções`).join("<br>") },
-      xAxis: { type: "category", data: B.res.slice(0, -1), name: "real − previsto (p.p. do eleitorado)", nameLocation: "middle", nameGap: 26, nameTextStyle: { color: T.muted }, ...eixo(), axisLabel: { color: T.muted, interval: 4 } },
-      yAxis: { type: "log", min: 1, ...eixo(), axisLabel: { color: T.muted, formatter: (v) => mi(v) } },
-      series: [["Lula", "lula"], ["Flávio", "flavio"]].map(([n, cc]) => ({ name: n, type: "line", step: "middle", symbol: "none", lineStyle: { width: 2, color: T[cc] }, itemStyle: { color: T[cc] },
-        data: S.res[n].map((v) => (v > 0 ? v : null)) })),
-    }));
-    app.querySelector("#res-nota").textContent = `Desvio-padrão: ${k.res_desvio_lula.toFixed(2).replace(".", ",")} p.p. (Lula) e ${k.res_desvio_fla.toFixed(2).replace(".", ",")} p.p. (Flávio). Mais de 10 p.p. acima do previsto: ${n0(k.res_lula_acima10)} seções para Lula e ${n0(k.res_fla_acima10)} para Flávio; abaixo: ${n0(k.res_lula_abaixo10)} e ${n0(k.res_fla_abaixo10)}.`;
-    desenharDig();
-    trocarGrafico(elDc, () => grafHistograma(elDc, B.dcomp, S.dcomp, "seções"));
-    app.querySelector("#dcomp-nota").textContent = `Variação média do comparecimento: ${pp(k.dcomp_medio)}.`;
-    tabSusp.redesenhar && tabSusp.atualizar();
-  }
-  function desenharDig() {
-    const S = ufSel ? A.ufs[ufSel] : A.brasil;
-    const pcts = (col) => { const v = S.digitos[col], t = v.reduce((a, b) => a + b, 0); return v.map((x) => (100 * x) / t); };
-    trocarGrafico(elDig, () => novoGrafico(elDig, {
-      legend: { top: 0, left: 0, textStyle: { color: T.ink2 } }, grid: { left: 8, right: 8, top: 34, bottom: 8, containLabel: true },
-      tooltip: { trigger: "axis", axisPointer: { type: "shadow" }, formatter: (ps) => `Dígito final ${ps[0].name}<br>` + ps.map((p) => `${p.marker}${p.seriesName}: <b>${p1(p.value, 2)}</b>`).join("<br>") },
-      xAxis: { type: "category", data: [...Array(10).keys()].map(String), ...eixo(), splitLine: { show: false } },
-      yAxis: { type: "value", min: (v) => Math.min(8, Math.floor(v.min)), max: (v) => Math.max(12, Math.ceil(v.max)), ...eixo(), axisLabel: { color: T.muted, formatter: "{value}%" } },
-      series: [["Lula", "lula"], ["Flávio", "flavio"]].map(([n, cc]) => ({ name: n, type: "bar", barGap: "10%", itemStyle: { color: T[cc], borderRadius: [3, 3, 0, 0] }, data: pcts(`${n}_${turnoDig}`),
-        markLine: n === "Lula" ? { silent: true, symbol: "none", lineStyle: { color: T.ink, type: "solid" }, label: { show: false }, data: [{ yAxis: 10 }] } : undefined })),
-    }));
-    const xl = qui2(S.digitos[`Lula_${turnoDig}`]), xf = qui2(S.digitos[`Flávio_${turnoDig}`]);
-    const av = (x) => (x > CHI2_9.p01 ? "desvio significativo a 1%" : x > CHI2_9.p05 ? "desvio significativo a 5%" : "sem desvio significativo");
-    app.querySelector("#dig-nota").textContent = `χ² = ${xl.toFixed(1).replace(".", ",")} para Lula (${av(xl)}) e ${xf.toFixed(1).replace(".", ",")} para Flávio (${av(xf)}).` +
-      (ufSel && (xl > CHI2_9.p05 || xf > CHI2_9.p05) ? " Com 27 estados, 1 ou 2 desvios a 5% são esperados por acaso." : "");
-  }
-  app.querySelector("#seg-fp").addEventListener("click", (e) => { const b = e.target.closest("button"); if (!b) return;
-    b.parentElement.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", x === b)); cand = b.dataset.c;
-    trocarGrafico(elFp1, () => fp(elFp1, 1)); trocarGrafico(elFp2, () => fp(elFp2, 2)); });
-  app.querySelector("#seg-dig").addEventListener("click", (e) => { const b = e.target.closest("button"); if (!b) return;
-    b.parentElement.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", x === b)); turnoDig = +b.dataset.t; desenharDig(); });
-  const sel = app.querySelector("#sel-uf");
-  sel.addEventListener("change", () => { ufSel = sel.value; desenharRecorte(); });
-
-  // modelo de urna
-  const U = A.urnas;
-  tabela(app.querySelector("#tab-urna"), { porPagina: 10, linhas: Object.entries(U.secoes_por_modelo).map(([m, n]) => ({ id: m, m, n, v: U.sem_controle[m], ef: U.dentro_do_municipio[m] })),
-    colunas: [{ t: "Modelo (2º turno)", v: (l) => l.m, ordemPadrao: 1 }, { t: "Seções", n: 1, v: (l) => l.n, f: (l) => n0(l.n) },
-      { t: "Variação média de Lula", n: 1, v: (l) => l.v, f: (l) => pp(l.v) },
-      { t: "Diferença vs. UE 2020 no mesmo município", n: 1, v: (l) => (l.ef ? l.ef.efeito_pp : 0), f: (l) => (l.ef ? pp(l.ef.efeito_pp, 2) : "referência") },
-      { t: "Erro-padrão", n: 1, v: (l) => (l.ef ? l.ef.erro_padrao : 0), f: (l) => (l.ef ? l.ef.erro_padrao.toFixed(2).replace(".", ",") : "—") }] });
-
-  // indicadores por estado
-  const linhasInd = Object.entries(A.ufs).map(([uf, S]) => ({ id: uf, uf, nome: R.ufs[uf].nome, ...S.k, secoes: S.secoes, xl: qui2(S.digitos.Lula_2), xf: qui2(S.digitos["Flávio_2"]) }));
-  const chiCel = (x) => `<span class="${x > CHI2_9.p01 ? "delta-up" : ""}">${x.toFixed(1).replace(".", ",")}</span>`;
-  tabela(app.querySelector("#tab-ind"), { linhas: linhasInd, porPagina: 30, aoClicar: (l) => { sel.value = l.uf; ufSel = l.uf; desenharRecorte(); app.querySelector(".filtro-uf").scrollIntoView({ behavior: "smooth" }); },
-    colunas: [{ t: "Estado", v: (l) => l.nome }, { t: "Seções", n: 1, v: (l) => l.secoes, f: (l) => n0(l.secoes), ordemPadrao: 1 },
-      { t: "Resíduo Lula (dp)", n: 1, v: (l) => l.res_desvio_lula, f: (l) => l.res_desvio_lula.toFixed(2).replace(".", ",") },
-      { t: "Resíduo Flávio (dp)", n: 1, v: (l) => l.res_desvio_fla, f: (l) => l.res_desvio_fla.toFixed(2).replace(".", ",") },
-      { t: "Lula > +10 p.p.", n: 1, v: (l) => l.res_lula_acima10, f: (l) => n0(l.res_lula_acima10) },
-      { t: "Flávio > +10 p.p.", n: 1, v: (l) => l.res_fla_acima10, f: (l) => n0(l.res_fla_acima10) },
-      { t: "Ganho Lula acima das fontes (≥10)", n: 1, v: (l) => l.limite_lula_10, f: (l) => n0(l.limite_lula_10) },
-      { t: "Ganho Flávio acima das fontes (≥10)", n: 1, v: (l) => l.limite_fla_10, f: (l) => n0(l.limite_fla_10) },
-      { t: "Comparec. 100% (1º/2º)", n: 1, v: (l) => l.comp100_2, f: (l) => `${l.comp100_1} / ${l.comp100_2}` },
-      { t: "Δ comparec. médio", n: 1, v: (l) => l.dcomp_medio, f: (l) => pp(l.dcomp_medio) },
-      { t: "χ² dígito Lula 2º", n: 1, v: (l) => l.xl, f: (l) => chiCel(l.xl) },
-      { t: "χ² dígito Flávio 2º", n: 1, v: (l) => l.xf, f: (l) => chiCel(l.xf) }] });
-
-  // seções atípicas
-  const SC = Object.fromEntries(A.suspeitas.colunas.map((c, i) => [c, i]));
-  const todas = A.suspeitas.linhas.map((r) => ({ id: `${r[SC.uf]}-${r[SC.mun]}-${r[SC.zona]}-${r[SC.secao]}`, r }));
-  const contSusp = app.querySelector("#tab-susp");
-  const g = (l, k) => l.r[SC[k]];
-  const tabSusp = {
-    atualizar() { this.t = tabela(contSusp, { porPagina: 25, linhas: ufSel ? todas.filter((l) => g(l, "uf") === ufSel) : todas,
-      busca: { id: "busca-susp", placeholder: "Filtrar por município", campo: (l) => g(l, "nome") },
-      aoClicar: (l) => { alvoSecao = { uf: g(l, "uf"), cod: g(l, "mun"), zona: g(l, "zona"), secao: g(l, "secao") }; location.hash = `mun-${g(l, "uf")}-${g(l, "mun")}`; },
-      colunas: [
-        { t: "UF", v: (l) => g(l, "uf") }, { t: "Município", v: (l) => g(l, "nome") },
-        { t: "Zona", v: (l) => g(l, "zona"), f: (l) => `<span class="mono">${z4(g(l, "zona"))}</span>` },
-        { t: "Seção", v: (l) => g(l, "secao"), f: (l) => `<span class="mono">${z4(g(l, "secao"))}</span>` },
-        { t: "Aptos", n: 1, v: (l) => g(l, "aptos"), f: (l) => n0(g(l, "aptos")) },
-        { t: "Comparec. 1º → 2º", n: 1, v: (l) => g(l, "comp2") - g(l, "comp1"), f: (l) => `${n0(g(l, "comp1"))} → ${n0(g(l, "comp2"))}` },
-        { t: "Lula 1º → 2º", n: 1, v: (l) => g(l, "lula2") - g(l, "lula1"), f: (l) => `${n0(g(l, "lula1"))} → ${n0(g(l, "lula2"))}` },
-        { t: "Flávio 1º → 2º", n: 1, v: (l) => g(l, "fla2") - g(l, "fla1"), f: (l) => `${n0(g(l, "fla1"))} → ${n0(g(l, "fla2"))}` },
-        { t: "Elim. + Br/Nu 1º", n: 1, v: (l) => g(l, "elim1") + g(l, "bn1"), f: (l) => n0(g(l, "elim1") + g(l, "bn1")) },
-        { t: "Resíduo Lula", n: 1, v: (l) => g(l, "res_lula") ?? 0, f: (l) => (g(l, "res_lula") == null ? "—" : pp(g(l, "res_lula"))), ordemPadrao: 1 },
-        { t: "Resíduo Flávio", n: 1, v: (l) => g(l, "res_fla") ?? 0, f: (l) => (g(l, "res_fla") == null ? "—" : pp(g(l, "res_fla"))) },
-        { t: "Motivo", v: (l) => g(l, "motivos").join(" "), f: (l) => g(l, "motivos").map((m) => `<span class="chip">${esc(MOTIVOS[m])}</span>`).join("") },
-        { t: "Urna", v: (l) => g(l, "urna") || "", f: (l) => esc(g(l, "urna") || "—") },
-      ] }); },
-    redesenhar() { this.t && this.t.redesenhar(); },
-  };
-  tabSusp.atualizar();
-  desenharRecorte();
-}
-
-// ---------- mapas ----------
 const MAPA = { topo: null, ind: null, col: null, reg: {} };
 async function carregarMapa() {
   if (!MAPA.topo) {
@@ -2189,6 +1866,542 @@ function desenharEleitorado(sec, V) {
       { t: "Lula ÷ eleitores", n: 1, v: (l) => l.r[6], f: (l) => p1(l.r[6]), ordemPadrao: 1 }] });
 }
 
+// ---------- auditoria (fase 1): panorama, reconciliação, Monte Carlo e simulador ----------
+// Os cálculos pesados vêm de scripts/22_auditoria.py (dados/auditoria/*); reconciliação, limites e cenários são
+// recalculados aqui com as mesmas fórmulas para qualquer recorte, e a seção usa Monte Carlo no navegador.
+const MEGA_P = 1 / 50063860;
+const AUD_VISOES = [["panorama", "Panorama nacional"], ["reconciliacao", "Reconciliação e fluxo"], ["montecarlo", "Monte Carlo"], ["simulador", "Simulador de cenários"]];
+const AUD_ORIG = ["Lula", "Flávio", "Demais", "Brancos", "Nulos", "Abstenção"];
+const AUD_DEST = ["Lula", "Flávio", "Brancos", "Nulos", "Abstenção"];
+const CLASSES = { "Compatível com o modelo": "ok", Incomum: "atencao", "Muito incomum": "grave", Inconclusivo: "neutro", "Matematicamente inviável sob restrições explícitas": "grave" };
+const AUD = { nac: null, uf: {} };
+const fmtN = (v, d = 1) => v.toLocaleString("pt-BR", { maximumFractionDigits: d });
+function umEmN(p) {
+  if (p == null || !(p > 0)) return "—";
+  const n = 1 / p;
+  if (n < 1.05) return "quase certo";
+  if (n < 1000) return `1 em ${fmtN(n, n < 10 ? 1 : 0)}`;
+  for (const [lim, s, pl] of [[1e6, "mil", "mil"], [1e9, "milhão", "milhões"], [1e12, "bilhão", "bilhões"], [1e15, "trilhão", "trilhões"]]) {
+    if (n < lim) { const v = n / (lim / 1000); return `1 em ${fmtN(v, v < 10 ? 1 : 0)} ${Math.round(v * 10) / 10 >= 2 ? pl : s}`; }
+  }
+  return "1 em mais de 1 quatrilhão";
+}
+// comparação com a Mega-Sena (aposta simples), só com estimativa precisa (evento ocorreu ≥ 10 vezes nas simulações)
+function megaTxt(r) {
+  if (!r || !(r.p > 0)) return "—";
+  if (r.p > 1e-3) return `<span class="nota">evento comum</span>`;
+  if (r.metodo && r.metodo !== "monte_carlo" && r.metodo !== "empirico_irmaos") return `<span class="nota">sem precisão para comparar</span>`;
+  const R = MEGA_P / r.p;
+  return R >= 1 ? `${fmtN(R, R < 10 ? 1 : 0)}× menos provável` : `${fmtN(1 / R, 1 / R < 10 ? 1 : 0)}× mais provável`;
+}
+const probTxt = (r) => (!r ? "—" : r.metodo === "extrapolacao_normal" ? `<span title="Nenhuma das ${n0(r.simulacoes)} simulações foi tão extrema; valor extrapolado pela aproximação normal">≈ ${umEmN(r.p)}*</span>` : umEmN(r.p));
+const icTxt = (r) => (!r || r.p_hi == null ? "—" : r.extremos === 0 ? `< ${umEmN(r.p_hi).replace("1 em ", "1 em ")} (95%)` : `${umEmN(r.p_hi)} a ${umEmN(Math.max(r.p_lo, 1e-300))}`);
+const classeTag = (c) => `<span class="tag-classe tag-${CLASSES[c] || "neutro"}">${esc(c)}</span>`;
+
+// ---- estado (filtros + visão) guardado no endereço
+function audEstado() {
+  const q = new URLSearchParams(location.hash.split("?")[1] || "");
+  const g = (k) => q.get(k) || null;
+  return { v: g("v") || "panorama", reg: g("reg"), uf: g("uf"), mun: g("mun") ? +g("mun") : null, zona: g("zona") ? +g("zona") : null, secao: g("secao") ? +g("secao") : null };
+}
+function audHash(st) {
+  const q = new URLSearchParams();
+  for (const k of ["v", "reg", "uf", "mun", "zona", "secao"]) if (st[k] != null && st[k] !== "") q.set(k, st[k]);
+  return "#auditoria?" + q.toString();
+}
+const audIr = (patch) => { location.hash = audHash({ ...audEstado(), ...patch }); };
+
+// ---- cálculos (mesmas fórmulas de scripts/auditoria_motor.py)
+function audCategorias(t1, t2) {
+  return { c1: { Lula: t1[0], Flávio: t1[1], Demais: t1[2] + t1[3] + t1[4] + t1[5] + t1[6], Brancos: t1[7], Nulos: t1[8], Abstenção: t1[9] },
+    c2: { Lula: t2[0], Flávio: t2[1], Demais: 0, Brancos: t2[2], Nulos: t2[3], Abstenção: t2[4] }, ap1: t1[10], ap2: t2[5] };
+}
+function audReconciliar(t1, t2) {
+  const { c1, c2, ap1, ap2 } = audCategorias(t1, t2);
+  const comp1 = ap1 - c1.Abstenção, comp2 = ap2 - c2.Abstenção, nom1 = c1.Lula + c1.Flávio + c1.Demais, nom2 = c2.Lula + c2.Flávio;
+  const novos = Math.max(0, ap2 - ap1), R = c1.Demais + c1.Brancos + c1.Nulos + c1.Abstenção + novos;
+  const gL = c2.Lula - c1.Lula, gF = c2.Flávio - c1.Flávio, gLp = Math.max(0, gL), gFp = Math.max(0, gF);
+  return { c1, c2, ap1, ap2, comp1, comp2, nom1, nom2, R, novos, gL, gF,
+    ident: { c1: comp1 === nom1 + c1.Brancos + c1.Nulos, c2: comp2 === nom2 + c2.Brancos + c2.Nulos, a1: ap1 === comp1 + c1.Abstenção, a2: ap2 === comp2 + c2.Abstenção },
+    semVotacao: comp2 > 0 && nom2 + c2.Brancos + c2.Nulos === 0 && c2.Abstenção === 0,
+    captL: R ? gLp / R : null, captConj: R ? (gLp + gFp) / R : null, semMigracao: gLp + gFp <= R,
+    cruzFL: gF < 0 ? Math.max(0, gLp - R) : 0, cruzLF: gL < 0 ? Math.max(0, gFp - R) : 0,
+    maxFL: Math.min(c1.Flávio, c2.Lula), maxLF: Math.min(c1.Lula, c2.Flávio),
+    retL: [Math.max(0, c1.Lula + c2.Lula - (ap1 + novos)), Math.min(c1.Lula, c2.Lula)], retF: [Math.max(0, c1.Flávio + c2.Flávio - (ap1 + novos)), Math.min(c1.Flávio, c2.Flávio)] };
+}
+// matriz 6×5 (fração) a partir da 10×5 em %, juntando os eliminados pelo peso de cada um no recorte
+function audMatriz6(pct10, t1) {
+  const P = pct10.map((r) => { const s = r.reduce((a, b) => a + b, 0) || 1; return r.map((v) => v / s); });
+  const w = t1.slice(2, 7), ws = w.reduce((a, b) => a + b, 0);
+  const dem = P[2].map((_, j) => (ws ? w.reduce((a, wk, i) => a + wk * P[2 + i][j], 0) / ws : P.slice(2, 7).reduce((a, r) => a + r[j], 0) / 5));
+  return [P[0], P[1], dem, P[7], P[8], P[9]];
+}
+const audOrigens = (t1) => [t1[0], t1[1], t1[2] + t1[3] + t1[4] + t1[5] + t1[6], t1[7], t1[8], t1[9]];
+function audMomentos(c, P, alpha) {
+  let EL = 0, EF = 0, VL = 0, VF = 0, C = 0;
+  c.forEach((ck, k) => { const pL = P[k][0], pF = P[k][1], inf = alpha == null ? 1 : 1 + Math.max(0, ck - 1) / (alpha + 1);
+    EL += ck * pL; EF += ck * pF; VL += ck * pL * (1 - pL) * inf; VF += ck * pF * (1 - pF) * inf; C -= ck * pL * pF * inf; });
+  const tot = EL + EF; if (tot <= 0) return [0.5, 0];
+  return [EL / tot, Math.sqrt(Math.max(1e-18, (EF * EF * VL + EL * EL * VF - 2 * EL * EF * C) / tot ** 4))];
+}
+// gerador pseudoaleatório com semente (reprodutível), normal, gama e binomial
+function rngSemente(seed) {
+  let a = seed >>> 0 || 1;
+  const u = () => { a |= 0; a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  let sobra = null;
+  const normal = () => { if (sobra != null) { const s = sobra; sobra = null; return s; } let x, y, r; do { x = 2 * u() - 1; y = 2 * u() - 1; r = x * x + y * y; } while (!r || r >= 1); const f = Math.sqrt(-2 * Math.log(r) / r); sobra = y * f; return x * f; };
+  const gama = (k) => { if (k < 1) return gama(k + 1) * Math.pow(u() || 1e-12, 1 / k); const d = k - 1 / 3, c = 1 / Math.sqrt(9 * d);
+    for (;;) { let x, v; do { x = normal(); v = 1 + c * x; } while (v <= 0); v = v * v * v; const uu = u(); if (uu < 1 - 0.0331 * x ** 4 || Math.log(uu) < 0.5 * x * x + d * (1 - v + Math.log(v))) return d * v; } };
+  const binom = (n, p) => { if (n <= 0 || p <= 0) return 0; if (p >= 1) return n;
+    if (n < 40) { let k = 0; for (let i = 0; i < n; i++) if (u() < p) k++; return k; }
+    const m = n * p, s = Math.sqrt(m * (1 - p)); if (s < 3) { let k = 0, q = Math.exp(-m), acc = q, x = u(); while (x > acc && k < n) { k++; q *= m / k; acc += q; } return k; }
+    return Math.min(n, Math.max(0, Math.round(m + s * normal()))); };
+  return { u, normal, gama, binom };
+}
+// simulação da parcela de Lula entre os finalistas (Dirichlet-Multinomial; alpha null = multinomial), em lotes
+async function audSimular(c, P, alpha, S, seed, aoProgresso) {
+  const R = rngSemente(seed), out = new Float64Array(S), LL = new Float64Array(S);
+  for (let s = 0; s < S; s++) {
+    let L = 0, F = 0;
+    for (let k = 0; k < c.length; k++) {
+      const ck = c[k]; if (!ck) continue;
+      let pL = P[k][0], pF = P[k][1];
+      if (alpha != null) { const t = Math.max(0, 1 - pL - pF); const g1 = R.gama(Math.max(1e-6, alpha * pL)), g2 = R.gama(Math.max(1e-6, alpha * pF)), g3 = R.gama(Math.max(1e-6, alpha * t)), gs = g1 + g2 + g3; pL = g1 / gs; pF = g2 / gs; }
+      const xL = R.binom(ck, pL), xF = R.binom(ck - xL, pF / Math.max(1e-12, 1 - pL)); L += xL; F += xF;
+    }
+    out[s] = L / Math.max(1, L + F); LL[s] = L;
+    if (s % 5000 === 4999) { aoProgresso && aoProgresso(s + 1); await new Promise((r) => setTimeout(r, 0)); }
+  }
+  return { sim: out, LL };
+}
+function audProb(sim, obs) {
+  const S = sim.length; let m = 0; for (const v of sim) m += v; m /= S; let v2 = 0; for (const v of sim) v2 += (v - m) ** 2; const sd = Math.sqrt(v2 / S);
+  let k = 0; const d = Math.abs(obs - m) - 1e-15; for (const v of sim) if (Math.abs(v - m) >= d) k++;
+  const z = sd > 0 ? (obs - m) / sd : 0, pN = 2 * normSf(Math.abs(z));
+  const hi = 1 - Math.pow(0.025, 1 / S); // limite superior de 95% quando k = 0
+  return { p: k >= 1 ? k / S : pN, extremos: k, simulacoes: S, metodo: k >= 10 ? "monte_carlo" : k > 0 ? "monte_carlo_impreciso" : "extrapolacao_normal",
+    p_hi: k === 0 ? hi : Math.min(1, (k + 2 * Math.sqrt(k) + 2) / S), p_lo: k === 0 ? 0 : Math.max(0, (k - 2 * Math.sqrt(k)) / S), media: m, dp: sd, z };
+}
+function normSf(x) { const t = 1 / (1 + 0.2316419 * x), d = 0.3989423 * Math.exp(-x * x / 2); const p = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274)))); return x > 8 ? Math.exp(-x * x / 2) / (x * Math.sqrt(2 * Math.PI)) : p; }
+function audHist(sim, obs, bins = 40) {
+  let lo = Math.min(obs, ...sim.slice(0, 1)), hi = Math.max(obs, ...sim.slice(0, 1));
+  for (const v of sim) { if (v < lo) lo = v; if (v > hi) hi = v; }
+  const pad = (hi - lo) * 0.03 || 1e-4; lo -= pad; hi += pad; const passo = (hi - lo) / bins, h = new Array(bins).fill(0);
+  for (const v of sim) h[Math.min(bins - 1, Math.floor((v - lo) / passo))]++;
+  return { contagens: h, inicio: lo, passo };
+}
+
+// ---- contexto do recorte ativo
+async function audContexto(st) {
+  const R = D.resumo, N = AUD.nac;
+  const ctx = { st, nivel: "brasil", rotulo: "Brasil", partes: [["Brasil", { reg: null, uf: null, mun: null, zona: null, secao: null }]] };
+  if (st.uf && R.ufs[st.uf]) {
+    const [U, A] = await Promise.all([carregarUF(st.uf), (AUD.uf[st.uf] ||= await json(`dados/auditoria/uf/${st.uf}.json`))]);
+    ctx.U = U; ctx.A = A; ctx.reg = R.ufs[st.uf].regiao;
+    ctx.partes.push([R.ufs[st.uf].regiao, { reg: R.ufs[st.uf].regiao, uf: null, mun: null, zona: null, secao: null }], [R.ufs[st.uf].nome, { uf: st.uf, mun: null, zona: null, secao: null }]);
+    const mU = st.mun && U.municipios.find((m) => m.cod === st.mun), aM = st.mun && A.municipios.find((m) => m.id === st.mun);
+    if (mU && aM) {
+      ctx.partes.push([mU.nome, { mun: st.mun, zona: null, secao: null }]);
+      if (st.zona) {
+        const aZ = A.zonas.find((z) => z.id === `${st.mun}-${st.zona}`);
+        if (aZ) {
+          ctx.partes.push([`Zona ${z4(st.zona)}`, { zona: st.zona, secao: null }]);
+          if (st.secao) {
+            const S = await carregarSecoes(st.uf);
+            const l = S.linhas.find((x) => x[0] === st.mun && x[1] === st.zona && x[2] === st.secao);
+            if (l) {
+              ctx.partes.push([`Seção ${z4(st.secao)}`, { secao: st.secao }]);
+              return Object.assign(ctx, { nivel: "secao", rotulo: `Seção ${z4(st.secao)} · zona ${z4(st.zona)} · ${mU.nome} (${st.uf})`, t1: l.slice(4, 15), t2: l.slice(15, 21),
+                pct: mU.mig.pct, pctRef: mU.mig.pct, alpha: N.alpha.por_uf[st.uf]?.secao, aud: null, refTxt: `matriz municipal (${mU.nome})` });
+            }
+          }
+          return Object.assign(ctx, { nivel: "zona", rotulo: `Zona ${z4(st.zona)} · ${mU.nome} (${st.uf})`, t1: aZ.contagens.turno1, t2: aZ.contagens.turno2, pct: mU.mig.pct, pctRef: mU.mig.pct,
+            alpha: aZ.monte_carlo.alpha, aud: aZ, refTxt: `matriz municipal (${mU.nome})` });
+        }
+      }
+      return Object.assign(ctx, { nivel: "municipio", rotulo: `${mU.nome} (${st.uf})`, t1: aM.contagens.turno1, t2: aM.contagens.turno2, pct: mU.mig.pct,
+        pctRef: R.ufs[st.uf].migracao.pct, alpha: aM.monte_carlo.alpha, aud: aM, refTxt: `matriz estadual (${R.ufs[st.uf].nome})` });
+    }
+    const aU = N.ufs[st.uf];
+    return Object.assign(ctx, { nivel: "uf", rotulo: R.ufs[st.uf].nome, t1: aU.contagens.turno1, t2: aU.contagens.turno2, pct: R.ufs[st.uf].migracao.pct,
+      pctRef: R.migracao.brasil.pct, alpha: aU.monte_carlo.alpha, aud: aU, refTxt: "matriz nacional" });
+  }
+  if (st.reg && N.regioes[st.reg]) {
+    const aR = N.regioes[st.reg];
+    ctx.partes.push([st.reg, { reg: st.reg }]);
+    return Object.assign(ctx, { nivel: "regiao", rotulo: st.reg, t1: aR.contagens.turno1, t2: aR.contagens.turno2, pct: R.migracao.regioes[st.reg].pct,
+      pctRef: R.migracao.brasil.pct, alpha: aR.monte_carlo.alpha, aud: aR, refTxt: "matriz nacional" });
+  }
+  return Object.assign(ctx, { t1: N.brasil.contagens.turno1, t2: N.brasil.contagens.turno2, pct: R.migracao.brasil.pct, pctRef: null, alpha: null, aud: N.brasil, refTxt: null });
+}
+
+// ---- página
+async function visaoAuditoria(app) {
+  app.innerHTML = `<p class="carregando">Carregando a auditoria…</p>`;
+  AUD.nac ||= await json("dados/auditoria/nacional.json");
+  const st = audEstado(), hashAtual = location.hash;
+  const ctx = await audContexto(st);
+  if (location.hash !== hashAtual && location.hash !== "#auditoria") return;
+  const N = AUD.nac, R = D.resumo;
+  const ufsReg = Object.entries(R.ufs).filter(([, u]) => !st.reg || u.regiao === st.reg).sort((a, b) => a[1].nome.localeCompare(b[1].nome, "pt-BR"));
+  const sel = (id, rot, ops, val, vazio) => `<label>${rot}<select id="${id}"><option value="">${vazio}</option>${ops.map(([v, t]) => `<option value="${v}" ${String(v) === String(val ?? "") ? "selected" : ""}>${esc(t)}</option>`).join("")}</select></label>`;
+  const munOps = ctx.U ? ctx.U.municipios.map((m) => [m.cod, m.nome]).sort((a, b) => a[1].localeCompare(b[1], "pt-BR")) : [];
+  const zonaOps = ctx.A && st.mun ? ctx.A.zonas.filter((z) => z.mun === st.mun).map((z) => [+z.id.split("-")[1], `Zona ${z4(+z.id.split("-")[1])}`]) : [];
+  let secOps = [];
+  if (st.zona && st.uf) { const S = await carregarSecoes(st.uf); secOps = S.linhas.filter((l) => l[0] === st.mun && l[1] === st.zona).map((l) => [l[2], `Seção ${z4(l[2])}`]).sort((a, b) => a[0] - b[0]); }
+  const regAtual = st.reg || ctx.reg || "";
+  app.innerHTML = `<div class="cabeca"><span class="olho">Auditoria · investigação matemática e estatística</span>
+      <h1>${esc(ctx.rotulo)}</h1>
+      <p class="lead">Reconciliação dos votos entre os turnos, limites matemáticos das transferências e compatibilidade do resultado com modelos estatísticos explícitos. Probabilidades valem sob as premissas de cada modelo e não são, isoladamente, evidência de irregularidade.</p></div>
+    <div class="aud-barra">
+      <nav class="aud-trilha" aria-label="Recorte">${ctx.partes.map(([t, p], i) => i === ctx.partes.length - 1 ? `<b>${esc(t)}</b>` : `<a href="${audHash({ ...st, ...p })}">${esc(t)}</a><span aria-hidden="true">›</span>`).join("")}</nav>
+      <form class="aud-filtros" id="aud-filtros">
+        ${sel("af-reg", "Região", Object.keys(R.regioes).map((r) => [r, r]), regAtual, "Todas")}
+        ${sel("af-uf", "Estado", ufsReg.map(([k, u]) => [k, u.nome]), st.uf, "Todos")}
+        ${sel("af-mun", "Município", munOps, st.mun, st.uf ? "Todos" : "—")}
+        ${sel("af-zona", "Zona", zonaOps, st.zona, st.mun ? "Todas" : "—")}
+        ${sel("af-secao", "Seção", secOps, st.secao, st.zona ? "Todas" : "—")}
+      </form>
+      <div class="aud-abas" role="tablist">${AUD_VISOES.map(([k, t], i) => `<a role="tab" href="${audHash({ ...st, v: k })}" aria-selected="${st.v === k}"><span class="aba-n">${i + 1}</span>${t}</a>`).join("")}</div>
+    </div>
+    <div id="aud-corpo"></div>`;
+  const f = app.querySelector("#aud-filtros");
+  f.querySelector("#af-reg").onchange = (e) => audIr({ reg: e.target.value || null, uf: null, mun: null, zona: null, secao: null });
+  f.querySelector("#af-uf").onchange = (e) => audIr({ uf: e.target.value || null, reg: e.target.value ? R.ufs[e.target.value].regiao : st.reg, mun: null, zona: null, secao: null });
+  f.querySelector("#af-mun").onchange = (e) => audIr({ mun: e.target.value || null, zona: null, secao: null });
+  f.querySelector("#af-zona").onchange = (e) => audIr({ zona: e.target.value || null, secao: null });
+  f.querySelector("#af-secao").onchange = (e) => audIr({ secao: e.target.value || null });
+  for (const id of ["af-mun", "af-zona", "af-secao"]) { const s = f.querySelector("#" + id); if (s.options.length <= 1) s.disabled = true; }
+  const corpo = app.querySelector("#aud-corpo");
+  const views = { panorama: audPanorama, reconciliacao: audReconciliacao, montecarlo: audMonteCarlo, simulador: audSimulador };
+  await (views[st.v] || audPanorama)(corpo, ctx);
+  corpo.insertAdjacentHTML("beforeend", audMetodo());
+}
+
+// ---- visão 1: panorama nacional
+function audPanorama(el, ctx) {
+  const N = AUD.nac, st = ctx.st, C = N.ranking_municipios.colunas, ix = Object.fromEntries(C.map((c, i) => [c, i]));
+  const filtroUF = (uf) => (!st.reg || D.resumo.ufs[uf]?.regiao === st.reg) && (!st.uf || uf === st.uf);
+  const linhas = N.ranking_municipios.linhas.filter((r) => filtroUF(r[ix.uf]));
+  const cls = (c) => linhas.filter((r) => r[ix.classe] === c).length;
+  const incom = cls("Incomum") + cls("Muito incomum"), q = N.qualidade, cal = N.calibracao, K = N.contagens;
+  const silva = N.ranking_municipios.linhas.find((r) => r[ix.uf] === "RJ" && r[ix.id] === 59110);
+  el.innerHTML = `<section class="bloco aud-sec"><div class="aud-kpis">
+      <div><span class="rot">Estados</span><b>${n0(st.uf ? 1 : st.reg ? D.resumo.regioes[st.reg].length : K.ufs - 1)}</b><small>${st.uf || st.reg ? "no recorte" : "27 UFs + exterior"}</small></div>
+      <div><span class="rot">Municípios</span><b>${n0(linhas.filter((r) => r[ix.uf] !== "ZZ").length)}</b><small>${linhas.some((r) => r[ix.uf] === "ZZ") ? `+ ${n0(linhas.filter((r) => r[ix.uf] === "ZZ").length)} cidades no exterior` : "todos do recorte"}</small></div>
+      <div><span class="rot">Zonas · seções</span><b>${n0(st.uf ? N.ufs[st.uf].zonas : K.zonas)} · ${mi(st.uf ? N.ufs[st.uf].secoes : K.secoes)}</b><small>100% das seções do recorte</small></div>
+      <div><span class="rot">Resultados incomuns sob o modelo</span><b>${n0(incom)}</b><small>${n0(cls("Muito incomum"))} muito incomuns · FDR entre municípios</small></div>
+      <div><span class="rot">Inconclusivos</span><b>${n0(cls("Inconclusivo"))}</b><small>poucos votos ou seção sem votação</small></div>
+      <div><span class="rot">Qualidade dos dados</span><b>${p1((100 * q.comparecimento_2_confere) / q.secoes, 3)}</b><small>seções com contas fechando · ${n0(q.secoes_sem_votacao_registrada)} sem votação registrada</small></div>
+    </div>
+    <p class="nota">Calibração do modelo: ${p1(100 * cal.frac_p_abaixo_005, 1)} dos municípios têm probabilidade abaixo de 5% (esperado: 5%) e ${p1(100 * cal.frac_p_abaixo_001, 2)} abaixo de 1% (esperado: 1%). Um modelo bem calibrado produz poucas surpresas, na proporção esperada.</p>
+    ${silva ? `<a class="atalho" href="${audHash({ v: "reconciliacao", reg: "Sudeste", uf: "RJ", mun: 59110 })}"><span class="exp-ic">${icone("auditoria")}</span><span><b>Estudo de caso: Silva Jardim (RJ)</b><small>Flávio +1 voto, Lula +984 e comparecimento −104. De onde vieram os votos? ${probTxt({ p: silva[ix.p], metodo: silva[ix.metodo], simulacoes: silva[ix.sims] })} sob o modelo principal.</small></span><span class="exp-seta" aria-hidden="true">→</span></a>` : ""}
+  </section>
+  <section class="bloco"><div class="bloco-cab"><div><span class="olho">Mapa · municípios</span><h2>Onde o resultado se afasta do esperado</h2>
+      <p class="lead">Cada município comparado com o que a matriz de transferência do seu estado prevê. Clique para investigar.</p></div>
+      <label class="nota">Indicador <select id="aud-met"><option value="p">Probabilidade (1 em N)</option><option value="z">Desvio padronizado</option><option value="desvio">Lula: observado − esperado</option><option value="capt">Captação necessária para Lula</option><option value="dp">Incerteza do modelo (desvio-padrão)</option><option value="classe">Classificação</option></select></label></div>
+    <div class="grafico" data-g="aud-mapa" style="height:560px"><p class="carregando">Carregando mapa…</p></div>
+    <p class="nota" id="aud-mapa-nota"></p></section>
+  <section class="bloco"><div><span class="olho">Ranking · estados</span><h2>Estados comparados com a matriz do Brasil</h2>
+      <p class="lead">Probabilidade calculada com a distribuição agregada de cada estado (não é a média dos municípios). Clique para filtrar.</p></div><div id="aud-rk-uf"></div></section>
+  <section class="bloco"><div><span class="olho">Ranking · municípios</span><h2>Municípios comparados com a matriz do seu estado</h2>
+      <p class="lead">Mesma definição de evento para todos: parcela de Lula entre os finalistas no 2º turno tão ou mais distante do esperado. Municípios maiores têm distribuições mais estreitas; a dispersão entre municípios entra no modelo (Dirichlet-Multinomial).</p></div><div id="aud-rk-mun"></div>
+    <p class="nota">Exportar: <a href="https://adriano-atanes.github.io/analise-eleicao-presidente-2026/dados/auditoria/municipios.csv" target="_blank" rel="noopener">municípios (CSV)</a> · <a href="https://adriano-atanes.github.io/analise-eleicao-presidente-2026/dados/auditoria/ufs.csv" target="_blank" rel="noopener">estados (CSV)</a> · <a href="https://adriano-atanes.github.io/analise-eleicao-presidente-2026/dados/auditoria/nacional.json" target="_blank" rel="noopener">contrato JSON</a>. * valor extrapolado: nenhuma simulação foi tão extrema.</p></section>`;
+  // ranking por estado
+  const ufs = Object.entries(N.ufs).filter(([u]) => filtroUF(u)).map(([u, a]) => ({ id: u, u, a, mc: a.monte_carlo.modelos.dirichlet }));
+  tabela(el.querySelector("#aud-rk-uf"), { porPagina: 30, linhas: ufs, aoClicar: (l) => audIr({ uf: l.u, reg: D.resumo.ufs[l.u].regiao, mun: null, zona: null, secao: null }),
+    colunas: [{ t: "UF", v: (l) => l.u }, { t: "Municípios", n: 1, v: (l) => l.a.municipios, f: (l) => n0(l.a.municipios) }, { t: "Seções", n: 1, v: (l) => l.a.secoes, f: (l) => n0(l.a.secoes) },
+      { t: "Δ Lula", n: 1, v: (l) => l.a.reconciliacao.variacao.Lula, f: (l) => sinal(l.a.reconciliacao.variacao.Lula) }, { t: "Δ Flávio", n: 1, v: (l) => l.a.reconciliacao.variacao.Flávio, f: (l) => sinal(l.a.reconciliacao.variacao.Flávio) },
+      { t: "Lula: obs. − esp.", n: 1, v: (l) => l.a.monte_carlo.observado - l.a.monte_carlo.esperado, f: (l) => pp(100 * (l.a.monte_carlo.observado - l.a.monte_carlo.esperado), 2) },
+      { t: "Probabilidade", n: 1, v: (l) => -l.mc.p, f: (l) => probTxt(l.mc), ordemPadrao: 1 }, { t: "Mega-Sena", v: (l) => l.mc.p, f: (l) => megaTxt(l.mc) },
+      { t: "Intervalo 95%", v: (l) => l.mc.p, f: (l) => icTxt(l.mc) }, { t: "Municípios incomuns", n: 1, v: (l) => l.a.municipios_incomuns, f: (l) => n0(l.a.municipios_incomuns) }] });
+  // ranking por município
+  const mun = linhas.map((r, i) => ({ id: i, r }));
+  const g = (l, k) => l.r[ix[k]];
+  const nomeUF = (u) => (u === "ZZ" ? "Exterior" : u);
+  tabela(el.querySelector("#aud-rk-mun"), { porPagina: 25, linhas: mun, busca: { id: "aud-busca-mun", placeholder: "Buscar município…", campo: (l) => g(l, "nome") + " " + g(l, "uf") },
+    aoClicar: (l) => audIr({ v: "reconciliacao", uf: g(l, "uf"), reg: D.resumo.ufs[g(l, "uf")].regiao, mun: g(l, "id"), zona: null, secao: null }),
+    colunas: [{ t: "UF", v: (l) => g(l, "uf"), f: (l) => nomeUF(g(l, "uf")) }, { t: "Município", v: (l) => g(l, "nome") }, { t: "Eleitorado", n: 1, v: (l) => g(l, "aptos"), f: (l) => n0(g(l, "aptos")) },
+      { t: "Δ Lula · Δ Flávio", n: 1, v: (l) => g(l, "dL"), f: (l) => `${sinal(g(l, "dL"))} · ${sinal(g(l, "dF"))}` },
+      { t: "Lula: obs. × esp.", n: 1, v: (l) => g(l, "obs") - g(l, "esp"), f: (l) => `${p1(100 * g(l, "obs"))} × ${p1(100 * g(l, "esp"))}` },
+      { t: "Probabilidade", n: 1, v: (l) => -(g(l, "p") ?? 1), f: (l) => probTxt({ p: g(l, "p"), metodo: g(l, "metodo"), simulacoes: g(l, "sims") }), ordemPadrao: 1 },
+      { t: "Mega-Sena", v: (l) => g(l, "p"), f: (l) => megaTxt({ p: g(l, "p"), metodo: g(l, "metodo") }) },
+      { t: "Captação p/ Lula", n: 1, v: (l) => g(l, "capt") ?? -1, f: (l) => (g(l, "capt") == null ? "—" : p1(100 * g(l, "capt"), 0)) },
+      { t: "Classificação", v: (l) => g(l, "classe"), f: (l) => classeTag(g(l, "classe")) }] });
+  // mapa
+  const elM = el.querySelector('[data-g="aud-mapa"]'), selM = el.querySelector("#aud-met");
+  const dadosMun = Object.fromEntries(N.ranking_municipios.linhas.map((r) => [`${r[ix.uf]}-${r[ix.id]}`, r]));
+  carregarMapa().then(() => {
+    if (!document.body.contains(elM)) return;
+    elM.innerHTML = "";
+    const reg = registrarMalha(st.uf && st.uf !== "ZZ" ? st.uf : null);
+    const desenhar = () => trocarGrafico(elM, () => {
+      const met = selM.value, val = (r) => met === "p" ? (r[ix.p] ? -Math.log10(r[ix.p]) : null) : met === "z" ? r[ix.z] : met === "desvio" ? 100 * (r[ix.obs] - r[ix.esp]) : met === "capt" ? (r[ix.capt] == null ? null : 100 * r[ix.capt]) : met === "dp" ? 100 * r[ix.dp] : ({ "Compatível com o modelo": 0, Incomum: 1, "Muito incomum": 2, Inconclusivo: -1 }[r[ix.classe]] ?? null);
+      const dados = Object.entries(dadosMun).filter(([k]) => !k.startsWith("ZZ") && (!st.uf || k.startsWith(st.uf + "-")) && (!st.reg || D.resumo.ufs[k.slice(0, 2)]?.regiao === st.reg)).map(([k, r]) => ({ name: k, value: val(r) })).filter((d) => d.value != null);
+      const cfg = { p: { min: 0, max: 4, cores: [T.mid, T.up], txt: ["1 em 10 mil ou menos", "provável"], nota: "Cor pela probabilidade sob o modelo principal (escala logarítmica). Cor forte não significa irregularidade: com 5.570 municípios, alguns resultados raros são esperados." },
+        z: { min: -4, max: 4, cores: [T.flavio, T.mid, T.lula], txt: ["Lula acima do esperado", "Lula abaixo"], nota: "Desvio entre observado e esperado em desvios-padrão do modelo." },
+        desvio: { min: -6, max: 6, cores: [T.flavio, T.mid, T.lula], txt: ["Lula acima (p.p.)", "Lula abaixo"], nota: "Parcela de Lula entre os finalistas: observado menos esperado pela matriz do estado." },
+        capt: { min: 0, max: 60, cores: [T.mid, T.ink2], txt: ["60%+", "0%"], nota: "Parcela dos votos disponíveis (eliminados, brancos, nulos e abstenção do 1º turno) que precisaria ir para Lula para explicar o crescimento dele." },
+        dp: { min: 0, max: 5, cores: [T.mid, T.accent], txt: ["5 p.p.+", "0"], nota: "Largura da distribuição prevista: municípios pequenos têm mais incerteza." },
+        classe: { min: -1, max: 2, cores: [T.grid, T.mid, T.atencao || T.cury, T.up], txt: ["Muito incomum", "Inconclusivo"], nota: "Classificação após correção para múltiplas comparações (FDR)." } }[met];
+      el.querySelector("#aud-mapa-nota").textContent = cfg.nota;
+      const c = novoGrafico(elM, {
+        tooltip: { trigger: "item", formatter: (p) => { const r = dadosMun[p.name]; if (!r) return ""; return `<b>${esc(r[ix.nome])}</b> · ${r[ix.uf]}<br>Lula entre os finalistas: ${p1(100 * r[ix.obs])} (esperado ${p1(100 * r[ix.esp])})<br>Probabilidade: ${probTxt({ p: r[ix.p], metodo: r[ix.metodo], simulacoes: r[ix.sims] })}<br>${esc(r[ix.classe])}`; } },
+        visualMap: { min: cfg.min, max: cfg.max, inRange: { color: cfg.cores }, text: cfg.txt, calculable: false, orient: "horizontal", left: 8, bottom: 4, itemWidth: 12, itemHeight: 160, textStyle: { color: T.ink2 }, seriesIndex: 0 },
+        geo: { map: reg.nome, roam: true, scaleLimit: { min: 1, max: 40 }, layoutCenter: ["50%", "48%"], layoutSize: "96%", itemStyle: { areaColor: T.grid, borderColor: st.uf ? T.surface : "transparent", borderWidth: st.uf ? 0.4 : 0 },
+          emphasis: { label: { show: false }, itemStyle: { areaColor: T.ink, borderColor: T.ink } }, select: { disabled: true } },
+        series: [{ type: "map", geoIndex: 0, data: dados }, ...(reg.bordas.length ? [{ type: "lines", coordinateSystem: "geo", geoIndex: 0, polyline: true, silent: true, z: 5, lineStyle: { color: T.surface, width: 0.9, opacity: 0.9 }, data: reg.bordas.map((cc) => ({ coords: cc })) }] : [])],
+      });
+      c.on("click", (p) => { const r = dadosMun[p.name]; if (r) audIr({ v: "reconciliacao", uf: r[ix.uf], reg: D.resumo.ufs[r[ix.uf]].regiao, mun: r[ix.id], zona: null, secao: null }); });
+      return c;
+    });
+    selM.onchange = desenhar; desenhar();
+  }).catch((e) => { elM.innerHTML = `<p class="aviso">Não foi possível carregar o mapa (${esc(e.message)}).</p>`; });
+}
+
+// ---- visão 2: reconciliação e fluxo
+function audReconciliacao(el, ctx) {
+  const t1 = ctx.t1, t2 = ctx.t2, r = audReconciliar(t1, t2), c6 = audOrigens(t1), P6 = audMatriz6(ctx.pct, t1);
+  const lin = (rot, a, b, cls = "") => `<tr class="${cls}"><td>${rot}</td><td class="n">${n0(a)}</td><td class="n">${b == null ? "—" : n0(b)}</td><td class="n"><b>${b == null ? sinal(-a) : sinal(b - a)}</b></td></tr>`;
+  const ok = (v) => (v ? status("ok", "Confere") : status("grave", "Não confere"));
+  const fin = r.gL + r.gF, outras = (r.c2.Demais - r.c1.Demais) + (r.c2.Brancos - r.c1.Brancos) + (r.c2.Nulos - r.c1.Nulos);
+  const pool = [["Demais candidatos", r.c1.Demais], ["Brancos", r.c1.Brancos], ["Nulos", r.c1.Nulos], ["Abstenção do 1º turno", r.c1.Abstenção], ["Novos aptos", r.novos]];
+  // respostas da investigação
+  const perguntas = [
+    ["Quantos votos tinham os candidatos eliminados?", `${n0(r.c1.Demais)} votos no 1º turno; no 2º turno essa categoria não existe.`],
+    ["Como variaram brancos e nulos?", `Brancos ${sinal(r.c2.Brancos - r.c1.Brancos)} (${n0(r.c1.Brancos)} → ${n0(r.c2.Brancos)}); nulos ${sinal(r.c2.Nulos - r.c1.Nulos)} (${n0(r.c1.Nulos)} → ${n0(r.c2.Nulos)}).`],
+    ["Como variou a abstenção?", `${sinal(r.c2.Abstenção - r.c1.Abstenção)} (${n0(r.c1.Abstenção)} → ${n0(r.c2.Abstenção)}); comparecimento ${sinal(r.comp2 - r.comp1)}; eleitorado apto ${sinal(r.ap2 - r.ap1)}.`],
+    ["A conta fecha?", `Os finalistas ganharam juntos ${sinal(fin)}; eliminados, brancos e nulos variaram ${sinal(outras)}; a diferença (${sinal(-(fin + outras))}) é a variação do comparecimento (${sinal(r.comp2 - r.comp1)}). ${fin + outras === r.comp2 - r.comp1 ? "A identidade confere." : "A identidade não confere."}`],
+    ["Quantos votos poderiam migrar?", `${n0(r.R)} sem tocar nos eleitores dos finalistas: eliminados, brancos, nulos, abstenção do 1º turno e novos aptos.`],
+    ["Se todos fossem para Lula, o crescimento seria possível?", r.gL <= 0 ? "Lula não cresceu neste recorte." : r.gL <= r.R ? `Sim. Lula cresceu ${sinal(r.gL)}, o que exige ${p1(100 * r.captL, 1)} dos votos disponíveis.` : `Não. Lula cresceu ${sinal(r.gL)}, mais que os ${n0(r.R)} disponíveis: pelo menos ${n0(r.cruzFL)} eleitores de Flávio teriam de ter migrado.`],
+    ["É preciso supor migração entre finalistas?", r.semMigracao ? "Não. Os totais podem ser explicados sem que nenhum eleitor troque de finalista (o que não prova que ninguém trocou)." : `Sim, no mínimo ${n0(r.cruzFL + r.cruzLF)} eleitores.`],
+    ["O que explica a variação líquida de Flávio?", `A variação líquida (${sinal(r.gF)}) é um saldo: entradas menos saídas. Ela é compatível com, por exemplo, Flávio reter entre ${n0(r.retF[0])} e ${n0(r.retF[1])} dos seus ${n0(r.c1.Flávio)} eleitores e receber o restante de outras origens. Uma variação pequena não significa que poucos eleitores mudaram.`],
+  ];
+  const fr = (i, j) => { const linhas = c6, cols = [t2[0], t2[1], t2[2], t2[3], t2[4] + Math.max(0, t1[10] - t2[5])]; const tot = linhas.reduce((a, b) => a + b, 0); return [Math.max(0, linhas[i] + cols[j] - tot), Math.min(linhas[i], cols[j])]; };
+  el.innerHTML = `<section class="bloco aud-sec"><div class="grade2">
+      <div><h3 class="sub-h">Contagem por categoria</h3><div class="tabela-wrap"><table><thead><tr><th>Categoria</th><th class="n">1º turno</th><th class="n">2º turno</th><th class="n">Variação</th></tr></thead><tbody>
+        ${lin("Lula", r.c1.Lula, r.c2.Lula)}${lin("Flávio Bolsonaro", r.c1.Flávio, r.c2.Flávio)}${lin("Demais candidatos", r.c1.Demais, 0)}${lin("Brancos", r.c1.Brancos, r.c2.Brancos)}${lin("Nulos", r.c1.Nulos, r.c2.Nulos)}
+        ${lin("Comparecimento", r.comp1, r.comp2, "linha-total")}${lin("Abstenção", r.c1.Abstenção, r.c2.Abstenção)}${lin("Eleitorado apto", r.ap1, r.ap2, "linha-total")}</tbody></table></div>
+        <div class="aud-ident"><span>Comparecimento = nominais + brancos + nulos: ${ok(r.ident.c1 && r.ident.c2)}</span><span>Aptos = comparecimento + abstenção: ${ok(r.ident.a1 && r.ident.a2)}</span>${r.semVotacao ? `<span>${status("atencao", "Sem votação registrada")}</span>` : ""}</div></div>
+      <div><h3 class="sub-h">Origem potencial dos votos</h3>
+        <div class="aud-num"><div><span>Disponíveis sem tocar nos finalistas</span><b>${n0(r.R)}</b></div><div><span>Transferência mínima para Lula</span><b>${n0(Math.max(0, r.gL))}</b></div><div><span>Captação necessária para Lula</span><b>${r.captL == null ? "—" : p1(100 * r.captL, 1)}</b></div><div><span>Migração mínima entre finalistas</span><b>${n0(r.cruzFL + r.cruzLF)}</b></div></div>
+        <div class="grafico" data-g="aud-pool" style="height:200px"></div>
+        <p class="nota">Retenção possível: Lula manteve entre ${n0(r.retL[0])} e ${n0(r.retL[1])} dos ${n0(r.c1.Lula)} eleitores do 1º turno; Flávio, entre ${n0(r.retF[0])} e ${n0(r.retF[1])} dos ${n0(r.c1.Flávio)} (limites matemáticos).</p></div>
+    </div></section>
+    <section class="bloco"><div><span class="olho">Perguntas da investigação</span><h2>O que os números permitem afirmar</h2></div>
+      <dl class="aud-qa">${perguntas.map(([q, a]) => `<div><dt>${esc(q)}</dt><dd>${a}</dd></div>`).join("")}</dl></section>
+    <section class="bloco"><div><span class="olho">Hipóteses · cenários extremos</span><h2>Cenários de transferência</h2><p class="lead">Cada cenário é uma hipótese testada contra os totais; viável quer dizer apenas que não contradiz a aritmética.</p></div><div id="aud-cen"></div></section>
+    <section class="bloco"><div class="bloco-cab"><div><span class="olho">Matriz de transição estimada${ctx.refTxt && ctx.nivel === "secao" ? " · " + esc(ctx.refTxt) : ""}</span><h2>Fluxos hipotéticos entre os turnos</h2>
+        <p class="lead">Estimativa por otimização (inferência ecológica com restrição de simplex e encolhimento hierárquico, scripts/03_migracao.py). São fluxos compatíveis com os totais, não trajetórias individuais comprovadas.${ctx.nivel === "zona" || ctx.nivel === "secao" ? " Para zona e seção usa-se a matriz do município." : ""}</p></div>
+        <div class="seg" role="group" id="seg-mat"><button aria-pressed="true" data-m="sankey">Fluxo</button><button aria-pressed="false" data-m="matriz">Matriz</button></div></div>
+      <div class="grafico" data-g="aud-fluxo" style="height:420px"></div>
+      <p class="nota">Na matriz, passe o mouse para ver o intervalo matematicamente possível de cada célula (limites de Fréchet, só com os totais).</p></section>`;
+  // cenários
+  const lc = audReconciliar(t1, t2), L1 = lc.c1.Lula, F1 = lc.c1.Flávio, sh = L1 / Math.max(1, L1 + F1);
+  const novosFin = Math.max(0, lc.c1.Demais + lc.c1.Brancos + lc.c1.Nulos + (lc.comp2 - lc.comp1) - (lc.c2.Brancos + lc.c2.Nulos));
+  const cen = [
+    ["A", "Transferência integral para Lula", "Finalistas retêm seus eleitores; todo o disponível vai para Lula.", lc.gL <= lc.R, `Lula poderia chegar a ${n0(L1 + lc.R)}; obteve ${n0(lc.c2.Lula)}. Mínimo necessário: ${n0(Math.max(0, lc.gL))}.`],
+    ["B", "Transferência integral para Flávio", "Finalistas retêm seus eleitores; todo o disponível vai para Flávio.", lc.gF <= lc.R, `Flávio poderia chegar a ${n0(F1 + lc.R)}; obteve ${n0(lc.c2.Flávio)}. Mínimo necessário: ${n0(Math.max(0, lc.gF))}.`],
+    ["C", "Transferência proporcional", "Quem deixa eliminados, brancos e nulos se divide como os finalistas no 1º turno.", true, `Lula teria ${n0(Math.round(L1 + sh * novosFin))} (obteve ${n0(lc.c2.Lula)}, diferença ${sinal(Math.round(lc.c2.Lula - L1 - sh * novosFin))}).`],
+    ["D", "Migração entre finalistas", "Parte dos eleitores troca de finalista.", true, lc.semMigracao ? `Não é necessária; se ocorreu, até ${n0(lc.maxFL)} de Flávio para Lula e ${n0(lc.maxLF)} de Lula para Flávio cabem nos totais.` : `Necessária: no mínimo ${n0(lc.cruzFL + lc.cruzLF)} eleitores.`],
+    ["E", "Participação variável", "Faltosos do 1º turno votam no 2º e vice-versa.", true, `Comparecimento ${sinal(lc.comp2 - lc.comp1)}; ao menos ${n0(Math.max(0, lc.c2.Abstenção - lc.c1.Abstenção))} eleitores que votaram no 1º turno faltaram no 2º.`],
+  ];
+  el.querySelector("#aud-cen").innerHTML = `<div class="tabela-wrap"><table class="tab-quebra"><thead><tr><th>Cenário</th><th>Hipótese</th><th>Viabilidade</th><th>O que os totais mostram</th></tr></thead><tbody>
+    ${cen.map(([id, n, h, v, txt]) => `<tr><td><b>${id}</b> · ${esc(n)}</td><td>${esc(h)}</td><td>${v ? status("ok", "Viável") : status("grave", "Inviável")}</td><td>${txt}</td></tr>`).join("")}</tbody></table></div>`;
+  // gráfico de votos disponíveis
+  const elP = el.querySelector('[data-g="aud-pool"]');
+  novoGrafico(elP, { grid: { left: 8, right: 30, top: 8, bottom: 8, containLabel: true }, tooltip: { trigger: "item", formatter: (p) => `${esc(p.name)}: <b>${n0(p.value)}</b>` },
+    xAxis: { type: "value", ...eixo(), axisLabel: { color: T.muted, formatter: (v) => mi(v) } },
+    yAxis: { type: "category", inverse: true, data: [...pool.map((x) => x[0]), "Lula precisou", "Flávio precisou"], ...eixo(), splitLine: { show: false }, axisLabel: { color: T.ink2, fontSize: 11 } },
+    series: [{ type: "bar", barWidth: 12, data: [...pool.map((x) => ({ value: x[1], itemStyle: { color: T.ink2 } })), { value: Math.max(0, r.gL), itemStyle: { color: T.lula } }, { value: Math.max(0, r.gF), itemStyle: { color: T.flavio } }],
+      label: { show: true, position: "right", color: T.ink2, fontSize: 11, formatter: (p) => n0(p.value) } }] });
+  // fluxo / matriz
+  const elF = el.querySelector('[data-g="aud-fluxo"]');
+  const corO = [T.lula, T.flavio, T.caiado, T.branco, T.nulo, T.abst], corD = [T.lula, T.flavio, T.branco, T.nulo, T.abst];
+  const desenharFluxo = (modo) => trocarGrafico(elF, () => modo === "sankey" ? novoGrafico(elF, {
+    tooltip: { trigger: "item", formatter: (p) => p.dataType === "edge" ? `${esc(p.data.source.replace(" (1º)", ""))} → ${esc(p.data.target.replace(" (2º)", ""))}: <b>${n0(p.data.value)}</b> (estimado)` : `${esc(p.name)}: ${n0(p.value)}` },
+    series: [{ type: "sankey", left: 8, right: 110, top: 8, bottom: 8, nodeGap: 10, nodeWidth: 14, draggable: false, emphasis: { focus: "adjacency" }, label: { color: T.ink2, fontSize: 12 },
+      lineStyle: { color: "source", opacity: 0.35, curveness: 0.5 },
+      data: [...AUD_ORIG.map((o, i) => ({ name: o + " (1º)", itemStyle: { color: corO[i] } })), ...AUD_DEST.map((d, j) => ({ name: d + " (2º)", itemStyle: { color: corD[j] } }))],
+      links: AUD_ORIG.flatMap((o, i) => AUD_DEST.map((d, j) => ({ source: o + " (1º)", target: d + " (2º)", value: Math.round(c6[i] * P6[i][j]) }))).filter((x) => x.value > 0) }] })
+    : novoGrafico(elF, { grid: { left: 8, right: 8, top: 30, bottom: 8, containLabel: true },
+      tooltip: { formatter: (p) => { const [j, i] = p.data.value; const [lo, hi] = fr(i, j); return `${AUD_ORIG[i]} → ${AUD_DEST[j]}<br>estimado: <b>${p1(100 * P6[i][j], 1)}</b> (${n0(Math.round(c6[i] * P6[i][j]))} votos)<br>possível só com os totais: ${n0(lo)} a ${n0(hi)}`; } },
+      xAxis: { type: "category", position: "top", data: AUD_DEST.map((d) => "→ " + d), ...eixo(), splitLine: { show: false } }, yAxis: { type: "category", inverse: true, data: AUD_ORIG, ...eixo(), splitLine: { show: false } },
+      visualMap: { show: false, min: 0, max: 100, inRange: { color: [T.surface, T.accent] } },
+      series: [{ type: "heatmap", data: AUD_ORIG.flatMap((o, i) => AUD_DEST.map((d, j) => ({ value: [j, i, +(100 * P6[i][j]).toFixed(1)] }))), label: { show: true, color: T.ink, formatter: (p) => p1(p.value[2], 0) } }] }));
+  el.querySelectorAll("#seg-mat button").forEach((b) => (b.onclick = () => { el.querySelectorAll("#seg-mat button").forEach((x) => x.setAttribute("aria-pressed", x === b)); desenharFluxo(b.dataset.m); }));
+  desenharFluxo("sankey");
+}
+
+// ---- visão 3: Monte Carlo
+async function audMonteCarlo(el, ctx) {
+  const N = AUD.nac;
+  if (ctx.nivel === "brasil") {
+    const cal = N.calibracao;
+    el.innerHTML = `<section class="bloco aud-sec"><div><span class="olho">Brasil · nível de referência</span><h2>Escolha uma região, estado, município, zona ou seção</h2>
+      <p class="lead">O Brasil é a referência das matrizes de transferência; por isso a probabilidade começa nos níveis abaixo. Aqui está a verificação de calibração do modelo principal: se ele descreve bem a variação entre municípios, os valores de probabilidade se distribuem de forma aproximadamente uniforme.</p></div>
+      <div class="grafico" data-g="aud-cal" style="height:280px"></div>
+      <p class="nota">${p1(100 * cal.frac_p_abaixo_005, 1)} dos municípios abaixo de 5% (esperado 5%); ${p1(100 * cal.frac_p_abaixo_001, 2)} abaixo de 1% (esperado 1%).</p></section>`;
+    const elC = el.querySelector('[data-g="aud-cal"]'), tot = cal.hist_p.reduce((a, b) => a + b, 0);
+    novoGrafico(elC, { title: { text: "Distribuição das probabilidades municipais (posterior predictive check)", left: 0, textStyle: { color: T.ink, fontSize: 13, fontWeight: 600 } },
+      grid: { left: 8, right: 8, top: 34, bottom: 8, containLabel: true }, tooltip: { trigger: "axis" },
+      xAxis: { type: "category", data: cal.hist_p.map((_, i) => `${i * 5}–${i * 5 + 5}%`), ...eixo(), splitLine: { show: false }, axisLabel: { color: T.ink2, fontSize: 10 } },
+      yAxis: { type: "value", ...eixo(), axisLabel: { color: T.muted } },
+      series: [{ type: "bar", data: cal.hist_p, itemStyle: { color: T.ink2 } }, { type: "line", data: cal.hist_p.map(() => tot / cal.hist_p.length), showSymbol: false, lineStyle: { color: T.accent, type: "dashed" }, name: "uniforme" }] });
+    return;
+  }
+  const c = audOrigens(ctx.t1), Pref = audMatriz6(ctx.pctRef, ctx.t1), obs = ctx.t2[0] / Math.max(1, ctx.t2[0] + ctx.t2[1]);
+  const pre = ctx.aud && ctx.aud.monte_carlo;
+  el.innerHTML = `<section class="bloco aud-sec"><div class="bloco-cab"><div><span class="olho">Evento avaliado</span><h2>Parcela de Lula entre os finalistas no 2º turno</h2>
+      <p class="lead">Probabilidade de um resultado tão ou mais distante do esperado quanto o observado, nos dois sentidos, se os eleitores de ${esc(ctx.rotulo)} tivessem se comportado como prevê a ${esc(ctx.refTxt)}.</p></div></div>
+    <div class="aud-kpis" id="mc-kpis"></div>
+    <div class="grade2"><div class="grafico" data-g="mc-hist" style="height:300px"></div><div id="mc-modelos"></div></div>
+    <div id="mc-extra"></div></section>
+    <section class="bloco" id="mc-sub"></section>`;
+  const desenhar = (mc, hist, modelos, sens, exato) => {
+    const md = modelos.dirichlet;
+    const finTot = ctx.t2[0] + ctx.t2[1];
+    el.querySelector("#mc-kpis").innerHTML = `
+      <div><span class="rot">Observado · esperado</span><b>${p1(100 * obs, 2)} · ${p1(100 * md.media, 2)}</b><small>desvio ${pp(100 * (obs - md.media), 2)} (${fmtN(md.z, 2)} desvios-padrão)</small></div>
+      <div class="kpi-destaque"><span class="rot">Probabilidade (modelo principal)</span><b>${probTxt(md)}</b><small>${md.metodo === "extrapolacao_normal" ? "nenhuma simulação tão extrema; valor extrapolado" : `${n0(md.extremos)} de ${n0(md.simulacoes)} simulações tão extremas`}</small></div>
+      <div><span class="rot">Comparação com a Mega-Sena</span><b>${megaTxt(md)}</b><small>aposta simples: 1 em 50.063.860</small></div>
+      <div><span class="rot">Intervalo de 95%</span><b>${icTxt(md)}</b><small>incerteza de Monte Carlo</small></div>
+      <div><span class="rot">Lula esperado (votos)</span><b>${n0(Math.round(md.media * finTot))}</b><small>±${n0(Math.round(2 * md.dp * finTot))} · obtido ${n0(ctx.t2[0])}</small></div>`;
+    // histograma
+    const elH = el.querySelector('[data-g="mc-hist"]');
+    const xs = hist.contagens.map((_, i) => hist.inicio + (i + 0.5) * hist.passo), obsIdx = (obs - hist.inicio) / hist.passo - 0.5;
+    trocarGrafico(elH, () => novoGrafico(elH, { title: { text: "Distribuição simulada (Dirichlet-Multinomial)", left: 0, textStyle: { color: T.ink, fontSize: 13, fontWeight: 600 } },
+      grid: { left: 8, right: 8, top: 34, bottom: 24, containLabel: true }, tooltip: { trigger: "axis", formatter: (ps) => `Lula ${p1(100 * xs[ps[0].dataIndex], 2)}: ${n0(ps[0].value)} simulações` },
+      xAxis: { type: "category", data: xs.map((x) => p1(100 * x, 1)), ...eixo(), splitLine: { show: false }, axisLabel: { color: T.ink2, fontSize: 10, interval: 7 }, name: "Lula entre os finalistas", nameLocation: "middle", nameGap: 24, nameTextStyle: { color: T.muted } },
+      yAxis: { type: "value", ...eixo(), axisLabel: { color: T.muted, formatter: (v) => mi(v) } },
+      series: [{ type: "bar", barCategoryGap: "4%", data: hist.contagens, itemStyle: { color: T.ink2 },
+        markLine: { symbol: "none", silent: true, lineStyle: { color: T.lula, width: 2 }, label: { formatter: "observado", color: T.lula }, data: [{ xAxis: Math.max(0, Math.min(xs.length - 1, Math.round(obsIdx))) }] } }] }));
+    // modelos
+    const nomes = { multinomial: "Multinomial (sem dispersão)", dirichlet: "Dirichlet-Multinomial (principal)", hierarquico: "Bayesiano hierárquico (α incerto)", bootstrap: "Bootstrap (unidades irmãs)" };
+    el.querySelector("#mc-modelos").innerHTML = `<h3 class="sub-h">Comparação entre modelos</h3><div class="tabela-wrap"><table><thead><tr><th>Modelo</th><th class="n">Probabilidade</th><th class="n">Simulações</th><th>Mega-Sena</th></tr></thead><tbody>
+      ${Object.entries(modelos).map(([k, m]) => `<tr${k === "dirichlet" ? ' class="linha-total"' : ""}><td>${nomes[k] || k}</td><td class="n">${probTxt(m)}</td><td class="n">${n0(m.simulacoes)}</td><td>${megaTxt(m)}</td></tr>`).join("")}</tbody></table></div>
+      ${sens ? `<p class="nota">Sensibilidade (aproximação normal): com metade da dispersão estimada, ${umEmN(sens.alpha_dobro)}; com o dobro, ${umEmN(sens.alpha_metade)}. α = ${fmtN(mc.alpha, 0)}.</p>` : ""}
+      ${exato != null ? `<p class="nota">Probabilidade do valor exato (Lula com exatamente ${n0(ctx.t2[0])} votos): ${umEmN(exato)}. Todo valor exato é improvável; o que importa é a probabilidade de um resultado tão ou mais extremo.</p>` : ""}
+      <p class="nota">O multinomial ignora que municípios e seções diferem entre si e por isso exagera a raridade; o modelo principal estima essa dispersão a partir das unidades irmãs.</p>`;
+  };
+  if (pre) {
+    desenhar(pre, pre.histograma, pre.modelos, pre.sensibilidade, pre.modelos.dirichlet.valor_exato);
+  } else {
+    // seção: Monte Carlo no navegador
+    el.querySelector("#mc-kpis").innerHTML = `<div><span class="rot">Simulando no navegador…</span><b id="mc-prog">0</b><small>simulações</small></div>`;
+    const S = 100000, seed = 2026;
+    const alpha = ctx.alpha || 200;
+    const rm = await audSimular(c, Pref, null, 20000, seed, null);
+    const rd = await audSimular(c, Pref, alpha, S, seed + 1, (k) => { const e = el.querySelector("#mc-prog"); if (e) e.textContent = n0(k); });
+    if (!document.body.contains(el)) return;
+    const pd = audProb(rd.sim, obs), pm = audProb(rm.sim, obs);
+    let k = 0; for (const v of rd.LL) if (v === ctx.t2[0]) k++;
+    desenhar({ alpha }, audHist(rd.sim, obs), { multinomial: pm, dirichlet: pd }, null, k / S);
+    el.querySelector("#mc-extra").innerHTML = `<p class="nota">Seção: ${n0(S)} simulações executadas agora no navegador (semente ${seed}), com a dispersão calibrada entre as seções de ${esc(ctx.st.uf)} (α = ${fmtN(alpha, 0)}).</p>`;
+  }
+  // distribuição por zona (município) e por seção (zona)
+  const sub = el.querySelector("#mc-sub");
+  if (ctx.nivel === "municipio" && ctx.A) {
+    const zs = ctx.A.zonas.filter((z) => z.mun === ctx.st.mun);
+    sub.innerHTML = `<div><span class="olho">Distribuição por zona</span><h2>Zonas de ${esc(ctx.rotulo)}</h2><p class="lead">Cada zona comparada com a matriz do município (20 mil simulações cada). Clique para abrir.</p></div><div id="mc-zonas"></div>`;
+    tabela(sub.querySelector("#mc-zonas"), { porPagina: 20, linhas: zs.map((z, i) => ({ id: i, z, md: z.monte_carlo.modelos.dirichlet })), aoClicar: (l) => audIr({ zona: +l.z.id.split("-")[1], secao: null }),
+      colunas: [{ t: "Zona", v: (l) => l.z.id, f: (l) => `<span class="mono">${z4(+l.z.id.split("-")[1])}</span>` }, { t: "Lula: obs. × esp.", n: 1, v: (l) => l.z.monte_carlo.observado, f: (l) => `${p1(100 * l.z.monte_carlo.observado)} × ${p1(100 * l.md.media)}` },
+        { t: "Probabilidade", n: 1, v: (l) => -l.md.p, f: (l) => probTxt(l.md), ordemPadrao: 1 }, { t: "Classificação", v: (l) => l.z.classificacao, f: (l) => classeTag(l.z.classificacao) }] });
+  } else if (ctx.nivel === "zona" || ctx.nivel === "secao") {
+    const S = await carregarSecoes(ctx.st.uf), Pm = ctx.pct, al = AUD.nac.alpha.por_uf[ctx.st.uf]?.secao || 200;
+    const ls = S.linhas.filter((l) => l[0] === ctx.st.mun && l[1] === ctx.st.zona).map((l) => {
+      const t1 = l.slice(4, 15), t2 = l.slice(15, 21), [m, sd] = audMomentos(audOrigens(t1), audMatriz6(Pm, t1), al), o = t2[0] / Math.max(1, t2[0] + t2[1]);
+      const z = sd > 0 ? (o - m) / sd : 0; return { id: l[2], s: l[2], o, m, z, p: t2[0] + t2[1] > 0 ? 2 * normSf(Math.abs(z)) : null };
+    });
+    sub.innerHTML = `<div><span class="olho">Distribuição por seção</span><h2>Seções da zona ${z4(ctx.st.zona)}</h2><p class="lead">Aproximação normal do modelo Dirichlet-Multinomial com a dispersão das seções do estado. Clique numa seção para a simulação completa.</p></div><div id="mc-secoes"></div>`;
+    tabela(sub.querySelector("#mc-secoes"), { porPagina: 20, linhas: ls, aoClicar: (l) => audIr({ secao: l.s }),
+      colunas: [{ t: "Seção", v: (l) => l.s, f: (l) => `<span class="mono">${z4(l.s)}</span>` }, { t: "Lula: obs. × esp.", n: 1, v: (l) => l.o, f: (l) => `${p1(100 * l.o)} × ${p1(100 * l.m)}` },
+        { t: "Desvio (dp)", n: 1, v: (l) => Math.abs(l.z), f: (l) => fmtN(l.z, 2) }, { t: "Probabilidade (aprox.)", n: 1, v: (l) => -(l.p ?? 1), f: (l) => umEmN(l.p), ordemPadrao: 1 }] });
+  } else sub.remove();
+}
+
+// ---- visão 4: simulador de cenários
+function audSimulador(el, ctx) {
+  const t1 = ctx.t1, t2 = ctx.t2, c = audOrigens(t1), obs = t2[0] / Math.max(1, t2[0] + t2[1]);
+  const est = audMatriz6(ctx.pct, t1).map((r) => [r[0], r[1], r[2] + r[3], r[4]].map((v) => Math.round(1000 * v) / 10)); // Lula, Flávio, branco/nulo, abstenção
+  const sh = t1[0] / Math.max(1, t1[0] + t1[1]);
+  const PRESETS = {
+    estimado: ["Matriz estimada", est],
+    A: ["A · tudo para Lula", [[100, 0, 0, 0], [0, 100, 0, 0], [100, 0, 0, 0], [100, 0, 0, 0], [100, 0, 0, 0], est[5]]],
+    B: ["B · tudo para Flávio", [[100, 0, 0, 0], [0, 100, 0, 0], [0, 100, 0, 0], [0, 100, 0, 0], [0, 100, 0, 0], est[5]]],
+    C: ["C · proporcional", [[100, 0, 0, 0], [0, 100, 0, 0], [70 * sh, 70 * (1 - sh), 20, 10], [50 * sh, 50 * (1 - sh), 45, 5], [50 * sh, 50 * (1 - sh), 45, 5], est[5]].map((r) => r.map((v) => Math.round(v * 10) / 10))],
+    D: ["D · migração entre finalistas", [[95, 5, 0, 0], [5, 95, 0, 0], ...est.slice(2)]],
+    E: ["E · participação variável", [...est.slice(0, 5), [Math.min(30, est[5][0] * 2), Math.min(30, est[5][1] * 2), est[5][2], Math.max(0, 100 - Math.min(30, est[5][0] * 2) - Math.min(30, est[5][1] * 2) - est[5][2])]]],
+  };
+  let M6 = PRESETS.estimado[1].map((r) => r.slice());
+  el.innerHTML = `<section class="bloco aud-sec"><div class="bloco-cab"><div><span class="olho">Hipótese · ${esc(ctx.rotulo)}</span><h2>Monte seu cenário de transferência</h2>
+      <p class="lead">Defina para onde vai cada grupo de eleitores do 1º turno. A simulação roda no navegador e mostra o resultado que o cenário produziria e quão provável seria o resultado observado se ele fosse verdadeiro. Resultados são hipóteses, não estimativas do que ocorreu.</p></div></div>
+    <div class="seg aud-presets" role="group">${Object.entries(PRESETS).map(([k, [t]]) => `<button type="button" data-p="${k}" aria-pressed="${k === "estimado"}">${t}</button>`).join("")}</div>
+    <div class="tabela-wrap"><table class="aud-matriz-ed"><thead><tr><th>Eleitores do 1º turno</th><th class="n">Votos</th><th class="n">→ Lula %</th><th class="n">→ Flávio %</th><th class="n">→ Branco/nulo %</th><th class="n">→ Abstenção %</th><th class="n">Soma</th></tr></thead><tbody id="sim-linhas"></tbody></table></div>
+    <div class="ap-ctrl">
+      <label class="nota">Modelo <select id="sim-mod"><option value="dm">Dirichlet-Multinomial (dispersão calibrada)</option><option value="mn">Multinomial (sem dispersão)</option><option value="dmx">Dirichlet com dispersão 10× maior</option></select></label>
+      <label class="nota">Simulações <select id="sim-n"><option value="10000">10 mil</option><option value="50000" selected>50 mil</option><option value="100000">100 mil</option></select></label>
+      <label class="nota">Semente <input id="sim-seed" type="number" value="2026" style="width:90px"></label>
+      <button class="ap-play" id="sim-rodar" type="button">Simular</button>
+    </div>
+    <p class="aviso" id="sim-aviso" hidden></p>
+    <div class="aud-kpis" id="sim-kpis"></div>
+    <div class="grafico" data-g="sim-hist" style="height:300px"></div></section>`;
+  const tb = el.querySelector("#sim-linhas");
+  const desenharLinhas = () => {
+    tb.innerHTML = AUD_ORIG.map((o, i) => `<tr><td>${o}</td><td class="n">${n0(c[i])}</td>${[0, 1, 2, 3].map((j) => `<td class="n"><input type="number" min="0" max="100" step="0.5" data-i="${i}" data-j="${j}" value="${M6[i][j]}"></td>`).join("")}<td class="n" data-soma="${i}"></td></tr>`).join("");
+    validar();
+  };
+  const validar = () => {
+    let ok = true;
+    M6.forEach((r, i) => { const s = r.reduce((a, b) => a + b, 0), cel = tb.querySelector(`[data-soma="${i}"]`); cel.textContent = p1(s, 1); const bom = Math.abs(s - 100) < 0.6 && r.every((v) => v >= 0); cel.style.color = bom ? "" : "var(--grave)"; ok &&= bom; });
+    const av = el.querySelector("#sim-aviso"); av.hidden = ok; av.textContent = ok ? "" : "Cada linha precisa somar 100% e não ter valores negativos para o cenário ser matematicamente consistente.";
+    el.querySelector("#sim-rodar").disabled = !ok; return ok;
+  };
+  tb.addEventListener("input", (e) => { const t = e.target; if (!t.dataset.i) return; M6[+t.dataset.i][+t.dataset.j] = +t.value || 0; validar(); });
+  el.querySelectorAll(".aud-presets button").forEach((b) => (b.onclick = () => { el.querySelectorAll(".aud-presets button").forEach((x) => x.setAttribute("aria-pressed", x === b)); M6 = PRESETS[b.dataset.p][1].map((r) => r.slice()); desenharLinhas(); rodar(); }));
+  async function rodar() {
+    if (!validar()) return;
+    const P = M6.map((r) => [r[0] / 100, r[1] / 100, (r[2] + r[3]) / 100]);
+    const mod = el.querySelector("#sim-mod").value, base = ctx.alpha || AUD.nac.alpha.uf || 500;
+    const alpha = mod === "mn" ? null : mod === "dmx" ? base / 10 : base;
+    const S = +el.querySelector("#sim-n").value, seed = +el.querySelector("#sim-seed").value || 1;
+    const k = el.querySelector("#sim-kpis"); k.innerHTML = `<div><span class="rot">Simulando…</span><b id="sim-prog">0</b><small>de ${n0(S)}</small></div>`;
+    const r = await audSimular(c, P, alpha, S, seed, (n) => { const e = el.querySelector("#sim-prog"); if (e) e.textContent = n0(n); });
+    if (!document.body.contains(el)) return;
+    const pr = audProb(r.sim, obs);
+    let vence = 0; for (const v of r.sim) if (v > 0.5) vence++;
+    const EL = c.reduce((a, ck, i) => a + ck * P[i][0], 0), EF = c.reduce((a, ck, i) => a + ck * P[i][1], 0);
+    k.innerHTML = `<div><span class="rot">Lula no cenário (esperado)</span><b>${p1(100 * EL / (EL + EF), 2)}</b><small>${n0(Math.round(EL))} votos · Flávio ${n0(Math.round(EF))}</small></div>
+      <div><span class="rot">Lula vence no cenário</span><b>${p1(100 * vence / S, 1)}</b><small>das ${n0(S)} simulações</small></div>
+      <div><span class="rot">Resultado observado</span><b>${p1(100 * obs, 2)}</b><small>Lula ${n0(t2[0])} · Flávio ${n0(t2[1])}</small></div>
+      <div class="kpi-destaque"><span class="rot">Observado, se o cenário fosse verdadeiro</span><b>${probTxt(pr)}</b><small>tão ou mais extremo · Mega-Sena: ${megaTxt(pr)}</small></div>`;
+    const elH = el.querySelector('[data-g="sim-hist"]'), h = audHist(r.sim, obs), xs = h.contagens.map((_, i) => h.inicio + (i + 0.5) * h.passo);
+    trocarGrafico(elH, () => novoGrafico(elH, { grid: { left: 8, right: 8, top: 16, bottom: 24, containLabel: true }, tooltip: { trigger: "axis", formatter: (ps) => `Lula ${p1(100 * xs[ps[0].dataIndex], 2)}: ${n0(ps[0].value)} simulações` },
+      xAxis: { type: "category", data: xs.map((x) => p1(100 * x, 1)), ...eixo(), splitLine: { show: false }, axisLabel: { color: T.ink2, fontSize: 10, interval: 7 } },
+      yAxis: { type: "value", ...eixo(), axisLabel: { color: T.muted, formatter: (v) => mi(v) } },
+      series: [{ type: "bar", barCategoryGap: "4%", data: h.contagens, itemStyle: { color: T.accent }, markLine: { symbol: "none", silent: true, lineStyle: { color: T.lula, width: 2 }, label: { formatter: "observado", color: T.lula },
+        data: [{ xAxis: Math.max(0, Math.min(xs.length - 1, Math.round((obs - h.inicio) / h.passo - 0.5))) }] } }] }));
+  }
+  el.querySelector("#sim-rodar").onclick = rodar;
+  desenharLinhas(); rodar();
+}
+
+function audMetodo() {
+  const m = AUD.nac.metadados;
+  return `<details class="bloco metodo"><summary><b>Como foi calculado</b> <span class="nota">· fonte, modelos, parâmetros e rastreabilidade</span></summary>
+    <ul class="passos">
+      <li><b>Universo:</b> 100% das seções do recorte (boletins de urna do TSE); a aleatoriedade está só na geração dos cenários do Monte Carlo.</li>
+      <li><b>Evento:</b> ${esc(m.evento)}. Probabilidades em “1 em N”; o percentual fica nos detalhes técnicos (JSON).</li>
+      <li><b>Referência:</b> a unidade é comparada com a matriz de transferência do nível acima (região e UF → Brasil; município → UF; zona e seção → município), estimada por inferência ecológica com encolhimento hierárquico.</li>
+      <li><b>Modelos:</b> multinomial; Dirichlet-Multinomial (principal), com concentração α calibrada para que os desvios das unidades irmãs tenham variância 1; hierárquico (α sorteado da distribuição bootstrap da calibração); bootstrap empírico entre unidades irmãs.</li>
+      <li><b>Simulações:</b> ${n0(m.simulacoes.uf_regiao_municipio)} por região, UF e município; ${n0(m.simulacoes.zona)} por zona; ${n0(m.simulacoes.profundo)} no passe profundo (Silva Jardim e os 20 municípios mais distantes do esperado); semente ${m.seed}. Quando nenhuma simulação é tão extrema, a probabilidade é extrapolada pela aproximação normal e marcada com *; o limite superior de 95% é mostrado.</li>
+      <li><b>Classificação:</b> FDR de Benjamini–Hochberg entre municípios: muito incomum q &lt; 0,01; incomum q &lt; 0,10; inconclusivo com menos de 300 votos nos finalistas ou sem votação registrada. Classificações não são afirmações de irregularidade.</li>
+      <li><b>Mega-Sena:</b> 1 em 50.063.860 (aposta simples); comparação mostrada só quando o evento ocorreu ao menos 10 vezes nas simulações.</li>
+      <li><b>Processamento:</b> ${esc(m.processado_em)} · ${fmtN(m.tempo_total_s, 0)} s · motor ${esc(m.versao_motor)} · esquema ${esc(m.schema_version)}. Código: scripts/auditoria_motor.py e scripts/22_auditoria.py; metodologia completa em docs/auditoria_metodologia.md.</li>
+    </ul></details>`;
+}
+
 // ---------- apuração animada ----------
 const REG_COR = { Norte: "caiado", Nordeste: "up", "Centro-Oeste": "cury", Sudeste: "ink2", Sul: "down", Exterior: "muted" };
 const hhmm = (h) => h.replace(":", "h");
@@ -2376,7 +2589,7 @@ async function rotear() {
     else if ((m = h.match(/^mun-([A-Z]{2})-(\d+)$/))) {
       const nome = D.resumo.indice_municipios.find((x) => x[0] === m[1] && x[1] === +m[2])?.[2] || m[2];
       trilha([["Brasil", ""], [D.resumo.ufs[m[1]]?.nome || m[1], "uf-" + m[1]], [nome, h]]); await visaoMunicipio(app, m[1], +m[2]);
-    } else if (h === "auditoria") { trilha([["Brasil", ""], ["Auditoria", h]]); await visaoAuditoria(app); }
+    } else if (h === "auditoria" || h.startsWith("auditoria?")) { trilha([["Brasil", ""], ["Auditoria", "auditoria"]]); await visaoAuditoria(app); }
     else if (h === "perfil") { trilha([["Brasil", ""], ["Perfil", h]]); await visaoPerfil(app); }
     else if ((m = h.match(/^apuracao(?:-video-([12])(-sorteio)?)?$/))) { trilha([["Brasil", ""], ["Apuração", "apuracao"]]); await visaoApuracao(app, m[1] ? { turno: m[1], sorteio: !!m[2] } : null); }
     else if (h === "bu" || h.startsWith("bu?")) { trilha([["Brasil", ""], ["Seções", "bu"]]); await visaoBoletim(app); }
@@ -2384,10 +2597,12 @@ async function rotear() {
     else if (h === "logs") { trilha([["Brasil", ""], ["Urnas", h]]); await visaoLogs(app); }
     else { trilha([["Brasil", ""]]); visaoBrasil(app); }
     marcarMenu(h);
-    if (["logs", "auditoria", "perfil"].includes(h)) montarSumario(app);
+    if (["logs", "perfil"].includes(h)) montarSumario(app);
   } catch (e) { console.error(e); app.innerHTML = `<p class="aviso">Não foi possível carregar os dados (${esc(e.message)}). Recarregue a página.</p>`; }
-  window.scrollTo(0, 0);
+  if (!(h.startsWith("auditoria") && rotaAnterior.startsWith("auditoria"))) window.scrollTo(0, 0);
+  rotaAnterior = h;
 }
+let rotaAnterior = "";
 window.addEventListener("hashchange", rotear);
 
 // re-renderiza quando o tema muda

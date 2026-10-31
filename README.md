@@ -35,6 +35,9 @@ python 18_apuracao_animada.py       # parcial na ordem de chegada × ordem sorte
 python 19_virada_falhas.py          # verificação: virada da apuração × falhas no log das urnas → portal/dados/virada_falhas.json
 python 20_votos_eleitorado.py       # verificação: votos de Lula × eleitorado por município e lista que circula nas redes → portal/dados/votos_eleitorado.json
 python 21_boletins.py               # boletim de urna: votos dos demais candidatos do 1º turno e endereço dos locais → portal/dados/bu/<UF>.json
+python 22_auditoria.py              # Auditoria: reconciliação, limites, cenários e Monte Carlo de todas as UFs, municípios e zonas
+                                   #   (opções: --sim 100000 --sim-zona 20000 --seed 2026 --forcar; cache em dados/processados/auditoria_cache)
+python -m unittest discover -s tests   # testes do motor da Auditoria (scripts/auditoria_motor.py)
 node 18b_video_apuracao.js apuracao-video-1-sorteio <pasta> 600 90   # quadros do vídeo (portal servido em localhost:8765);
 #   depois: ffmpeg -framerate 30 -i <pasta>/q%04d.png -c:v libx264 -pix_fmt yuv420p portal/apuracao_1turno.mp4
 ```
@@ -85,3 +88,10 @@ proporção no 2º turno (destino j)  =  Σₖ  proporção no 1º turno (origem
 - **Estados:** uma matriz por estado, com as suas seções. Brasil e regiões somam os fluxos estaduais.
 - **Municípios:** a matriz é puxada para a do estado em proporção ao número de seções (equivale a 30 seções fictícias com a composição do município votando como o estado).
 - **Incerteza:** bootstrap das seções (intervalo de 90%), que mede só a variação amostral. A premissa do modelo é a maior fonte de incerteza; por isso o portal também mostra a estimativa feita com zonas eleitorais. Onde as duas divergem, leia o valor como uma faixa.
+
+## Auditoria (Fase 1)
+
+A página Auditoria tem quatro visões que compartilham o mesmo recorte geográfico (Brasil → região → estado → município → zona → seção):
+Panorama nacional, Reconciliação e fluxo, Monte Carlo e Simulador de cenários. O processamento pesado roda offline em
+`scripts/22_auditoria.py` (motor em `scripts/auditoria_motor.py`) e é publicado como JSON versionado em `portal/dados/auditoria/`.
+Metodologia completa em [docs/auditoria_metodologia.md](docs/auditoria_metodologia.md).
