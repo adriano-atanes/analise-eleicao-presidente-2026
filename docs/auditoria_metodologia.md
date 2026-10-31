@@ -125,7 +125,7 @@ bem especificado ela é aproximadamente uniforme: cerca de 5% abaixo de 0,05 e 1
 `scripts/23_transferencia.py`, para todos os estados, municípios, zonas e seções. No portal, o teste é recalculado na
 hora, de forma exata, para qualquer recorte e aparece no topo da visão “Resultado do recorte” como uma ficha pronta: variação
 de Lula, Flávio e comparecimento; votos dos eliminados; mínimo que precisa ter ido para Lula; chance sob eleitores
-independentes (referência 2022), com a comparação com a Mega-Sena e a posição no país; e chance com a variação real
+independentes (referência 2026 do nível acima) e a posição no país; e chance com a variação real
 (referência do estado). O segundo cartão da ficha não mostra essa chance: mostra a contagem direta, sem modelo, da posição do
 recorte entre as unidades do mesmo nível no estado (por exemplo, “15º de 92 municípios”), contando quantas tiveram K/E igual
 ou maior. A chance com variação real fica na tabela de detalhes.
@@ -151,7 +151,7 @@ ideológico, ou do próprio estado em 2026. Calcula-se P(X ≥ K) por duas leitu
 
 | Leitura | Modelo |
 |---|---|
-| Eleitor independente | Binomial(E, μ). É a leitura que leva a comparações como “acertar a Mega-Sena N vezes seguidas” (N = log P / log P_mega). |
+| Eleitor independente | Binomial(E, μ). |
 | Com variação real | Beta-Binomial(E, μ, ρ), com ρ (correlação entre eleitores do mesmo recorte) calibrado por método dos momentos por UF e por nível, com a variação observada de K/E entre as unidades irmãs. |
 
 Classificação com FDR sobre a leitura com variação real (referência: estado).
@@ -176,8 +176,7 @@ Valores q de Benjamini–Hochberg entre os municípios do país (e, separadament
 ## 7. Apresentação
 
 - Probabilidade em **1 em N** (1/p), com o valor numérico guardado no JSON.
-- **Mega-Sena:** P_mega = 1 / 50.063.860 (aposta simples). Razão R = P_mega / P_evento e expoente n = log P_evento / log P_mega.
-  No portal, a comparação só aparece quando o evento é mais raro que acertar a Mega-Sena uma vez (P ≤ 1 / 50.063.860).
+- Probabilidades muito pequenas aparecem como potência de 10 (por exemplo, 1 em 10¹⁵⁶), com o log10 guardado no JSON.
 
 ## 8. Contrato de dados (schema 1.0)
 
@@ -202,7 +201,7 @@ para leitura por agentes em uma fase futura; nenhuma integração com IA foi fei
 - calibração (recupera α e produz valores p uniformes, teste KS);
 - eventos raros sem probabilidade zero;
 - valor exato contra extremo;
-- formatação 1 em N, Mega-Sena e FDR (contra `scipy`);
+- formatação 1 em N e FDR (contra `scipy`);
 - contrato do JSON publicado.
 
 ## 10. Limitações conhecidas

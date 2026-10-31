@@ -26,7 +26,6 @@ import math
 import numpy as np
 from scipy import stats
 
-MEGA = 1 / 50_063_860  # aposta simples de 6 dezenas
 ORIGENS = ["Lula", "Flávio", "Demais", "Branco", "Nulo", "Abstenção"]
 DESTINOS = ["Lula", "Flávio", "Branco", "Nulo", "Abstenção"]
 
@@ -327,9 +326,3 @@ def um_em_n(p):
             return f"1 em {txt} {plural}"
     return "1 em mais de 1 quatrilhão"
 
-
-def mega(p):
-    """Comparação com a Mega-Sena (aposta simples): razão R = P_mega / P_evento e expoente n."""
-    if p is None or p <= 0:
-        return None
-    return {"razao": MEGA / p, "n": math.log(p) / math.log(MEGA)}

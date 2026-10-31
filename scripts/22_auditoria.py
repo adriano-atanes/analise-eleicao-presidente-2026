@@ -223,8 +223,7 @@ def evidencias(u, uf=None):
     if mc:
         for nome, m in mc["modelos"].items():
             ev.append({"tipo": "monte_carlo", "modelo": nome, "p": m["p"], "um_em_n": M.um_em_n(m["p"]), "intervalo_95": [m.get("p_lo"), m.get("p_hi")],
-                       "extremos": m.get("extremos"), "simulacoes": m.get("simulacoes"), "metodo": m.get("metodo"),
-                       "mega_sena": M.mega(m["p"]) if m.get("metodo") == "monte_carlo" and m["p"] <= 1e-3 else None})
+                       "extremos": m.get("extremos"), "simulacoes": m.get("simulacoes"), "metodo": m.get("metodo")})
     if "classificacao" in u:
         ev.append({"tipo": "classificacao", "classe": u["classificacao"], "fdr_q": u.get("fdr_q")})
     return ev
@@ -409,7 +408,6 @@ def main():
             "referencias": {"regiao": "Brasil", "uf": "Brasil", "municipio": "UF", "zona": "município", "secao": "município"},
             "classificacao": {"Muito incomum": "q < 0,01 (FDR de Benjamini–Hochberg entre municípios)", "Incomum": "q < 0,10",
                               "Inconclusivo": "menos de 300 votos nos finalistas no 2º turno", "Matematicamente inviável sob restrições explícitas": "identidade contábil não confere"},
-            "mega_sena": {"probabilidade": M.MEGA, "regra": "comparação exibida só quando o evento ocorreu ao menos 10 vezes nas simulações"},
             "cache_reaproveitado": sorted(usados_cache)}
     alfas = {u: resultados[u]["alpha"] for u in resultados}
     nacional = {"schema_version": SCHEMA, "metadados": meta, "brasil": brasil, "regioes": reg_res, "ufs": ufs_res,

@@ -16,7 +16,6 @@ Probabilidade de Lula receber K ou mais desses votos, P(X ≥ K):
   com dispersão: X ~ Beta-Binomial(E, μ, ρ)    (eleitores do mesmo lugar tendem a decidir parecido; ρ é calibrado
                  por UF e por nível com a variação observada entre os municípios, zonas ou seções do estado).
 Valores guardados em log10 (probabilidades muito pequenas não cabem em ponto flutuante).
-Comparação com a Mega-Sena: n = log10(P) / log10(1/50.063.860) = número de acertos seguidos com aposta simples.
 
 Saída: portal/dados/auditoria/transferencia.json
 """
@@ -29,7 +28,6 @@ from scipy import stats
 
 from comum import PORTAL_DADOS, PROCESSADOS
 
-LOG10_MEGA = math.log10(1 / 50_063_860)
 T1C = ["Lula_1", "Flávio_1", "Renan_1", "Cury_1", "Caiado_1", "Zema_1", "Outros_1", "Branco_1", "Nulo_1", "Abst_1", "Aptos_1"]
 T2C = ["Lula_2", "Flávio_2", "Branco_2", "Nulo_2", "Abst_2", "Aptos_2"]
 
@@ -124,7 +122,7 @@ def main():
         "evento": "Lula recebe pelo menos K dos votos dos eliminados (K = mínimo exigido pelo saldo do próprio recorte, sem migração entre finalistas)",
         "referencias": {"2022": "comportamento de 2022 por campo ideológico (Brasil)", "estado": "comportamento do próprio estado em 2026 (matriz estimada)"},
         "modelos": {"independente": "Binomial: cada eleitor decide de forma independente", "disperso": "Beta-Binomial com ρ calibrado por UF e nível"},
-        "q2022": q22, "referencia_estado": ref, "log10_mega": LOG10_MEGA}, "rho": {}, "niveis": {}}
+        "q2022": q22, "referencia_estado": ref}, "rho": {}, "niveis": {}}
     niveis = {
         "uf": sec.groupby("SG_UF")[T1C + T2C].sum().reset_index(),
         "municipio": sec.groupby(["SG_UF", "CD_MUNICIPIO", "NM_MUNICIPIO"])[T1C + T2C].sum().reset_index(),

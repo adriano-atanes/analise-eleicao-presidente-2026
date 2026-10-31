@@ -137,11 +137,6 @@ class Apresentacao(unittest.TestCase):
         self.assertEqual(M.um_em_n(1 / 2e9), "1 em 2 bilhões")
         self.assertIsNone(M.um_em_n(0))
 
-    def test_mega(self):
-        m = M.mega(1 / 500e6)
-        self.assertAlmostEqual(m["razao"], 500e6 / 50_063_860, places=6)  # ~10 vezes menos provável
-        self.assertAlmostEqual(m["n"], math.log(1 / 500e6) / math.log(1 / 50_063_860), places=9)
-
     def test_fdr(self):
         p = np.random.default_rng(2).uniform(size=200) ** 3
         self.assertTrue(np.allclose(M.bh_fdr(p), stats.false_discovery_control(p)))
@@ -162,7 +157,7 @@ class Transferencia(unittest.TestCase):
 
     def test_cauda_binomial_extrema_silva_jardim(self):
         v = self.T.cauda_binom(np.array([792.0]), np.array([897.0]), np.array([0.25193]))[0]
-        self.assertTrue(-360 < v < -330, v)  # ~10^-348: “45 Mega-Senas” sob eleitores independentes
+        self.assertTrue(-360 < v < -330, v)  # ~10^-348 sob eleitores independentes
 
     def test_betabinomial_mais_largo(self):
         b = self.T.cauda_binom(np.array([600.0]), np.array([897.0]), np.array([0.46]))[0]

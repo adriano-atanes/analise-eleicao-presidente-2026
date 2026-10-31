@@ -325,9 +325,9 @@ section.bloco { scroll-margin-top: calc(var(--topo-h, 96px) + 60px); }
 .veredito { display: grid; gap: 4px; padding: 16px 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
 .veredito:first-child { border-color: var(--up); box-shadow: inset 4px 0 0 var(--up); }
 .veredito .rot { font-size: 12.5px; color: var(--ink-2); }
-.veredito .mega b, .veredito small b { font: inherit; font-weight: 700; color: var(--ink); }
+.veredito .sub b, .veredito small b { font: inherit; font-weight: 700; color: var(--ink); }
 .veredito > b { font-family: var(--f-display); font-stretch: 85%; font-size: clamp(30px, 5vw, 44px); line-height: 1.05; }
-.veredito .mega { font-size: 16px; }
+.veredito .sub { font-size: 16px; }
 .veredito small { font-size: 12.5px; color: var(--muted); line-height: 1.4; }
 .aud-kpis .kpi-destaque b { color: var(--up); }
 .bloco-det { margin: 10px 0; }
@@ -2136,7 +2136,6 @@ function desenharEleitorado(sec, V) {
 // ---------- auditoria: panorama nacional e resultado pronto de cada recorte (cálculo exato, sem simulação) ----------
 // Os cálculos pesados vêm de scripts/22_auditoria.py (dados/auditoria/*); reconciliação, limites e cenários são
 // recalculados aqui com as mesmas fórmulas para qualquer recorte; o teste de transferência é exato (Binomial e Beta-Binomial).
-const MEGA_P = 1 / 50063860;
 const AUD_VISOES = [["panorama", "Panorama nacional"], ["reconciliacao", "Resultado do recorte"]];
 const AUD_ORIG = ["Lula", "Flávio", "Demais", "Brancos", "Nulos", "Abstenção"];
 const AUD_DEST = ["Lula", "Flávio", "Brancos", "Nulos", "Abstenção"];
@@ -2235,12 +2234,14 @@ function umEmNlog(lp) {
   if (lp > -12) return umEmN(Math.pow(10, lp));
   return `1 em 10<sup>${Math.floor(-lp)}</sup>`;
 }
-const LOG10_MEGA = Math.log10(1 / 50063860);
-// comparação com a Mega-Sena só quando o evento é mais raro que acertar a Mega-Sena uma vez (1 em 50.063.860)
-function megaLog(lp) {
-  if (lp == null || lp === -Infinity || lp > LOG10_MEGA) return "";
-  const n = lp / LOG10_MEGA;
-  return `equivale a acertar a Mega-Sena <b>${fmtN(n, n < 10 ? 1 : 0)} vez${n >= 2 ? "es" : ""} seguida${n >= 2 ? "s" : ""}</b>`;
+const LOG10_RARO = -6; // 1 em 1 milhão
+// probabilidade em percentual, legível também quando é muito pequena
+function probPct(lp) {
+  if (lp == null) return "";
+  if (lp === -Infinity) return "probabilidade zero sem migração entre finalistas";
+  if (lp < -6) return "probabilidade menor que 0,0001%";
+  const p = 100 * Math.pow(10, lp);
+  return `probabilidade de ${p >= 1 ? p1(p, 1) : p >= 0.01 ? p1(p, 2) : p1(p, 4)}`;
 }
 // μ = parcela dos eleitores dos eliminados que foi para Lula em 2026 no nível acima, ponderada pelos eliminados de cada UF
 function audMuRef(TR, ufs) {
@@ -2267,7 +2268,7 @@ function audTransferencia(ctx, TR) {
     const muBR = audMuRef(TR, todas), indL = (l) => ctx.nivel === "uf" ? caudaLog10(l[ci.K], l[ci.E], muBR, null) : l[ci.indUF];
     const vals = T.linhas.map((l) => [migra(l), indL(l)]);
     X.nUnid = T.linhas.length; X.nMigra = vals.filter(([m]) => m).length;
-    X.nMega = vals.filter(([m, v]) => m || (v != null && v <= LOG10_MEGA)).length;
+    X.nRaro = vals.filter(([m, v]) => m || (v != null && v <= LOG10_RARO)).length;
     X.pos = X.K > X.E || X.ind == null ? null : 1 + X.nMigra + vals.filter(([m, v]) => !m && v != null && v < X.ind - 1e-9).length;
     X.listada = ctx.nivel !== "secao" || T.linhas.some((l) => l[ci.SG_UF] === st.uf && l[ci.CD_MUNICIPIO] === st.mun && l[ci.NR_ZONA] === st.zona && l[ci.NR_SECAO] === st.secao);
     // vizinhos: mesma UF e mesmo nível (estados: todos), só unidades com votos suficientes nos eliminados
@@ -2304,13 +2305,13 @@ function htmlTransferencia(ctx, X) {
   const esperado = X.mu == null ? "" : ` No padrão de 2026 ${X.refNome}, ${p1(100 * X.mu, 0)} dos eleitores dos eliminados votaram em Lula`;
   const h2 = `Lula precisava de ao menos ${n0(X.K)} dos ${n0(X.E)} votos dos eliminados (${p1(100 * X.r, 1)}).${X.mu == null ? "" : `${esperado}.`}`;
   const txt = `${mov}. Mesmo que todos esses votos tivessem ido para Lula, pelo menos ${n0(X.K)} dos ${n0(X.E)} eleitores dos candidatos eliminados votaram nele (supondo que nenhum eleitor de Flávio mudou de lado).${X.mu == null ? "" : ` Se este recorte tivesse seguido o padrão de 2026 ${X.refNome}, seriam cerca de ${n0(Math.round(X.mu * X.E))} votos.`}`;
-  const posTxt = X.pos != null && unid ? `${X.listada ? `<b>${n0(X.pos)}º</b> mais extrem${fem ? "a" : "o"} entre ${fem ? "as" : "os"} ${n0(X.nUnid)} ${plural}${ctx.nivel === "secao" ? " mais extremas" : ""} do país` : `fora das ${n0(X.nUnid)} seções mais extremas do país`}${ctx.nivel === "secao" ? "." : `; ${n0(X.nMega)} ${plural} têm chance menor que a de acertar a Mega-Sena uma vez.`}` : "";
-  const cartaoChance = X.ind == null ? "" : `<div class="veredito"><span class="rot">Chance de acontecer, seguindo o padrão de 2026 ${X.refNome}: ${p1(100 * X.mu, 0)} para Lula</span><b>${umEmNlog(X.ind)}</b><span class="mega">${megaLog(X.ind)}</span><small>${posTxt}</small></div>`;
+  const posTxt = X.pos != null && unid ? `${X.listada ? `<b>${n0(X.pos)}º</b> mais extrem${fem ? "a" : "o"} entre ${fem ? "as" : "os"} ${n0(X.nUnid)} ${plural}${ctx.nivel === "secao" ? " mais extremas" : ""} do país` : `fora das ${n0(X.nUnid)} seções mais extremas do país`}${ctx.nivel === "secao" ? "." : `; ${n0(X.nRaro)} ${plural} têm chance menor que 1 em 1 milhão.`}` : "";
+  const cartaoChance = X.ind == null ? "" : `<div class="veredito"><span class="rot">Chance de acontecer, seguindo o padrão de 2026 ${X.refNome}: ${p1(100 * X.mu, 0)} para Lula</span><b>${umEmNlog(X.ind)}</b><span class="sub">${probPct(X.ind)}</span><small>${posTxt}</small></div>`;
   const cartaoViz = X.viz ? (() => { const v = X.viz, ondeUF = ctx.nivel === "uf" ? "do Brasil" : `do estado (${esc(D.resumo.ufs[ctx.st.uf]?.nome || ctx.st.uf)})`;
     return `<div class="veredito"><span class="rot">Comparação com ${fem ? "as" : "os"} ${plural} ${ondeUF}</span><b>${n0(v.outros + 1)}º de ${n0(v.total)}</b>
-      <span class="mega">${v.outros === 0 ? `Nenhum${fem ? "a outra" : " outro"} ${unid[0]} ${ondeUF} teve resultado tão extremo.` : `Em <b>${n0(v.outros)}</b> outr${fem ? "as" : "os"} ${v.outros === 1 ? unid[0] : plural}, Lula também precisou de ${p1(100 * X.r, 0)} ou mais dos votos dos eliminados.`}</span>
+      <span class="sub">${v.outros === 0 ? `Nenhum${fem ? "a outra" : " outro"} ${unid[0]} ${ondeUF} teve resultado tão extremo.` : `Em <b>${n0(v.outros)}</b> outr${fem ? "as" : "os"} ${v.outros === 1 ? unid[0] : plural}, Lula também precisou de ${p1(100 * X.r, 0)} ou mais dos votos dos eliminados.`}</span>
       <small>Contagem direta, sem modelo${v.minE ? `, entre ${plural} com ao menos ${n0(v.minE)} votos nos eliminados` : ""}. Quando ${fem ? "muitas" : "muitos"} ${plural} ${fem ? "vizinhas" : "vizinhos"} têm o mesmo padrão, ele não é exclusivo deste local, o que não quer dizer que seja normal.</small></div>`; })() : "";
-  const detalhe = X.ind == null ? "" : `<details class="bloco-det"><summary>Chance supondo que eleitores do mesmo lugar votam em bloco</summary><p class="nota">Mesmo padrão de 2026 ${X.refNome}, mas tratando o recorte como decisões em bloco, com a variação observada entre ${fem ? "as" : "os"} ${plural} do estado (ρ = ${fmtN(X.rho, 2)}): <b>${umEmNlog(X.dis)}</b>${megaLog(X.dis) ? ` (${megaLog(X.dis)})` : ""}. É a leitura mais conservadora; com ρ alto, ela trata o recorte quase como uma única decisão.</p></details>`;
+  const detalhe = X.ind == null ? "" : `<details class="bloco-det"><summary>Chance supondo que eleitores do mesmo lugar votam em bloco</summary><p class="nota">Mesmo padrão de 2026 ${X.refNome}, mas tratando o recorte como decisões em bloco, com a variação observada entre ${fem ? "as" : "os"} ${plural} do estado (ρ = ${fmtN(X.rho, 2)}): <b>${umEmNlog(X.dis)}</b> (${probPct(X.dis)}). É a leitura mais conservadora; com ρ alto, ela trata o recorte quase como uma única decisão.</p></details>`;
   return cab(h2, txt) + (cartaoChance || cartaoViz ? `<div class="vereditos">${cartaoChance}${cartaoViz}</div>` : "") + detalhe + premissas;
 }
 // ---- contexto do recorte ativo
@@ -2412,18 +2413,18 @@ function audPanorama(el, ctx) {
   const TM = TR.niveis.municipio, cm = idx(TM), gm = (l, k) => l[cm[k]];
   const muns = TM.linhas.filter((l) => filtroUF(gm(l, "SG_UF")));
   const cnt = (ls, gt, c) => ls.filter((l) => gt(l, "classe") === c).length;
-  const megaUma = (gt, l) => gt(l, "K") > gt(l, "E") || (gt(l, "indUF") != null && gt(l, "indUF") <= LOG10_MEGA);
+  const raro = (gt, l) => gt(l, "K") > gt(l, "E") || (gt(l, "indUF") != null && gt(l, "indUF") <= LOG10_RARO);
   const q = N.qualidade;
   el.innerHTML = `<section class="bloco aud-sec"><div class="aud-kpis">
       <div><span class="rot">Municípios analisados</span><b>${n0(muns.length)}</b><small>100% das seções, cálculo exato</small></div>
       <div class="kpi-destaque"><span class="rot">Ganho de Lula só fecha com migração de Flávio</span><b>${n0(cnt(muns, gm, "Requer migração entre finalistas"))}</b><small>municípios · maior que eliminados + brancos, nulos e faltosos liberados</small></div>
-      <div class="kpi-destaque"><span class="rot">Chance menor que acertar a Mega-Sena</span><b>${n0(muns.filter((l) => megaUma(gm, l)).length)}</b><small>municípios · se cada um seguisse o padrão de 2026 do seu estado</small></div>
+      <div class="kpi-destaque"><span class="rot">Chance menor que 1 em 1 milhão</span><b>${n0(muns.filter((l) => raro(gm, l)).length)}</b><small>municípios · se cada um seguisse o padrão de 2026 do seu estado</small></div>
       <div><span class="rot">Muito incomuns · incomuns</span><b>${n0(cnt(muns, gm, "Muito incomum"))} · ${n0(cnt(muns, gm, "Incomum"))}</b><small>com a variação real entre municípios, após FDR</small></div>
       <div><span class="rot">Qualidade dos dados</span><b>${p1((100 * q.comparecimento_2_confere) / q.secoes, 3)}</b><small>seções com contas fechando · ${n0(q.secoes_sem_votacao_registrada)} sem votação registrada</small></div>
     </div></section>
   <section class="bloco"><div class="bloco-cab"><div><span class="olho">Mapa · municípios</span><h2>Onde o ganho de Lula exigiu mais dos votos dos eliminados</h2>
       <p class="lead">Cada município comparado com o seu próprio 1º turno. Clique para abrir o resultado pronto.</p></div>
-      <label class="nota">Indicador <select id="aud-met"><option value="acima">Quanto acima do padrão do estado</option><option value="mega">Mega-Senas seguidas (padrão do estado em 2026)</option><option value="r">Mínimo dos eliminados para Lula</option><option value="dis">Chance supondo votos em bloco (estado)</option><option value="classe">Classificação</option></select></label></div>
+      <label class="nota">Indicador <select id="aud-met"><option value="acima">Quanto acima do padrão do estado</option><option value="raro">Chance de acontecer (padrão do estado em 2026)</option><option value="r">Mínimo dos eliminados para Lula</option><option value="dis">Chance supondo votos em bloco (estado)</option><option value="classe">Classificação</option></select></label></div>
     <div class="grafico aud-mapa" data-g="aud-mapa"><p class="carregando">Carregando mapa…</p></div>
     <p class="nota" id="aud-mapa-nota"></p></section>
   <section class="bloco"><div class="bloco-cab"><div><span class="olho">Ranking · 1º × 2º turno de cada recorte</span><h2>Resultados prontos, do mais extremo ao menos extremo</h2>
@@ -2438,14 +2439,14 @@ function audPanorama(el, ctx) {
     { t: "Mínimo para Lula", n: 1, v: (x) => gt(x.l, "r") ?? -1, f: (x) => `${n0(gt(x.l, "K"))} (${p1(100 * (gt(x.l, "r") || 0), 0)})` },
     { t: "Δ Flávio", n: 1, v: (x) => gt(x.l, "dF"), f: (x) => sinal(gt(x.l, "dF")) },
     { t: "Esperado pelo padrão de 2026", n: 1, v: (x) => gt(x.l, "muUF"), f: (x) => p1(100 * gt(x.l, "muUF"), 0) },
-    { t: "Chance de acontecer", n: 1, v: (x) => (gt(x.l, "K") > gt(x.l, "E") ? 1e6 + gt(x.l, "r") : -(gt(x.l, "indUF") ?? 0)), f: (x) => (gt(x.l, "K") > gt(x.l, "E") ? "só com migração de Flávio" : `${umEmNlog(gt(x.l, "indUF"))}${megaLog(gt(x.l, "indUF")) ? `<br><span class="nota">${megaLog(gt(x.l, "indUF"))}</span>` : ""}`), ordemPadrao: 1 },
+    { t: "Chance de acontecer", n: 1, v: (x) => (gt(x.l, "K") > gt(x.l, "E") ? 1e6 + gt(x.l, "r") : -(gt(x.l, "indUF") ?? 0)), f: (x) => (gt(x.l, "K") > gt(x.l, "E") ? "só com migração de Flávio" : umEmNlog(gt(x.l, "indUF"))), ordemPadrao: 1 },
     { t: "Classificação", v: (x) => gt(x.l, "classe"), f: (x) => classeTag(gt(x.l, "classe") === "Compatível" ? "Compatível com o modelo" : gt(x.l, "classe")) }];
   const desenharTR = (nivel) => {
     const T = TR.niveis[nivel], ci = idx(T), gt = (l, k) => l[ci[k]];
     const ls = T.linhas.filter((l) => filtroUF(gt(l, "SG_UF"))).map((l, i) => ({ id: i, l }));
     const c = (k) => ls.filter((x) => gt(x.l, "classe") === k).length;
     el.querySelector("#tr-kpis").innerHTML = `<div><span class="rot">Só fecha com migração de Flávio</span><b>${n0(c("Requer migração entre finalistas"))}</b><small>ganho de Lula maior que eliminados + brancos, nulos e faltosos liberados</small></div>
-      <div><span class="rot">Chance menor que acertar a Mega-Sena</span><b>${n0(ls.filter((x) => megaUma(gt, x.l)).length)}</b><small>se seguissem o padrão de 2026 do seu estado</small></div>
+      <div><span class="rot">Chance menor que 1 em 1 milhão</span><b>${n0(ls.filter((x) => raro(gt, x.l)).length)}</b><small>se seguissem o padrão de 2026 do seu estado</small></div>
       <div><span class="rot">Muito incomuns · incomuns</span><b>${n0(c("Muito incomum"))} · ${n0(c("Incomum"))}</b><small>com a variação real, após FDR</small></div>
       <div><span class="rot">${nivel === "secao" ? "Seções listadas" : "Unidades analisadas"}</span><b>${n0(ls.length)}</b><small>${nivel === "secao" ? "as mais extremas do país; as demais têm a ficha calculada ao abrir a seção" : "todas as do recorte"}</small></div>`;
     const nomeL = (l) => nivel === "municipio" ? gt(l, "NM_MUNICIPIO") : nivel === "zona" ? `${gt(l, "NM_MUNICIPIO")} · zona ${z4(gt(l, "NR_ZONA"))}` : `${gt(l, "NM_MUNICIPIO")} · ${z4(gt(l, "NR_ZONA"))}/${z4(gt(l, "NR_SECAO"))}`;
@@ -2473,19 +2474,19 @@ function audPanorama(el, ctx) {
     const desenhar = () => trocarGrafico(elM, () => {
       const met = selM.value;
       const val = (l) => met === "acima" ? (gm(l, "r") == null ? null : Math.max(-40, Math.min(60, 100 * (gm(l, "r") - gm(l, "muUF")))))
-        : met === "mega" ? (migra(l) ? 5 : gm(l, "indUF") == null ? null : Math.min(5, gm(l, "indUF") / LOG10_MEGA))
+        : met === "raro" ? (migra(l) ? 12 : gm(l, "indUF") == null ? null : Math.min(12, -gm(l, "indUF")))
         : met === "r" ? (gm(l, "r") == null ? null : Math.min(100, Math.max(0, 100 * gm(l, "r"))))
         : met === "dis" ? (migra(l) ? 4 : gm(l, "disUF") == null ? null : Math.min(4, -gm(l, "disUF")))
         : ({ "Compatível": 0, Incomum: 1, "Muito incomum": 2, "Requer migração entre finalistas": 3 }[gm(l, "classe")] ?? null);
       const dados = Object.entries(dadosMun).filter(([k]) => !k.startsWith("ZZ") && (!st.uf || k.startsWith(st.uf + "-")) && (!st.reg || D.resumo.ufs[k.slice(0, 2)]?.regiao === st.reg)).map(([k, l]) => ({ name: k, value: val(l) })).filter((d) => d.value != null);
       const cfg = { acima: { min: -40, max: 60, cores: [T.flavio, T.mid, T.lula], txt: ["+60 p.p.", "−40 p.p."], nota: "Parcela mínima dos eleitores dos eliminados que precisa ter ido para Lula no município menos a parcela que foi para Lula no estado em 2026, em pontos percentuais. Vermelho forte: o município exigiu muito mais do que o padrão do próprio estado." },
-        mega: { min: 0, max: 5, cores: [T.mid, T.up], txt: ["5 ou mais Mega-Senas", "0"], nota: "Quantas vezes seguidas seria preciso acertar a Mega-Sena para ter a mesma chance, se o município seguisse o padrão de 2026 do seu estado. Municípios cujo ganho de Lula só fecha com migração de Flávio aparecem no topo da escala." },
+        raro: { min: 0, max: 12, cores: [T.mid, T.up], txt: ["1 em 10¹² ou menos", "provável"], nota: "Chance de acontecer se o município seguisse o padrão de 2026 do seu estado, em escala logarítmica (cada faixa é 10 vezes menos provável). Municípios cujo ganho de Lula só fecha com migração de Flávio aparecem no topo da escala." },
         r: { min: 0, max: 100, cores: [T.mid, T.lula], txt: ["100%", "0%"], nota: "Parcela mínima dos eleitores dos eliminados que precisa ter votado em Lula, pelo saldo do próprio município." },
         dis: { min: 0, max: 4, cores: [T.mid, T.up], txt: ["1 em 10 mil ou menos", "provável"], nota: "Chance com a variação real entre municípios do estado (leitura conservadora), em escala logarítmica." },
         classe: { min: 0, max: 3, cores: [T.grid, T.atencao || T.cury, T.up, T.ink], txt: ["Só com migração de Flávio", "Compatível"], nota: "Classificação com a variação real, após correção para múltiplas comparações (FDR)." } }[met];
       el.querySelector("#aud-mapa-nota").textContent = cfg.nota;
       const c = novoGrafico(elM, {
-        tooltip: { trigger: "item", formatter: (p) => { const l = dadosMun[p.name]; if (!l) return ""; return `<b>${esc(gm(l, "NM_MUNICIPIO"))}</b> · ${gm(l, "SG_UF")}<br>Lula precisava de ao menos ${n0(gm(l, "K"))} dos ${n0(gm(l, "E"))} votos dos eliminados (${p1(100 * (gm(l, "r") || 0), 0)})<br>${migra(l) ? "Só fecha com migração de Flávio para Lula" : `Padrão do estado em 2026: ${p1(100 * gm(l, "muUF"), 0)}<br>Chance de acontecer: ${umEmNlog(gm(l, "indUF"))}${megaLog(gm(l, "indUF")) ? "<br>" + megaLog(gm(l, "indUF")) : ""}`}`; } },
+        tooltip: { trigger: "item", formatter: (p) => { const l = dadosMun[p.name]; if (!l) return ""; return `<b>${esc(gm(l, "NM_MUNICIPIO"))}</b> · ${gm(l, "SG_UF")}<br>Lula precisava de ao menos ${n0(gm(l, "K"))} dos ${n0(gm(l, "E"))} votos dos eliminados (${p1(100 * (gm(l, "r") || 0), 0)})<br>${migra(l) ? "Só fecha com migração de Flávio para Lula" : `Padrão do estado em 2026: ${p1(100 * gm(l, "muUF"), 0)}<br>Chance de acontecer: ${umEmNlog(gm(l, "indUF"))}`}`; } },
         visualMap: { min: cfg.min, max: cfg.max, inRange: { color: cfg.cores }, text: cfg.txt, calculable: false, orient: "horizontal", left: 8, bottom: 4, itemWidth: 12, itemHeight: 160, textStyle: { color: T.ink2 }, seriesIndex: 0 },
         geo: { map: reg.nome, roam: true, scaleLimit: { min: 1, max: 40 }, layoutCenter: ["50%", "48%"], layoutSize: "96%", itemStyle: { areaColor: T.grid, borderColor: st.uf ? T.surface : "transparent", borderWidth: st.uf ? 0.4 : 0 },
           emphasis: { label: { show: false }, itemStyle: { areaColor: T.ink, borderColor: T.ink } }, select: { disabled: true } },
@@ -2612,7 +2613,6 @@ function audMetodo() {
       <li><b>Saldo:</b> brancos, nulos e abstenção só fornecem votos se diminuíram entre os turnos. O mínimo que precisa ter vindo dos eliminados é K = ganho de Lula − brancos/nulos liberados − abstenção liberada, supondo que nenhum eleitor de Flávio mudou de lado. Se K for maior que os votos dos eliminados, a conta só fecha com migração de Flávio para Lula.</li>
       <li><b>Referência (sempre 2026):</b> município, zona e seção são comparados com o padrão do próprio estado no 2º turno de 2026 (parcela dos eleitores dos eliminados que foi para Lula, pela matriz de transferência estimada); estado e região, com o padrão do Brasil.</li>
       <li><b>Chance:</b> P(Lula receber ao menos K dos E votos dos eliminados), com cada eleitor decidindo separadamente: Binomial(E, μ). Nos detalhes, a leitura em bloco: Beta-Binomial(E, μ, ρ), com ρ calibrado pela variação entre as unidades irmãs do estado.</li>
-      <li><b>Mega-Sena:</b> 1 em 50.063.860 (aposta simples). Mostrada só quando a chance é menor que isso; “N Mega-Senas seguidas” = log P ÷ log(1/50.063.860).</li>
       <li><b>Classificação:</b> FDR de Benjamini–Hochberg sobre a leitura com variação real: muito incomum q &lt; 0,01; incomum q &lt; 0,10. Classificações não são afirmações de irregularidade.</li>
       <li><b>Código:</b> scripts/23_transferencia.py (todas as unidades do país) e o mesmo cálculo no portal para qualquer recorte; metodologia completa em docs/auditoria_metodologia.md.</li>
     </ul></details>`;
