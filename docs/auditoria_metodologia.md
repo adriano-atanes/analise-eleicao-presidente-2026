@@ -141,6 +141,15 @@ ou maior. A chance com variação real fica na tabela de detalhes.
 
   A conta supõe que nenhum eleitor de Flávio migrou. Se K > E, o saldo só se explica com migração entre finalistas.
 
+> **Referência principal: perfil político (2026).** Cada unidade é comparada com os municípios do país que tiveram a mesma
+> parcela de Flávio nos votos válidos do 1º turno (faixas de 5 pontos). μ da faixa = soma de K ÷ soma de E entre esses
+> municípios (com E ≥ 200). Onde a direita é forte, espera-se que os eleitores dos eliminados vão menos para Lula; a referência
+> do próprio estado mistura lugares de perfis diferentes e por isso diluía esse efeito. A ficha mostra a chance (Binomial com
+> o μ da faixa), a posição entre as unidades do mesmo nível e da mesma faixa (contagem direta; para seções fora da lista, pelos
+> percentis da faixa) e, como comparação secundária, a posição entre as unidades do estado. A classificação (FDR) usa a
+> Beta-Binomial com o μ da faixa e ρ calibrado entre as unidades da mesma faixa. Campos: `f1`, `muPerf`, `posPerf`, `nPerf`,
+> `indPerf`, `disPerf`; metadados `perfil` e `perfil_quantis`.
+
 > **No portal, a referência é sempre 2026:** município, zona e seção são comparados com o padrão do próprio estado no
 > 2º turno de 2026 (μ do estado); estado e região, com o padrão do Brasil em 2026. A referência de 2022 continua no JSON
 > (`ind22`, `dis22`), mas não é exibida.

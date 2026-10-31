@@ -91,6 +91,14 @@ def calibrar_rho(K, E, mu):
     return float(np.clip(num / den, 1e-5, 0.9))
 
 
+LARG = 0.05  # faixas de perfil: parcela de Flávio nos votos válidos do 1º turno, de 5 em 5 pontos
+MIN_E = {"uf": 0, "municipio": 200, "zona": 200, "secao": 30}
+
+
+def faixa_perfil(f1):
+    return np.clip(np.floor(np.nan_to_num(f1) / LARG).astype(int), 0, int(1 / LARG) - 1)
+
+
 def main():
     R = json.load(open(PORTAL_DADOS / "resumo.json"))
     ID = json.load(open(PORTAL_DADOS / "ideologia.json"))
@@ -122,13 +130,31 @@ def main():
         "evento": "Lula recebe pelo menos K dos votos dos eliminados (K = mínimo exigido pelo saldo do próprio recorte, sem migração entre finalistas)",
         "referencias": {"2022": "comportamento de 2022 por campo ideológico (Brasil)", "estado": "comportamento do próprio estado em 2026 (matriz estimada)"},
         "modelos": {"independente": "Binomial: cada eleitor decide de forma independente", "disperso": "Beta-Binomial com ρ calibrado por UF e nível"},
-        "q2022": q22, "referencia_estado": ref}, "rho": {}, "niveis": {}}
+        "q2022": q22, "referencia_estado": ref}, "rho": {}, "rho_perfil": {}, "niveis": {}}
     niveis = {
         "uf": sec.groupby("SG_UF")[T1C + T2C].sum().reset_index(),
         "municipio": sec.groupby(["SG_UF", "CD_MUNICIPIO", "NM_MUNICIPIO"])[T1C + T2C].sum().reset_index(),
         "zona": sec.groupby(["SG_UF", "CD_MUNICIPIO", "NM_MUNICIPIO", "NR_ZONA"])[T1C + T2C].sum().reset_index(),
         "secao": sec[["SG_UF", "CD_MUNICIPIO", "NM_MUNICIPIO", "NR_ZONA", "NR_SECAO"] + T1C + T2C].copy(),
     }
+    # referência por perfil político (2026): entre os municípios do país com a mesma parcela de Flávio no 1º turno,
+    # a parcela dos votos dos eliminados que, no saldo, foi para Lula (soma de K ÷ soma de E)
+    dm = niveis["municipio"]
+    t1m, t2m = dm[T1C].to_numpy(float), dm[T2C].to_numpy(float)
+    Em, Km, _ = minimos(t1m, t2m)
+    fm = faixa_perfil(t1m[:, 1] / np.clip(t1m[:, 0:7].sum(1), 1, None))
+    okm = Em >= MIN_E["municipio"]
+    perfil = {}
+    for b in range(int(1 / LARG)):
+        msk = okm & (fm == b)
+        if msk.sum() >= 3:
+            rr = Km[msk] / Em[msk]
+            perfil[b] = {"n": int(msk.sum()), "mu": float(Km[msk].sum() / Em[msk].sum()), "mediana": float(np.median(rr)), "p90": float(np.quantile(rr, 0.9))}
+    bins = sorted(perfil)
+    mu_b = np.array([perfil[min(bins, key=lambda x: abs(x - b))]["mu"] for b in range(int(1 / LARG))])
+    saida["metadados"]["perfil"] = {"largura": LARG, "min_E": MIN_E, "faixas": {str(b): v for b, v in perfil.items()},
+                                    "definicao": "faixa da parcela de Flávio nos votos válidos do 1º turno; mu = soma de K ÷ soma de E entre os municípios do país na faixa (2026)"}
+    saida["metadados"]["perfil_quantis"] = {}
     for nivel, d in niveis.items():
         t1, t2 = d[T1C].to_numpy(float), d[T2C].to_numpy(float)
         uf = d.SG_UF.to_numpy()
@@ -142,7 +168,29 @@ def main():
             r_ = calibrar_rho(K[msk], E[msk], mest[msk])
             rho[msk] = r_
             saida["rho"][nivel][u] = r_
-        cols = {"E": E, "K": K, "dF": dF, "mu22": m22, "muUF": mest,
+        f1 = t1[:, 1] / np.clip(t1[:, 0:7].sum(1), 1, None)
+        fb = faixa_perfil(f1)
+        mperf = mu_b[fb]
+        rr_all = np.where(E > 0, K / np.clip(E, 1, None), np.nan)
+        okp = E >= MIN_E[nivel]
+        # posição entre as unidades do mesmo nível e da mesma faixa de perfil (quantas têm K/E igual ou maior)
+        pos = np.full(len(d), np.nan)
+        tot = np.full(len(d), np.nan)
+        rhop = np.full(len(d), 0.05)
+        saida["rho_perfil"][nivel] = {}
+        saida["metadados"]["perfil_quantis"][nivel] = {}
+        for b in np.unique(fb):
+            msk = fb == b
+            base = np.sort(rr_all[msk & okp])
+            if len(base):
+                pos[msk] = len(base) - np.searchsorted(base, rr_all[msk] - 1e-12, side="left") + (~okp[msk]).astype(int)
+                tot[msk] = len(base) + (~okp[msk]).astype(int)
+                saida["metadados"]["perfil_quantis"][nivel][str(int(b))] = {"n": int(len(base)), "q": [round(float(x), 4) for x in np.quantile(base, np.linspace(0, 1, 101))]}
+            rp = calibrar_rho(K[msk], E[msk], mperf[msk])
+            rhop[msk] = rp
+            saida["rho_perfil"][nivel][str(int(b))] = rp
+        cols = {"E": E, "K": K, "dF": dF, "mu22": m22, "muUF": mest, "f1": f1, "muPerf": mperf, "posPerf": pos, "nPerf": tot,
+                "indPerf": cauda_binom(K, E, mperf), "disPerf": cauda_betabinom(K, E, mperf, rhop),
                 "ind22": cauda_binom(K, E, m22), "dis22": cauda_betabinom(K, E, m22, rho),
                 "indUF": cauda_binom(K, E, mest), "disUF": cauda_betabinom(K, E, mest, rho)}
         df = d.drop(columns=T1C + T2C).copy()
@@ -152,9 +200,9 @@ def main():
         # percentil do mínimo exigido (K/E) entre as unidades do mesmo nível e UF
         df["r"] = np.where(E > 0, K / np.clip(E, 1, None), np.nan)
         df["pct"] = df.groupby("SG_UF")["r"].rank(pct=True) if nivel != "uf" else df["r"].rank(pct=True)
-        # FDR (BH) sobre o modelo disperso com referência do estado, entre unidades com E ≥ 30
+        # FDR (BH) sobre o modelo disperso com referência do perfil político (2026), entre unidades com E ≥ 30
         ok = (E >= 30)
-        p = np.power(10.0, np.where(np.isfinite(df["disUF"]), df["disUF"], -300))
+        p = np.power(10.0, np.where(np.isfinite(df["disPerf"]), df["disPerf"], -300))
         q = np.ones(len(df))
         if ok.sum():
             idx = np.where(ok)[0]
@@ -171,12 +219,12 @@ def main():
         print(nivel, len(df), df.classe.value_counts().to_dict(), "ρ mediano:", round(float(np.median(list(saida["rho"][nivel].values()))), 4))
         # exportação: tudo para UF, município e zona; seções só as 2.000 mais extremas e o ρ por UF (o portal calcula as demais)
         if nivel == "secao":
-            df = df[ok].sort_values("disUF").head(2000)
-        rnd = {"mu22": 5, "muUF": 5, "ind22": 3, "dis22": 3, "indUF": 3, "disUF": 3, "r": 4, "pct": 4, "q": 6}
+            df = df[ok].sort_values(["indPerf", "disPerf"]).head(2000)
+        rnd = {"f1": 4, "muPerf": 5, "indPerf": 3, "disPerf": 3, "mu22": 5, "muUF": 5, "ind22": 3, "dis22": 3, "indUF": 3, "disUF": 3, "r": 4, "pct": 4, "q": 6}
         lin = []
         for rr in df.itertuples(index=False):
             dd = rr._asdict()
-            lin.append([None if (isinstance(v, float) and not math.isfinite(v)) else (round(v, rnd[k]) if k in rnd and isinstance(v, float) else (int(v) if isinstance(v, (np.integer,)) or (isinstance(v, float) and k in ("E", "K", "dF", "apto")) else v))
+            lin.append([None if (isinstance(v, float) and not math.isfinite(v)) else (round(v, rnd[k]) if k in rnd and isinstance(v, float) else (int(v) if isinstance(v, (np.integer,)) or (isinstance(v, float) and k in ("E", "K", "dF", "apto", "posPerf", "nPerf")) else v))
                         for k, v in dd.items()])
         saida["niveis"][nivel] = {"colunas": list(df.columns), "linhas": lin}
     sj = niveis["municipio"]

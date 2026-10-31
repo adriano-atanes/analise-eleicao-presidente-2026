@@ -2243,13 +2243,19 @@ function probPct(lp) {
   const p = 100 * Math.pow(10, lp);
   return `probabilidade de ${p >= 1 ? p1(p, 1) : p >= 0.01 ? p1(p, 2) : p1(p, 4)}`;
 }
-// μ = parcela dos eleitores dos eliminados que foi para Lula em 2026 no nível acima, ponderada pelos eliminados de cada UF
 function audMuRef(TR, ufs) {
   let wfq = 0, wt = 0;
   for (const u of ufs) { const ref = TR.metadados.referencia_estado[u]; if (!ref || !D.resumo.ufs[u]) continue; const w = D.resumo.ufs[u].t1.slice(2, 7).reduce((a, b) => a + b, 0); wfq += w * ref.f * ref.q; wt += w; }
   return wfq / Math.max(1, wt);
 }
-// referência de cada nível, sempre 2026: município, zona e seção → estado; estado e região → Brasil; Brasil → nenhuma
+// faixa de perfil político do recorte: parcela de Flávio nos votos válidos do 1º turno (de 5 em 5 pontos)
+function audPerfil(TR, t1) {
+  const P = TR.metadados.perfil, val = t1.slice(0, 7).reduce((a, b) => a + b, 0), f1 = val ? t1[1] / val : 0;
+  const b = Math.min(Math.round(1 / P.largura) - 1, Math.floor(f1 / P.largura));
+  const ks = Object.keys(P.faixas).map(Number), bb = ks.reduce((m, k) => (Math.abs(k - b) < Math.abs(m - b) ? k : m), ks[0]);
+  return { f1, b, mu: P.faixas[bb].mu, mediana: P.faixas[bb].mediana, n: P.faixas[bb].n, rot: `entre ${n0(100 * b * P.largura)}% e ${n0(100 * (b + 1) * P.largura)}%` };
+}
+// referências, sempre 2026: (1) perfil político — municípios do país com a mesma parcela de Flávio no 1º turno; (2) estado/Brasil
 function audTransferencia(ctx, TR) {
   const r = audReconciliar(ctx.t1, ctx.t2), E = r.E, K = Math.max(0, r.gL - r.bnLib - r.abLib), st = ctx.st;
   const todas = Object.keys(TR.metadados.referencia_estado);
@@ -2258,19 +2264,24 @@ function audTransferencia(ctx, TR) {
   else if (ctx.nivel === "uf" || ctx.nivel === "regiao") { mu = audMuRef(TR, todas); refNome = "do Brasil"; }
   const nivelRho = { brasil: "uf", regiao: "uf", uf: "uf", municipio: "municipio", zona: "zona", secao: "secao" }[ctx.nivel];
   const rho = nivelRho === "uf" ? TR.rho.uf.BR : TR.rho[nivelRho][st.uf] ?? 0.2;
-  const X = { E, K, dF: r.gF, r: E ? K / E : null, mu, refNome, rho,
-    ind: mu == null ? null : caudaLog10(K, E, mu, null), dis: mu == null ? null : caudaLog10(K, E, mu, rho) };
-  // posição entre as unidades do mesmo nível no país (eleitores independentes, referência 2026 do nível acima)
+  const X = { E, K, dF: r.gF, r: E ? K / E : null, mu, refNome, rho, ind: mu == null ? null : caudaLog10(K, E, mu, null) };
+  // perfil político (não se aplica a Brasil e região, que misturam perfis)
   const T = ["uf", "municipio", "zona", "secao"].includes(ctx.nivel) ? TR.niveis[ctx.nivel] : null;
   if (T) {
+    const P = audPerfil(TR, ctx.t1), rhoP = TR.rho_perfil?.[ctx.nivel]?.[P.b] ?? rho;
+    Object.assign(X, { perf: P, indP: caudaLog10(K, E, P.mu, null), disP: caudaLog10(K, E, P.mu, rhoP), rhoP });
     const ci = Object.fromEntries(T.colunas.map((c, i) => [c, i]));
     const migra = (l) => l[ci.K] > l[ci.E];
-    const muBR = audMuRef(TR, todas), indL = (l) => ctx.nivel === "uf" ? caudaLog10(l[ci.K], l[ci.E], muBR, null) : l[ci.indUF];
-    const vals = T.linhas.map((l) => [migra(l), indL(l)]);
+    const proprio = T.linhas.find((l) => l[ci.SG_UF] === st.uf && (ctx.nivel === "uf" || (l[ci.CD_MUNICIPIO] === st.mun && (ctx.nivel === "municipio" || (l[ci.NR_ZONA] === st.zona && (ctx.nivel === "zona" || l[ci.NR_SECAO] === st.secao))))));
+    // posição no perfil: exata pela linha publicada; para seções fora da lista, pelos quantis da faixa
+    if (proprio && proprio[ci.posPerf] != null) X.perfPos = { pos: proprio[ci.posPerf], n: proprio[ci.nPerf] };
+    else { const Q = TR.metadados.perfil_quantis?.[ctx.nivel]?.[P.b]; if (Q && X.r != null) { const acima = Q.q.filter((v) => v >= X.r - 1e-9).length; X.perfPos = { pos: Math.max(1, Math.round((Q.n * acima) / 101)), n: Q.n, aprox: true }; } }
+    const Q = TR.metadados.perfil_quantis?.[ctx.nivel]?.[P.b]; X.perfMediana = Q ? Q.q[50] : P.mediana;
+    const vals = T.linhas.map((l) => [migra(l), l[ci.indPerf]]);
     X.nUnid = T.linhas.length; X.nMigra = vals.filter(([m]) => m).length;
     X.nRaro = vals.filter(([m, v]) => m || (v != null && v <= LOG10_RARO)).length;
-    X.pos = X.K > X.E || X.ind == null ? null : 1 + X.nMigra + vals.filter(([m, v]) => !m && v != null && v < X.ind - 1e-9).length;
-    X.listada = ctx.nivel !== "secao" || T.linhas.some((l) => l[ci.SG_UF] === st.uf && l[ci.CD_MUNICIPIO] === st.mun && l[ci.NR_ZONA] === st.zona && l[ci.NR_SECAO] === st.secao);
+    X.pos = X.K > X.E ? null : 1 + X.nMigra + vals.filter(([m, v]) => !m && v != null && v < X.indP - 1e-9).length;
+    X.listada = ctx.nivel !== "secao" || !!proprio;
     // vizinhos: mesma UF e mesmo nível (estados: todos), só unidades com votos suficientes nos eliminados
     const minE = { uf: 0, municipio: 200, zona: 200, secao: 30 }[ctx.nivel];
     let viz;
@@ -2289,30 +2300,37 @@ function htmlTransferencia(ctx, X) {
   const r = audReconciliar(ctx.t1, ctx.t2), nome = esc(ctx.rotulo);
   const dBN = r.c2.Brancos + r.c2.Nulos - r.c1.Brancos - r.c1.Nulos, dAb = r.c2.Abstenção - r.c1.Abstenção, dComp = r.comp2 - r.comp1;
   const unid = { uf: ["estado", "estados"], municipio: ["município", "municípios"], zona: ["zona", "zonas"], secao: ["seção", "seções"] }[ctx.nivel];
-  const fem = ctx.nivel === "zona" || ctx.nivel === "secao", plural = unid ? unid[1] : "estados";
+  const fem = ctx.nivel === "zona" || ctx.nivel === "secao", plural = unid ? unid[1] : "estados", art = fem ? "as" : "os";
+  const P = X.perf;
   const fatos = `<div class="aud-kpis ficha-fatos">
       <div><span class="rot">Lula · 1º → 2º turno</span><b style="color:var(--lula)">${sinal(r.gL)}</b><small>${n0(r.c1.Lula)} → ${n0(r.c2.Lula)}</small></div>
-      <div><span class="rot">Flávio · 1º → 2º turno</span><b style="color:var(--flavio)">${sinal(r.gF)}</b><small>${n0(r.c1.Flávio)} → ${n0(r.c2.Flávio)}</small></div>
+      <div><span class="rot">Flávio · 1º → 2º turno</span><b style="color:var(--flavio)">${sinal(r.gF)}</b><small>${n0(r.c1.Flávio)} → ${n0(r.c2.Flávio)}${P ? ` · ${p1(100 * P.f1, 1)} dos válidos no 1º turno` : ""}</small></div>
       <div><span class="rot">Comparecimento</span><b>${sinal(dComp)}</b><small>abstenção ${sinal(dAb)} · brancos e nulos ${sinal(dBN)}</small></div>
       <div><span class="rot">Votos dos eliminados no 1º turno</span><b>${n0(X.E)}</b><small>Renan, Cury, Caiado, Zema e outros</small></div></div>`;
   const liberados = `Brancos e nulos ${r.bnLib ? `liberaram ${n0(r.bnLib)} voto${r.bnLib === 1 ? "" : "s"}` : `não liberaram votos (variaram ${sinal(dBN)})`} e a abstenção ${r.abLib ? `liberou ${n0(r.abLib)}` : `não liberou nenhum (variou ${sinal(dAb)})`}`;
   const mov = `Entre o 1º e o 2º turno de 2026, Lula ${r.gL >= 0 ? "ganhou" : "perdeu"} ${n0(Math.abs(r.gL))} votos e Flávio ${r.gF >= 0 ? "ganhou" : "perdeu"} ${n0(Math.abs(r.gF))}. ${liberados}`;
   const cab = (h2, txt) => `<div><span class="olho">Resultado pronto · 1º × 2º turno de 2026 · ${nome}</span><h2>${h2}</h2><p class="lead">${txt}</p></div>${fatos}`;
-  const premissas = `<div class="aud-premissas"><b>Premissas e limites.</b> (1) O cálculo é exato, com 100% dos votos do recorte em 2026: não há simulação nem sorteio. (2) ${n0(X.K)} é um mínimo calculado pelo saldo: se eleitores de Flávio faltaram no 2º turno e faltosos do 1º turno votaram em Lula, o mesmo saldo aparece com menos votos dos eliminados indo para Lula. (3) A chance trata cada eleitor como uma decisão separada; na prática, eleitores do mesmo lugar decidem de forma parecida (vizinhança, igreja, lideranças), e por isso a comparação com os vizinhos do estado é mostrada ao lado. (4) Nenhuma probabilidade é, isoladamente, evidência de irregularidade.</div>`;
+  const premissas = `<div class="aud-premissas"><b>Premissas e limites.</b> (1) O cálculo é exato, com 100% dos votos do recorte em 2026: não há simulação nem sorteio. (2) ${n0(X.K)} é um mínimo calculado pelo saldo: se eleitores de Flávio faltaram no 2º turno e faltosos do 1º turno votaram em Lula, o mesmo saldo aparece com menos votos dos eliminados indo para Lula. (3) Perfil político: municípios do país com a mesma parcela de Flávio no 1º turno (faixas de 5 pontos); onde a direita é forte, espera-se que os eleitores dos eliminados (em boa parte de direita) vão menos para Lula. (4) A chance trata cada eleitor como uma decisão separada; na prática, eleitores do mesmo lugar decidem de forma parecida, e por isso as contagens diretas são mostradas ao lado. (5) Nenhuma probabilidade é, isoladamente, evidência de irregularidade.</div>`;
   if (X.K === 0) return cab("Lula não precisou de votos dos eliminados", `${mov}: o ganho de Lula cabe nesses votos, sem exigir nada dos ${n0(X.E)} eleitores dos candidatos eliminados. Nada a apontar neste teste.`);
   if (X.K > X.E) return cab(`O ganho de Lula só fecha com eleitores de Flávio passando para Lula`,
     `${mov}. Mesmo que todos esses votos e todos os ${n0(X.E)} votos dos eliminados tivessem ido para Lula, faltariam ${n0(X.K - X.E)}: a conta só fecha com migração direta de Flávio para Lula. ${unid ? `${n0(X.nMigra)} ${plural} do país estão nessa situação.` : ""}`) + premissas;
-  const esperado = X.mu == null ? "" : ` No padrão de 2026 ${X.refNome}, ${p1(100 * X.mu, 0)} dos eleitores dos eliminados votaram em Lula`;
-  const h2 = `Lula precisava de ao menos ${n0(X.K)} dos ${n0(X.E)} votos dos eliminados (${p1(100 * X.r, 1)}).${X.mu == null ? "" : `${esperado}.`}`;
-  const txt = `${mov}. Mesmo que todos esses votos tivessem ido para Lula, pelo menos ${n0(X.K)} dos ${n0(X.E)} eleitores dos candidatos eliminados votaram nele (supondo que nenhum eleitor de Flávio mudou de lado).${X.mu == null ? "" : ` Se este recorte tivesse seguido o padrão de 2026 ${X.refNome}, seriam cerca de ${n0(Math.round(X.mu * X.E))} votos.`}`;
-  const posTxt = X.pos != null && unid ? `${X.listada ? `<b>${n0(X.pos)}º</b> mais extrem${fem ? "a" : "o"} entre ${fem ? "as" : "os"} ${n0(X.nUnid)} ${plural}${ctx.nivel === "secao" ? " mais extremas" : ""} do país` : `fora das ${n0(X.nUnid)} seções mais extremas do país`}${ctx.nivel === "secao" ? "." : `; ${n0(X.nRaro)} ${plural} têm chance menor que 1 em 1 milhão.`}` : "";
-  const cartaoChance = X.ind == null ? "" : `<div class="veredito"><span class="rot">Chance de acontecer, seguindo o padrão de 2026 ${X.refNome}: ${p1(100 * X.mu, 0)} para Lula</span><b>${umEmNlog(X.ind)}</b><span class="sub">${probPct(X.ind)}</span><small>${posTxt}</small></div>`;
+  const perfTxt = P ? `${ctx.nivel === "municipio" ? "Nos municípios do país" : "Nos municípios do país"} onde Flávio teve ${P.rot} dos válidos no 1º turno, como aqui, ${p1(100 * P.mu, 0)} dos eleitores dos eliminados foram para Lula.` : X.mu == null ? "" : `No padrão de 2026 ${X.refNome}, ${p1(100 * X.mu, 0)} dos eleitores dos eliminados votaram em Lula.`;
+  const h2 = `Lula precisava de ao menos ${n0(X.K)} dos ${n0(X.E)} votos dos eliminados (${p1(100 * X.r, 1)}). ${perfTxt}`;
+  const muP = P ? P.mu : X.mu;
+  const txt = `${mov}. Mesmo que todos esses votos tivessem ido para Lula, pelo menos ${n0(X.K)} dos ${n0(X.E)} eleitores dos candidatos eliminados votaram nele (supondo que nenhum eleitor de Flávio mudou de lado).${muP == null ? "" : ` No padrão ${P ? "dos lugares com o mesmo perfil" : X.refNome}, seriam cerca de ${n0(Math.round(muP * X.E))} votos.`}`;
+  const posTxt = X.pos != null && unid ? `${X.listada ? `<b>${n0(X.pos)}º</b> mais extrem${fem ? "a" : "o"} entre ${art} ${n0(X.nUnid)} ${plural}${ctx.nivel === "secao" ? " mais extremas" : ""} do país` : `fora das ${n0(X.nUnid)} seções mais extremas do país`}${ctx.nivel === "secao" ? "." : `; ${n0(X.nRaro)} ${plural} têm chance menor que 1 em 1 milhão.`}` : "";
+  const lpPrin = P ? X.indP : X.ind;
+  const cartaoChance = lpPrin == null ? "" : `<div class="veredito"><span class="rot">Chance de acontecer, seguindo ${P ? `o padrão dos municípios com Flávio ${P.rot} no 1º turno: ${p1(100 * P.mu, 0)} para Lula` : `o padrão de 2026 ${X.refNome}: ${p1(100 * X.mu, 0)} para Lula`}</span><b>${umEmNlog(lpPrin)}</b><span class="sub">${probPct(lpPrin)}</span><small>${posTxt}</small></div>`;
+  const cartaoPerfil = P && X.perfPos ? `<div class="veredito"><span class="rot">Comparação com ${art} ${plural} do país com o mesmo perfil (Flávio ${P.rot} no 1º turno)</span><b>${X.perfPos.aprox ? "≈ " : ""}${n0(X.perfPos.pos)}º de ${n0(X.perfPos.n)}</b>
+      <span class="sub">${X.perfPos.pos <= 1 ? `Nenhum${fem ? "a outra" : " outro"} ${unid[0]} com o mesmo perfil teve resultado tão extremo.` : `Em ${X.perfPos.aprox ? "cerca de " : ""}<b>${n0(X.perfPos.pos - 1)}</b> outr${fem ? "as" : "os"}, Lula também precisou de ${p1(100 * X.r, 0)} ou mais dos votos dos eliminados.`} No meio da faixa, ${p1(100 * X.perfMediana, 0)}.</span>
+      <small>Contagem direta, sem modelo${ctx.nivel === "uf" ? "" : `, entre ${plural} com ao menos ${n0({ municipio: 200, zona: 200, secao: 30 }[ctx.nivel])} votos nos eliminados`}${X.perfPos.aprox ? "; posição aproximada pelos percentis da faixa" : ""}. Compara lugares com a mesma força da direita no 1º turno, em todo o país.</small></div>` : "";
   const cartaoViz = X.viz ? (() => { const v = X.viz, ondeUF = ctx.nivel === "uf" ? "do Brasil" : `do estado (${esc(D.resumo.ufs[ctx.st.uf]?.nome || ctx.st.uf)})`;
-    return `<div class="veredito"><span class="rot">Comparação com ${fem ? "as" : "os"} ${plural} ${ondeUF}</span><b>${n0(v.outros + 1)}º de ${n0(v.total)}</b>
+    return `<div class="veredito"><span class="rot">Comparação com ${art} ${plural} ${ondeUF}</span><b>${n0(v.outros + 1)}º de ${n0(v.total)}</b>
       <span class="sub">${v.outros === 0 ? `Nenhum${fem ? "a outra" : " outro"} ${unid[0]} ${ondeUF} teve resultado tão extremo.` : `Em <b>${n0(v.outros)}</b> outr${fem ? "as" : "os"} ${v.outros === 1 ? unid[0] : plural}, Lula também precisou de ${p1(100 * X.r, 0)} ou mais dos votos dos eliminados.`}</span>
-      <small>Contagem direta, sem modelo${v.minE ? `, entre ${plural} com ao menos ${n0(v.minE)} votos nos eliminados` : ""}. Quando ${fem ? "muitas" : "muitos"} ${plural} ${fem ? "vizinhas" : "vizinhos"} têm o mesmo padrão, ele não é exclusivo deste local, o que não quer dizer que seja normal.</small></div>`; })() : "";
-  const detalhe = X.ind == null ? "" : `<details class="bloco-det"><summary>Chance supondo que eleitores do mesmo lugar votam em bloco</summary><p class="nota">Mesmo padrão de 2026 ${X.refNome}, mas tratando o recorte como decisões em bloco, com a variação observada entre ${fem ? "as" : "os"} ${plural} do estado (ρ = ${fmtN(X.rho, 2)}): <b>${umEmNlog(X.dis)}</b> (${probPct(X.dis)}). É a leitura mais conservadora; com ρ alto, ela trata o recorte quase como uma única decisão.</p></details>`;
-  return cab(h2, txt) + (cartaoChance || cartaoViz ? `<div class="vereditos">${cartaoChance}${cartaoViz}</div>` : "") + detalhe + premissas;
+      <small>Contagem direta, sem modelo${v.minE ? `, entre ${plural} com ao menos ${n0(v.minE)} votos nos eliminados` : ""}. ${ctx.nivel === "uf" ? "Mistura estados de perfis diferentes." : "Mistura lugares de perfis diferentes dentro do estado."}</small></div>`; })() : "";
+  const detalhe = !P ? "" : `<details class="bloco-det"><summary>Outras leituras da chance</summary><p class="nota">Com o padrão de 2026 ${X.refNome} (${p1(100 * X.mu, 0)} para Lula), sem considerar o perfil: <b>${umEmNlog(X.ind)}</b> (${probPct(X.ind)}). Com o padrão do perfil, mas supondo que eleitores do mesmo lugar votam em bloco (ρ = ${fmtN(X.rhoP, 2)}, medido pela variação entre ${art} ${plural} da mesma faixa): <b>${umEmNlog(X.disP)}</b> (${probPct(X.disP)}). É a leitura mais conservadora.</p></details>`;
+  const cartoes = [cartaoChance, cartaoPerfil, cartaoViz].filter(Boolean).join("");
+  return cab(h2, txt) + (cartoes ? `<div class="vereditos">${cartoes}</div>` : "") + detalhe + premissas;
 }
 // ---- contexto do recorte ativo
 async function audContexto(st) {
@@ -2411,42 +2429,49 @@ function audPanorama(el, ctx) {
   const filtroUF = (uf) => (!st.reg || D.resumo.ufs[uf]?.regiao === st.reg) && (!st.uf || uf === st.uf);
   const idx = (T) => Object.fromEntries(T.colunas.map((c, i) => [c, i]));
   const TM = TR.niveis.municipio, cm = idx(TM), gm = (l, k) => l[cm[k]];
-  const muns = TM.linhas.filter((l) => filtroUF(gm(l, "SG_UF")));
+  // filtro de perfil político do 1º turno (parcela de Flávio nos votos válidos)
+  const PERFIS = [["todos", "Todos", 0], ["fl50", "Flávio venceu no 1º turno", 0.5], ["fl60", "Direita forte (Flávio 60%+)", 0.6]];
+  let perfil = "todos";
+  const filtroPerf = (f1) => f1 == null || f1 >= PERFIS.find((x) => x[0] === perfil)[2];
+  let muns = [];
   const cnt = (ls, gt, c) => ls.filter((l) => gt(l, "classe") === c).length;
-  const raro = (gt, l) => gt(l, "K") > gt(l, "E") || (gt(l, "indUF") != null && gt(l, "indUF") <= LOG10_RARO);
+  const raro = (gt, l) => gt(l, "K") > gt(l, "E") || (gt(l, "indPerf") != null && gt(l, "indPerf") <= LOG10_RARO);
+  const topoPerfil = (gt, l) => gt(l, "posPerf") != null && gt(l, "nPerf") >= 20 && gt(l, "posPerf") <= 0.05 * gt(l, "nPerf");
   const q = N.qualidade;
-  el.innerHTML = `<section class="bloco aud-sec"><div class="aud-kpis">
-      <div><span class="rot">Municípios analisados</span><b>${n0(muns.length)}</b><small>100% das seções, cálculo exato</small></div>
-      <div class="kpi-destaque"><span class="rot">Ganho de Lula só fecha com migração de Flávio</span><b>${n0(cnt(muns, gm, "Requer migração entre finalistas"))}</b><small>municípios · maior que eliminados + brancos, nulos e faltosos liberados</small></div>
-      <div class="kpi-destaque"><span class="rot">Chance menor que 1 em 1 milhão</span><b>${n0(muns.filter((l) => raro(gm, l)).length)}</b><small>municípios · se cada um seguisse o padrão de 2026 do seu estado</small></div>
-      <div><span class="rot">Muito incomuns · incomuns</span><b>${n0(cnt(muns, gm, "Muito incomum"))} · ${n0(cnt(muns, gm, "Incomum"))}</b><small>com a variação real entre municípios, após FDR</small></div>
-      <div><span class="rot">Qualidade dos dados</span><b>${p1((100 * q.comparecimento_2_confere) / q.secoes, 3)}</b><small>seções com contas fechando · ${n0(q.secoes_sem_votacao_registrada)} sem votação registrada</small></div>
-    </div></section>
+  el.innerHTML = `<section class="bloco aud-sec"><div class="bloco-cab"><div><span class="olho">Perfil político do 1º turno</span><h2>Onde a direita era forte, os eleitores dos eliminados foram para Lula?</h2>
+      <p class="lead">Cada lugar é comparado com os municípios do país que tiveram a mesma parcela de Flávio no 1º turno (faixas de 5 pontos), em 2026. Onde a direita é forte, espera-se que os eleitores dos candidatos eliminados, em boa parte de direita, vão menos para Lula.</p></div>
+      <div class="seg" role="group" id="seg-perf">${PERFIS.map(([k, t], i) => `<button type="button" aria-pressed="${i === 0}" data-p="${k}">${t}</button>`).join("")}</div></div>
+    <div class="aud-kpis" id="pan-kpis"></div>
+    <div class="grafico" data-g="aud-perfil" style="height:280px;margin-top:14px"></div>
+    <p class="nota">Barras: parcela dos votos dos eliminados que foi para Lula, no saldo, em cada faixa de Flávio no 1º turno (soma dos municípios do país); é a referência “mesmo perfil” usada nas fichas. Linha tracejada: até onde chegam 90% dos municípios da faixa (acima de 100%, o ganho de Lula só fecha com migração de Flávio).</p>    </div></section>
   <section class="bloco"><div class="bloco-cab"><div><span class="olho">Mapa · municípios</span><h2>Onde o ganho de Lula exigiu mais dos votos dos eliminados</h2>
-      <p class="lead">Cada município comparado com o seu próprio 1º turno. Clique para abrir o resultado pronto.</p></div>
-      <label class="nota">Indicador <select id="aud-met"><option value="acima">Quanto acima do padrão do estado</option><option value="raro">Chance de acontecer (padrão do estado em 2026)</option><option value="r">Mínimo dos eliminados para Lula</option><option value="dis">Chance supondo votos em bloco (estado)</option><option value="classe">Classificação</option></select></label></div>
+      <p class="lead">Cada município comparado com o seu próprio 1º turno e com os municípios de mesmo perfil. Clique para abrir o resultado pronto.</p></div>
+      <label class="nota">Indicador <select id="aud-met"><option value="acima">Quanto acima de municípios com o mesmo perfil</option><option value="raro">Chance de acontecer (padrão do mesmo perfil)</option><option value="f1">Flávio no 1º turno</option><option value="r">Mínimo dos eliminados para Lula</option><option value="dis">Chance supondo votos em bloco (mesmo perfil)</option><option value="classe">Classificação</option></select></label></div>
     <div class="grafico aud-mapa" data-g="aud-mapa"><p class="carregando">Carregando mapa…</p></div>
     <p class="nota" id="aud-mapa-nota"></p></section>
   <section class="bloco"><div class="bloco-cab"><div><span class="olho">Ranking · 1º × 2º turno de cada recorte</span><h2>Resultados prontos, do mais extremo ao menos extremo</h2>
-      <p class="lead">Para cada município, zona ou seção: o mínimo dos votos dos eliminados que precisa ter ido para Lula pelo saldo do próprio recorte, e a chance disso se o recorte seguisse o padrão de 2026 do seu estado. Clique em uma linha para ver a ficha completa.</p></div>
+      <p class="lead">Para cada município, zona ou seção: o mínimo dos votos dos eliminados que precisa ter ido para Lula pelo saldo do próprio recorte, e a chance disso se o recorte seguisse o padrão dos lugares com o mesmo perfil político em 2026. Clique em uma linha para ver a ficha completa.</p></div>
       <div class="seg" role="group" id="seg-tr"><button type="button" aria-pressed="true" data-n="municipio">Municípios</button><button type="button" aria-pressed="false" data-n="zona">Zonas</button><button type="button" aria-pressed="false" data-n="secao">Seções (2.000 mais extremas)</button></div></div>
     <div class="aud-kpis" id="tr-kpis"></div><div id="aud-rk-tr"></div></section>
   <section class="bloco"><div><span class="olho">Ranking · estados</span><h2>Estados: 1º × 2º turno de cada um</h2>
-      <p class="lead">Mesma conta, com os votos do estado inteiro, comparada com o padrão de 2026 do Brasil. Clique para filtrar.</p></div><div id="aud-rk-uf"></div>
+      <p class="lead">Mesma conta, com os votos do estado inteiro, comparada com o padrão dos municípios do país com a mesma parcela de Flávio no 1º turno. Clique para filtrar.</p></div><div id="aud-rk-uf"></div>
     <p class="nota">Exportar: <a href="https://adriano-atanes.github.io/analise-eleicao-presidente-2026/dados/auditoria/transferencia.json" target="_blank" rel="noopener">resultados (JSON)</a>.</p></section>`;
   const colunas = (gt, primeiras) => [...primeiras,
     { t: "Votos dos eliminados", n: 1, v: (x) => gt(x.l, "E"), f: (x) => n0(gt(x.l, "E")) },
     { t: "Mínimo para Lula", n: 1, v: (x) => gt(x.l, "r") ?? -1, f: (x) => `${n0(gt(x.l, "K"))} (${p1(100 * (gt(x.l, "r") || 0), 0)})` },
     { t: "Δ Flávio", n: 1, v: (x) => gt(x.l, "dF"), f: (x) => sinal(gt(x.l, "dF")) },
-    { t: "Esperado pelo padrão de 2026", n: 1, v: (x) => gt(x.l, "muUF"), f: (x) => p1(100 * gt(x.l, "muUF"), 0) },
-    { t: "Chance de acontecer", n: 1, v: (x) => (gt(x.l, "K") > gt(x.l, "E") ? 1e6 + gt(x.l, "r") : -(gt(x.l, "indUF") ?? 0)), f: (x) => (gt(x.l, "K") > gt(x.l, "E") ? "só com migração de Flávio" : umEmNlog(gt(x.l, "indUF"))), ordemPadrao: 1 },
+    { t: "Flávio no 1º turno", n: 1, v: (x) => gt(x.l, "f1"), f: (x) => p1(100 * gt(x.l, "f1"), 0) },
+    { t: "Esperado pelo perfil", n: 1, v: (x) => gt(x.l, "muPerf"), f: (x) => p1(100 * gt(x.l, "muPerf"), 0) },
+    { t: "Chance de acontecer", n: 1, v: (x) => (gt(x.l, "K") > gt(x.l, "E") ? 1e6 + gt(x.l, "r") : -(gt(x.l, "indPerf") ?? 0)), f: (x) => (gt(x.l, "K") > gt(x.l, "E") ? "só com migração de Flávio" : umEmNlog(gt(x.l, "indPerf"))), ordemPadrao: 1 },
+    { t: "Posição no perfil", n: 1, v: (x) => (gt(x.l, "posPerf") == null ? 2 : -gt(x.l, "posPerf") / gt(x.l, "nPerf")), f: (x) => (gt(x.l, "posPerf") == null ? "—" : `${n0(gt(x.l, "posPerf"))}º de ${n0(gt(x.l, "nPerf"))}`) },
     { t: "Classificação", v: (x) => gt(x.l, "classe"), f: (x) => classeTag(gt(x.l, "classe") === "Compatível" ? "Compatível com o modelo" : gt(x.l, "classe")) }];
   const desenharTR = (nivel) => {
     const T = TR.niveis[nivel], ci = idx(T), gt = (l, k) => l[ci[k]];
-    const ls = T.linhas.filter((l) => filtroUF(gt(l, "SG_UF"))).map((l, i) => ({ id: i, l }));
+    const ls = T.linhas.filter((l) => filtroUF(gt(l, "SG_UF")) && filtroPerf(gt(l, "f1"))).map((l, i) => ({ id: i, l }));
     const c = (k) => ls.filter((x) => gt(x.l, "classe") === k).length;
     el.querySelector("#tr-kpis").innerHTML = `<div><span class="rot">Só fecha com migração de Flávio</span><b>${n0(c("Requer migração entre finalistas"))}</b><small>ganho de Lula maior que eliminados + brancos, nulos e faltosos liberados</small></div>
-      <div><span class="rot">Chance menor que 1 em 1 milhão</span><b>${n0(ls.filter((x) => raro(gt, x.l)).length)}</b><small>se seguissem o padrão de 2026 do seu estado</small></div>
+      <div><span class="rot">Chance menor que 1 em 1 milhão</span><b>${n0(ls.filter((x) => raro(gt, x.l)).length)}</b><small>se seguissem o padrão do mesmo perfil político</small></div>
+      <div><span class="rot">Entre os 5% mais extremos do perfil</span><b>${n0(ls.filter((x) => topoPerfil(gt, x.l)).length)}</b><small>Lula precisou de mais que 95% dos lugares com a mesma força de Flávio</small></div>
       <div><span class="rot">Muito incomuns · incomuns</span><b>${n0(c("Muito incomum"))} · ${n0(c("Incomum"))}</b><small>com a variação real, após FDR</small></div>
       <div><span class="rot">${nivel === "secao" ? "Seções listadas" : "Unidades analisadas"}</span><b>${n0(ls.length)}</b><small>${nivel === "secao" ? "as mais extremas do país; as demais têm a ficha calculada ao abrir a seção" : "todas as do recorte"}</small></div>`;
     const nomeL = (l) => nivel === "municipio" ? gt(l, "NM_MUNICIPIO") : nivel === "zona" ? `${gt(l, "NM_MUNICIPIO")} · zona ${z4(gt(l, "NR_ZONA"))}` : `${gt(l, "NM_MUNICIPIO")} · ${z4(gt(l, "NR_ZONA"))}/${z4(gt(l, "NR_SECAO"))}`;
@@ -2454,12 +2479,34 @@ function audPanorama(el, ctx) {
       aoClicar: (x) => { const l = x.l, u = gt(l, "SG_UF"); audIr({ v: "reconciliacao", uf: u, reg: D.resumo.ufs[u].regiao, mun: gt(l, "CD_MUNICIPIO"), zona: nivel !== "municipio" ? gt(l, "NR_ZONA") : null, secao: nivel === "secao" ? gt(l, "NR_SECAO") : null }); },
       colunas: colunas(gt, [{ t: "UF", v: (x) => gt(x.l, "SG_UF") }, { t: "Local", v: (x) => nomeL(x.l) }]) });
   };
-  el.querySelectorAll("#seg-tr button").forEach((b) => (b.onclick = () => { el.querySelectorAll("#seg-tr button").forEach((x) => x.setAttribute("aria-pressed", x === b)); desenharTR(b.dataset.n); }));
+  let nivelTR = "municipio";
+  el.querySelectorAll("#seg-tr button").forEach((b) => (b.onclick = () => { el.querySelectorAll("#seg-tr button").forEach((x) => x.setAttribute("aria-pressed", x === b)); nivelTR = b.dataset.n; desenharTR(nivelTR); }));
+  // indicadores do perfil e gráfico de referência
+  const desenharKPIs = () => {
+    muns = TM.linhas.filter((l) => filtroUF(gm(l, "SG_UF")) && filtroPerf(gm(l, "f1")));
+    const nomeP = PERFIS.find((x) => x[0] === perfil)[1];
+    el.querySelector("#pan-kpis").innerHTML = `
+      <div><span class="rot">Municípios${perfil === "todos" ? " analisados" : ` · ${esc(nomeP)}`}</span><b>${n0(muns.length)}</b><small>100% das seções, cálculo exato</small></div>
+      <div class="kpi-destaque"><span class="rot">Entre os 5% mais extremos do seu perfil</span><b>${n0(muns.filter((l) => topoPerfil(gm, l)).length)}</b><small>municípios em que Lula precisou de mais votos dos eliminados que 95% dos municípios com a mesma força de Flávio</small></div>
+      <div class="kpi-destaque"><span class="rot">Ganho de Lula só fecha com migração de Flávio</span><b>${n0(cnt(muns, gm, "Requer migração entre finalistas"))}</b><small>municípios · maior que eliminados + brancos, nulos e faltosos liberados</small></div>
+      <div><span class="rot">Chance menor que 1 em 1 milhão</span><b>${n0(muns.filter((l) => raro(gm, l)).length)}</b><small>se cada um seguisse o padrão do seu perfil</small></div>
+      <div><span class="rot">Muito incomuns · incomuns</span><b>${n0(cnt(muns, gm, "Muito incomum"))} · ${n0(cnt(muns, gm, "Incomum"))}</b><small>perfil + variação real, após FDR</small></div>
+      <div><span class="rot">Qualidade dos dados</span><b>${p1((100 * q.comparecimento_2_confere) / q.secoes, 3)}</b><small>seções com contas fechando</small></div>`;
+  };
+  const PF = TR.metadados.perfil, fx = Object.keys(PF.faixas).map(Number).sort((a, b) => a - b);
+  const elP = el.querySelector('[data-g="aud-perfil"]');
+  novoGrafico(elP, { grid: { left: 8, right: 8, top: 24, bottom: 8, containLabel: true },
+    tooltip: { trigger: "axis", formatter: (ps) => { const k = fx[ps[0].dataIndex], f = PF.faixas[k]; return `Flávio ${n0(100 * k * PF.largura)}% a ${n0(100 * (k + 1) * PF.largura)}% no 1º turno<br>${n0(f.n)} municípios<br>Para Lula, no saldo: <b>${p1(100 * f.mu, 0)}</b> dos votos dos eliminados<br>Metade dos municípios até ${p1(100 * f.mediana, 0)}; 90% até ${p1(100 * f.p90, 0)}`; } },
+    xAxis: { type: "category", data: fx.map((k) => `${n0(100 * k * PF.largura)}–${n0(100 * (k + 1) * PF.largura)}%`), name: "Flávio no 1º turno", nameLocation: "middle", nameGap: 26, nameTextStyle: { color: T.muted }, ...eixo(), splitLine: { show: false }, axisLabel: { color: T.ink2, fontSize: 10 } },
+    yAxis: { type: "value", max: (v) => Math.max(100, Math.ceil(v.max / 10) * 10), ...eixo(), axisLabel: { color: T.muted, formatter: "{value}%" } },
+    series: [{ type: "bar", name: "Para Lula", barCategoryGap: "18%", data: fx.map((k) => ({ value: +(100 * PF.faixas[k].mu).toFixed(1), itemStyle: { color: k >= 10 ? T.flavio : T.ink2 } })), label: { show: true, position: "top", color: T.ink2, fontSize: 10, formatter: (p) => n0(p.value) + "%" } },
+      { type: "line", name: "90% dos municípios até", data: fx.map((k) => +(100 * PF.faixas[k].p90).toFixed(1)), symbolSize: 4, lineStyle: { color: T.up, type: "dashed" }, itemStyle: { color: T.up } }] });
+  const redesenharPerfil = () => { desenharKPIs(); desenharTR(nivelTR); if (window._audMapa) window._audMapa(); };
+  el.querySelectorAll("#seg-perf button").forEach((b) => (b.onclick = () => { el.querySelectorAll("#seg-perf button").forEach((x) => x.setAttribute("aria-pressed", x === b)); perfil = b.dataset.p; redesenharPerfil(); }));
+  desenharKPIs();
   desenharTR("municipio");
   // ranking por estado
-  const TU = TR.niveis.uf, cu = idx(TU), muBR = audMuRef(TR, Object.keys(TR.metadados.referencia_estado));
-  const indBR = new Map(TU.linhas.map((l) => [l, caudaLog10(l[cu.K], l[cu.E], muBR, null)]));
-  const gu = (l, k) => k === "indUF" ? indBR.get(l) : k === "muUF" ? muBR : l[cu[k]];
+  const TU = TR.niveis.uf, cu = idx(TU), gu = (l, k) => l[cu[k]];
   tabela(el.querySelector("#aud-rk-uf"), { porPagina: 30, linhas: TU.linhas.filter((l) => filtroUF(gu(l, "SG_UF"))).map((l, i) => ({ id: i, l })),
     aoClicar: (x) => { const u = gu(x.l, "SG_UF"); audIr({ uf: u, reg: D.resumo.ufs[u].regiao, mun: null, zona: null, secao: null }); },
     colunas: colunas(gu, [{ t: "UF", v: (x) => gu(x.l, "SG_UF"), f: (x) => D.resumo.ufs[gu(x.l, "SG_UF")]?.nome || gu(x.l, "SG_UF") }]) });
@@ -2473,20 +2520,22 @@ function audPanorama(el, ctx) {
     const reg = registrarMalha(st.uf && st.uf !== "ZZ" ? st.uf : null);
     const desenhar = () => trocarGrafico(elM, () => {
       const met = selM.value;
-      const val = (l) => met === "acima" ? (gm(l, "r") == null ? null : Math.max(-40, Math.min(60, 100 * (gm(l, "r") - gm(l, "muUF")))))
-        : met === "raro" ? (migra(l) ? 12 : gm(l, "indUF") == null ? null : Math.min(12, -gm(l, "indUF")))
+      const val = (l) => !filtroPerf(gm(l, "f1")) ? null : met === "acima" ? (gm(l, "r") == null ? null : Math.max(-40, Math.min(60, 100 * (gm(l, "r") - gm(l, "muPerf")))))
+        : met === "f1" ? 100 * gm(l, "f1")
+        : met === "raro" ? (migra(l) ? 12 : gm(l, "indPerf") == null ? null : Math.min(12, -gm(l, "indPerf")))
         : met === "r" ? (gm(l, "r") == null ? null : Math.min(100, Math.max(0, 100 * gm(l, "r"))))
-        : met === "dis" ? (migra(l) ? 4 : gm(l, "disUF") == null ? null : Math.min(4, -gm(l, "disUF")))
+        : met === "dis" ? (migra(l) ? 4 : gm(l, "disPerf") == null ? null : Math.min(4, -gm(l, "disPerf")))
         : ({ "Compatível": 0, Incomum: 1, "Muito incomum": 2, "Requer migração entre finalistas": 3 }[gm(l, "classe")] ?? null);
       const dados = Object.entries(dadosMun).filter(([k]) => !k.startsWith("ZZ") && (!st.uf || k.startsWith(st.uf + "-")) && (!st.reg || D.resumo.ufs[k.slice(0, 2)]?.regiao === st.reg)).map(([k, l]) => ({ name: k, value: val(l) })).filter((d) => d.value != null);
-      const cfg = { acima: { min: -40, max: 60, cores: [T.flavio, T.mid, T.lula], txt: ["+60 p.p.", "−40 p.p."], nota: "Parcela mínima dos eleitores dos eliminados que precisa ter ido para Lula no município menos a parcela que foi para Lula no estado em 2026, em pontos percentuais. Vermelho forte: o município exigiu muito mais do que o padrão do próprio estado." },
-        raro: { min: 0, max: 12, cores: [T.mid, T.up], txt: ["1 em 10¹² ou menos", "provável"], nota: "Chance de acontecer se o município seguisse o padrão de 2026 do seu estado, em escala logarítmica (cada faixa é 10 vezes menos provável). Municípios cujo ganho de Lula só fecha com migração de Flávio aparecem no topo da escala." },
+      const cfg = { acima: { min: -40, max: 60, cores: [T.flavio, T.mid, T.lula], txt: ["+60 p.p.", "−40 p.p."], nota: "Parcela mínima dos eleitores dos eliminados que precisa ter ido para Lula no município menos a parcela que foi para Lula nos municípios do país com a mesma força de Flávio no 1º turno, em pontos percentuais. Vermelho forte: o município exigiu muito mais que lugares de perfil parecido." },
+        f1: { min: 20, max: 80, cores: [T.lula, T.mid, T.flavio], txt: ["Flávio 80%", "20%"], nota: "Parcela de Flávio nos votos válidos do 1º turno: o perfil político usado como referência." },
+        raro: { min: 0, max: 12, cores: [T.mid, T.up], txt: ["1 em 10¹² ou menos", "provável"], nota: "Chance de acontecer se o município seguisse o padrão dos municípios com o mesmo perfil político em 2026, em escala logarítmica (cada faixa é 10 vezes menos provável). Municípios cujo ganho de Lula só fecha com migração de Flávio aparecem no topo da escala." },
         r: { min: 0, max: 100, cores: [T.mid, T.lula], txt: ["100%", "0%"], nota: "Parcela mínima dos eleitores dos eliminados que precisa ter votado em Lula, pelo saldo do próprio município." },
-        dis: { min: 0, max: 4, cores: [T.mid, T.up], txt: ["1 em 10 mil ou menos", "provável"], nota: "Chance com a variação real entre municípios do estado (leitura conservadora), em escala logarítmica." },
+        dis: { min: 0, max: 4, cores: [T.mid, T.up], txt: ["1 em 10 mil ou menos", "provável"], nota: "Chance com o padrão do mesmo perfil, supondo que eleitores do mesmo lugar votam em bloco (leitura conservadora), em escala logarítmica." },
         classe: { min: 0, max: 3, cores: [T.grid, T.atencao || T.cury, T.up, T.ink], txt: ["Só com migração de Flávio", "Compatível"], nota: "Classificação com a variação real, após correção para múltiplas comparações (FDR)." } }[met];
       el.querySelector("#aud-mapa-nota").textContent = cfg.nota;
       const c = novoGrafico(elM, {
-        tooltip: { trigger: "item", formatter: (p) => { const l = dadosMun[p.name]; if (!l) return ""; return `<b>${esc(gm(l, "NM_MUNICIPIO"))}</b> · ${gm(l, "SG_UF")}<br>Lula precisava de ao menos ${n0(gm(l, "K"))} dos ${n0(gm(l, "E"))} votos dos eliminados (${p1(100 * (gm(l, "r") || 0), 0)})<br>${migra(l) ? "Só fecha com migração de Flávio para Lula" : `Padrão do estado em 2026: ${p1(100 * gm(l, "muUF"), 0)}<br>Chance de acontecer: ${umEmNlog(gm(l, "indUF"))}`}`; } },
+        tooltip: { trigger: "item", formatter: (p) => { const l = dadosMun[p.name]; if (!l) return ""; return `<b>${esc(gm(l, "NM_MUNICIPIO"))}</b> · ${gm(l, "SG_UF")}<br>Lula precisava de ao menos ${n0(gm(l, "K"))} dos ${n0(gm(l, "E"))} votos dos eliminados (${p1(100 * (gm(l, "r") || 0), 0)})<br>${migra(l) ? "Só fecha com migração de Flávio para Lula" : `Flávio no 1º turno: ${p1(100 * gm(l, "f1"), 0)} · padrão do perfil: ${p1(100 * gm(l, "muPerf"), 0)} para Lula<br>Posição no perfil: ${gm(l, "posPerf") == null ? "—" : `${n0(gm(l, "posPerf"))}º de ${n0(gm(l, "nPerf"))}`}<br>Chance de acontecer: ${umEmNlog(gm(l, "indPerf"))}`}`; } },
         visualMap: { min: cfg.min, max: cfg.max, inRange: { color: cfg.cores }, text: cfg.txt, calculable: false, orient: "horizontal", left: 8, bottom: 4, itemWidth: 12, itemHeight: 160, textStyle: { color: T.ink2 }, seriesIndex: 0 },
         geo: { map: reg.nome, roam: true, scaleLimit: { min: 1, max: 40 }, layoutCenter: ["50%", "48%"], layoutSize: "96%", itemStyle: { areaColor: T.grid, borderColor: st.uf ? T.surface : "transparent", borderWidth: st.uf ? 0.4 : 0 },
           emphasis: { label: { show: false }, itemStyle: { areaColor: T.ink, borderColor: T.ink } }, select: { disabled: true } },
@@ -2495,7 +2544,7 @@ function audPanorama(el, ctx) {
       c.on("click", (p) => { const l = dadosMun[p.name]; if (l) audIr({ v: "reconciliacao", uf: gm(l, "SG_UF"), reg: D.resumo.ufs[gm(l, "SG_UF")].regiao, mun: gm(l, "CD_MUNICIPIO"), zona: null, secao: null }); });
       return c;
     });
-    selM.onchange = desenhar; desenhar();
+    selM.onchange = desenhar; window._audMapa = () => document.body.contains(elM) && desenhar(); desenhar();
   }).catch((e) => { elM.innerHTML = `<p class="aviso">Não foi possível carregar o mapa (${esc(e.message)}).</p>`; });
 }
 
