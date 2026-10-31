@@ -141,6 +141,10 @@ ou maior. A chance com variação real fica na tabela de detalhes.
 
   A conta supõe que nenhum eleitor de Flávio migrou. Se K > E, o saldo só se explica com migração entre finalistas.
 
+> **No portal, a referência é sempre 2026:** município, zona e seção são comparados com o padrão do próprio estado no
+> 2º turno de 2026 (μ do estado); estado e região, com o padrão do Brasil em 2026. A referência de 2022 continua no JSON
+> (`ind22`, `dis22`), mas não é exibida.
+
 **Probabilidade avaliada.** μ é a probabilidade de um eleitor dos eliminados votar em Lula: a fração que escolhe um
 finalista (matriz do estado em 2026) vezes a parcela de Lula entre esses. Referências: comportamento de 2022 por campo
 ideológico, ou do próprio estado em 2026. Calcula-se P(X ≥ K) por duas leituras:
