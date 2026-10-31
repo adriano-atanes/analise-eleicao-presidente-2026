@@ -37,6 +37,7 @@ python 20_votos_eleitorado.py       # verificação: votos de Lula × eleitorado
 python 21_boletins.py               # boletim de urna: votos dos demais candidatos do 1º turno e endereço dos locais → portal/dados/bu/<UF>.json
 python 22_auditoria.py              # Auditoria: reconciliação, limites, cenários e Monte Carlo de todas as UFs, municípios e zonas
 python 24_ja_votou.py               # Indicador “O eleitor identificado já votou” (logs) por turno, UF, município, zona e seção
+python 25_sem_digital.py            # Indicador de votos sem digital (logs): por turno, UF, município, zona e seção, com esperado pelo município
                                    #   (opções: --sim 100000 --sim-zona 20000 --seed 2026 --forcar; cache em dados/processados/auditoria_cache)
 python 23_transferencia.py          # teste de transferência dos eliminados (1º × 2º turno de cada UF, município, zona e seção) → portal/dados/auditoria/transferencia.json
 python -m unittest discover -s tests   # testes do motor da Auditoria (scripts/auditoria_motor.py)

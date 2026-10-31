@@ -1714,6 +1714,7 @@ async function visaoLogs(app) {
   <a class="atalho" href="#bu"><span class="exp-ic">${icone("bu")}</span><span><b>Procurando uma seção específica?</b><small>Boletim de urna e log de qualquer seção, por estado, zona e seção</small></span><span class="exp-seta" aria-hidden="true">→</span></a>
   <section class="bloco"><div class="bloco-cab"><div><span class="olho">1º × 2º turno · Brasil</span><h2>Os dois turnos lado a lado</h2></div></div><div id="log-comp"></div></section>
   ${htmlJaVotou()}
+  ${htmlSemDigital()}
   ${htmlAmpliada(LG)}
   ${htmlIntervalos(LG)}
   ${htmlDepois17(LG)}
@@ -1741,6 +1742,7 @@ async function visaoLogs(app) {
     </tbody></table></div><p class="nota">O 2º turno tem menos cargos (presidente e, em alguns estados, governador), o que explica o voto mais rápido e a fila menor.</p>`;
   desenharLogs(app, LG);
   desenharJaVotou(app);
+  desenharSemDigital(app);
   desenharAmpliada(app, LG);
   desenharIntervalos(app, LG);
   desenharDepois17(app, LG);
@@ -1892,6 +1894,126 @@ async function desenharJaVotou(app) {
       return c; });
   };
   sec.querySelector("#jv-turno").addEventListener("click", (e) => { const b = e.target.closest("button"); if (!b) return; b.parentElement.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", x === b)); est.t = b.dataset.t; desenharKPIs(); desenharTabela(); desenharMapa(); });
+  desenharKPIs(); desenharTabela();
+  carregarMapa().then(() => { if (!document.body.contains(elM)) return; elM.innerHTML = ""; elM.dataset.pronto = "1"; desenharMapa(); }).catch((e) => { elM.innerHTML = `<p class="aviso">Não foi possível carregar o mapa (${esc(e.message)}).</p>`; });
+}
+
+// ---------- indicador “eleitor que votou sem digital” (página Urnas) ----------
+function htmlSemDigital() {
+  return `<section class="bloco" id="sem-digital"><div class="bloco-cab"><div><span class="olho">Indicador · votos sem digital</span>
+      <h2>Quantos eleitores votaram sem a digital conferida</h2>
+      <p class="lead">O log grava “Tipo de habilitação do eleitor [biométrica]” quando a digital confere. Os demais votos foram liberados sem a digital: eleitor sem biometria no cadastro, digital que não conferiu depois das tentativas (o mesário libera com o código e o ano de nascimento) ou urna sem biometria, como no exterior.</p></div>
+      <div class="seg" role="group" aria-label="Turno" id="sd-turno"><button aria-pressed="false" data-t="1">1º turno</button><button aria-pressed="true" data-t="2">2º turno</button></div></div>
+    <div class="aud-kpis" id="sd-kpis"><p class="carregando">Carregando…</p></div>
+    <div class="grade2" style="margin-top:16px"><div><h3 class="sub-h">Seções pela parcela de votos sem digital</h3><div class="grafico" data-g="sd-faixas" style="height:260px"></div></div>
+      <div><h3 class="sub-h">Seções com mais votos sem digital votaram diferente?</h3><div id="sd-res"></div></div></div>
+    <h3 class="sub-h" style="margin-top:20px">Onde estão os votos sem digital</h3>
+    <nav class="aud-trilha" id="sd-trilha" aria-label="Recorte"></nav>
+    <div id="sd-tab"></div>
+    <h3 class="sub-h" style="margin-top:20px">Seções mais acima do esperado para o próprio município</h3><div id="sd-top"></div>
+    <h3 class="sub-h" style="margin-top:20px">Mapa · parcela dos votos sem digital</h3>
+    <div class="grafico" data-g="sd-mapa" style="height:520px"><p class="carregando">Carregando mapa…</p></div>
+    <p class="nota">Fonte: logs de 100% das urnas com log publicado pelo TSE. Votos sem digital = votos no log − habilitações biométricas. Liberados pelo mesário: votos com o registro “Mesário … habilitou o eleitor”. Esperado para o município: a parcela sem digital das outras seções do mesmo município aplicada aos votos da seção. Percentuais de seção só com 30 votos ou mais.</p></section>`;
+}
+async function desenharSemDigital(app) {
+  const sec = app.querySelector("#sem-digital"); if (!sec) return;
+  const J = await json("dados/sem_digital.json").catch(() => null);
+  if (!J) { sec.querySelector("#sd-kpis").innerHTML = `<p class="aviso">Dados indisponíveis.</p>`; return; }
+  if (!document.body.contains(sec)) return;
+  const porUF = {}, est = { t: "2", uf: null, mun: null, zona: null };
+  const pc = (s, v) => (v ? (100 * s) / v : 0), fpc = (s, v) => p1(pc(s, v), 1);
+  const nomeUF = (u) => (u === "ZZ" ? "Exterior" : D.resumo.ufs[u]?.nome || u);
+  const linkBU = (uf, zona, secao) => `#bu?uf=${uf}&zona=${zona}&secao=${secao}`;
+  const obj = (cols, l) => Object.fromEntries(cols.map((c, i) => [c, l[i]]));
+  const MC = Object.fromEntries(J.municipios.colunas.map((c, i) => [c, i]));
+  const desenharKPIs = () => {
+    const X = J.turnos[est.t], m = X.maior_excesso, P = J.persistencia;
+    sec.querySelector("#sd-kpis").innerHTML = `
+      <div class="kpi-destaque"><span class="rot">Votos sem digital no ${est.t}º turno</span><b>${mi(X.sem_digital)}</b><small>${p1(100 * X.pct, 1)} dos ${mi(X.votos)} votos · ${p1(100 * X.pct_brasil_sem_exterior, 1)} sem o exterior (${n0(X.exterior)} votos no exterior, sem biometria)</small></div>
+      <div><span class="rot">Liberados pelo mesário</span><b>${mi(X.liberados_mesario)}</b><small>${p1((100 * X.liberados_mesario) / X.sem_digital, 0)} dos votos sem digital · ${n0(X.digital_nao_confere)} digitais que não conferiram</small></div>
+      <div><span class="rot">Seções com metade ou mais sem digital</span><b>${n0(X.secoes_50)}</b><small>no Brasil, com 30 votos ou mais · ${n0(X.secoes_90)} com 90% ou mais</small></div>
+      <div><span class="rot">Muito acima do próprio município</span><b>${n0(X.secoes_z5)}</b><small>seções 5 desvios-padrão acima · ${n0(X.z5_com_leitor_ou_troca)} delas com erro no leitor biométrico ou troca de urna</small></div>
+      <div><span class="rot">A mesma seção nos dois turnos</span><b>${fmtN(P.correlacao_pct, 2)}</b><small>correlação da parcela sem digital entre os turnos · ${n0(P.z5_t2_e_t1)} das ${n0(P.z5_t2)} seções muito acima no 2º turno já estavam assim no 1º</small></div>`;
+    const el = sec.querySelector('[data-g="sd-faixas"]');
+    trocarGrafico(el, () => novoGrafico(el, { grid: { left: 8, right: 16, top: 16, bottom: 8, containLabel: true },
+      tooltip: { trigger: "axis", formatter: (ps) => `${esc(ps[0].name)} sem digital: <b>${n0(X.faixas[ps[0].dataIndex])}</b> seções` },
+      xAxis: { type: "category", data: J.faixas, ...eixo(), splitLine: { show: false }, axisLabel: { color: T.ink2, fontSize: 10, interval: 0, formatter: (v) => v.replace(" ou mais", "+").replace(" a ", "–").replace("até ", "≤") } },
+      yAxis: { type: "log", min: 1, ...eixo(), axisLabel: { color: T.muted, formatter: (v) => mi(v) } },
+      series: [{ type: "bar", barCategoryGap: "20%", data: X.faixas.map((v, i) => ({ value: Math.max(v, 1), itemStyle: { color: i >= 5 ? T.up : T.ink2 } })),
+        label: { show: true, position: "top", color: T.ink2, fontSize: 10, formatter: (p) => n0(X.faixas[p.dataIndex]) } }] }));
+  };
+  sec.querySelector("#sd-res").innerHTML = `<div class="tabela-wrap"><table><thead><tr><th>Votos sem digital na seção (2º turno)</th><th class="n">Seções</th><th class="n">Lula · 1º turno</th><th class="n">Lula · 2º turno</th><th class="n">Variação</th></tr></thead><tbody>
+    ${J.faixas_resultado.map((g) => `<tr><td>${esc(g.faixa)}</td><td class="n">${n0(g.secoes)}</td><td class="n">${p1(100 * g.lula1)}</td><td class="n">${p1(100 * g.lula2)}</td><td class="n"><b>${pp(100 * (g.lula2 - g.lula1))}</b></td></tr>`).join("")}</tbody></table></div>
+    <p class="nota">Lula entre os dois finalistas, seções no Brasil com 30 votos ou mais. A variação entre os turnos é parecida em todas as faixas, e a mudança da parcela sem digital de uma seção entre os turnos não acompanha a variação de Lula (correlação ${fmtN(J.correlacao_variacao, 3)}).</p>`;
+  const outro = () => (est.t === "2" ? "1" : "2");
+  const colsNum = () => { const t = est.t, o = outro(); return [
+    { t: "Votos", n: 1, v: (x) => x[`v${t}`], f: (x) => n0(x[`v${t}`]) },
+    { t: `Sem digital · ${t}º turno`, n: 1, v: (x) => pc(x[`s${t}`], x[`v${t}`]), f: (x) => `<b>${fpc(x[`s${t}`], x[`v${t}`])}</b> <span class="nota">(${n0(x[`s${t}`])})</span>`, ordemPadrao: 1 },
+    { t: "Liberados pelo mesário", n: 1, v: (x) => x[`m${t}`], f: (x) => n0(x[`m${t}`]) },
+    { t: `${o}º turno`, n: 1, v: (x) => pc(x[`s${o}`], x[`v${o}`]), f: (x) => fpc(x[`s${o}`], x[`v${o}`]) }]; };
+  const desenharTabela = async () => {
+    const trilha = [["Brasil", { uf: null, mun: null, zona: null }]];
+    if (est.uf) trilha.push([nomeUF(est.uf), { mun: null, zona: null }]);
+    if (est.mun) trilha.push([J.municipios.linhas.find((l) => l[MC.uf] === est.uf && l[MC.mun] === est.mun)?.[MC.nome] || "", { zona: null }]);
+    if (est.zona) trilha.push([`Zona ${z4(est.zona)}`, {}]);
+    const tr = sec.querySelector("#sd-trilha");
+    tr.innerHTML = trilha.map(([t], i) => (i === trilha.length - 1 ? `<b>${esc(t)}</b>` : `<a href="#" data-i="${i}">${esc(t)}</a><span aria-hidden="true">›</span>`)).join("");
+    tr.querySelectorAll("a").forEach((a) => (a.onclick = (e) => { e.preventDefault(); Object.assign(est, trilha[+a.dataset.i][1]); desenharTabela(); }));
+    const el = sec.querySelector("#sd-tab");
+    if (!est.uf) {
+      const ls = Object.entries(J.ufs).map(([u, v]) => ({ id: u, uf: u, ...obj(["v1", "s1", "m1", "n1", "v2", "s2", "m2", "n2"], v) }));
+      tabela(el, { porPagina: 30, linhas: ls, aoClicar: (x) => { est.uf = x.uf; desenharTabela(); }, colunas: [{ t: "Estado", v: (x) => nomeUF(x.uf) }, ...colsNum()] });
+    } else if (!est.mun) {
+      const ls = J.municipios.linhas.filter((l) => l[MC.uf] === est.uf).map((l, i) => ({ id: i, ...obj(J.municipios.colunas, l) }));
+      tabela(el, { porPagina: 20, linhas: ls, busca: { id: "sd-busca", placeholder: "Buscar município…", campo: (x) => x.nome }, aoClicar: (x) => { est.mun = x.mun; desenharTabela(); },
+        colunas: [{ t: "Município", v: (x) => x.nome }, ...colsNum()] });
+    } else {
+      el.innerHTML = `<p class="carregando">Carregando…</p>`;
+      const P = (porUF[est.uf] ||= await json(`dados/sem_digital/${est.uf}.json`));
+      if (!est.zona) {
+        const ls = P.zonas.linhas.map((l) => obj(P.zonas.colunas, l)).filter((x) => x.mun === est.mun).map((x, i) => ({ id: i, ...x }));
+        tabela(el, { porPagina: 30, linhas: ls, aoClicar: (x) => { est.zona = x.zona; desenharTabela(); }, colunas: [{ t: "Zona", v: (x) => x.zona, f: (x) => `Zona ${z4(x.zona)}` }, ...colsNum()] });
+      } else {
+        const t = est.t, o = outro();
+        const ls = P.secoes.linhas.map((l) => obj(P.secoes.colunas, l)).filter((x) => x.mun === est.mun && x.zona === est.zona).map((x, i) => ({ id: i, ...x }));
+        el.innerHTML = `<div id="sd-sec"></div><p class="nota">Só as seções com ${p1(100 * P.corte, 0)} ou mais dos votos sem digital em algum turno (e 30 votos ou mais); as demais seções da zona ficaram abaixo disso.</p>`;
+        if (!ls.length) { el.querySelector("#sd-sec").innerHTML = `<p class="nota">Nenhuma seção desta zona chegou a ${p1(100 * P.corte, 0)} sem digital.</p>`; return desenharTop(); }
+        tabela(el.querySelector("#sd-sec"), { porPagina: 30, linhas: ls, colunas: [{ t: "Seção", v: (x) => x.secao, f: (x) => `<a href="${linkBU(est.uf, x.zona, x.secao)}">Seção ${z4(x.secao)}</a>` },
+          { t: "Votos", n: 1, v: (x) => x[`v${t}`], f: (x) => n0(x[`v${t}`]) },
+          { t: `Sem digital · ${t}º turno`, n: 1, v: (x) => pc(x[`s${t}`], x[`v${t}`]), f: (x) => `<b>${fpc(x[`s${t}`], x[`v${t}`])}</b> <span class="nota">(${n0(x[`s${t}`])})</span>`, ordemPadrao: 1 },
+          { t: "Esperado pelo município", n: 1, v: (x) => x[`esp${t}`] ?? 0, f: (x) => (x[`esp${t}`] == null ? "—" : n0(x[`esp${t}`])) },
+          { t: `${o}º turno`, n: 1, v: (x) => pc(x[`s${o}`], x[`v${o}`]), f: (x) => fpc(x[`s${o}`], x[`v${o}`]) }] });
+      }
+    }
+    desenharTop();
+  };
+  const desenharTop = () => {
+    const t = est.t, o = outro();
+    const ls = J.maiores_secoes.linhas.map((l, i) => ({ id: i, ...obj(J.maiores_secoes.colunas, l) }))
+      .filter((x) => x[`esp${t}`] != null && x[`v${t}`] >= 30 && (!est.uf || x.uf === est.uf) && (!est.mun || x.mun === est.mun) && (!est.zona || x.zona === est.zona));
+    if (!ls.length) { sec.querySelector("#sd-top").innerHTML = `<p class="nota">Nenhuma seção deste recorte está entre as mais acima do esperado no país.</p>`; return; }
+    tabela(sec.querySelector("#sd-top"), { porPagina: 10, linhas: ls, colunas: [
+      { t: "Local", v: (x) => x.nome, f: (x) => `<a href="${linkBU(x.uf, x.zona, x.secao)}">${esc(x.nome)} (${x.uf}) · ${z4(x.zona)}/${z4(x.secao)}</a><br><span class="nota">${esc(x.local)}</span>` },
+      { t: `Sem digital · ${t}º turno`, n: 1, v: (x) => x[`s${t}`] - x[`esp${t}`], f: (x) => `<b>${n0(x[`s${t}`])} de ${n0(x[`v${t}`])}</b><br><span class="nota">${fpc(x[`s${t}`], x[`v${t}`])}</span>`, ordemPadrao: 1 },
+      { t: "Esperado pelo município", n: 1, v: (x) => x[`esp${t}`], f: (x) => n0(x[`esp${t}`]) },
+      { t: "Leitor biométrico · troca de urna", v: (x) => x[`leitor${t}`] + x[`cont${t}`], f: (x) => [x[`leitor${t}`] ? "erro no leitor" : "", x[`cont${t}`] ? "urna trocada" : ""].filter(Boolean).join(" · ") || "—" },
+      { t: `${o}º turno`, n: 1, v: (x) => pc(x[`s${o}`], x[`v${o}`]), f: (x) => `${n0(x[`s${o}`])} de ${n0(x[`v${o}`])}` }] });
+  };
+  const elM = sec.querySelector('[data-g="sd-mapa"]');
+  const dadosMun = Object.fromEntries(J.municipios.linhas.map((l) => [`${l[MC.uf]}-${l[MC.mun]}`, l]));
+  const desenharMapa = () => {
+    if (!elM.dataset.pronto) return;
+    const t = est.t, reg = registrarMalha(null);
+    trocarGrafico(elM, () => { const c = novoGrafico(elM, {
+      tooltip: { trigger: "item", formatter: (p) => { const l = dadosMun[p.name]; if (!l) return ""; return `<b>${esc(l[MC.nome])}</b> · ${l[MC.uf]} · ${t}º turno<br>${n0(l[MC["s" + t]])} de ${n0(l[MC["v" + t]])} votos sem digital (${fpc(l[MC["s" + t]], l[MC["v" + t]])})<br>${n0(l[MC["m" + t]])} liberados pelo mesário`; } },
+      visualMap: { min: 0, max: 30, inRange: { color: [misturar(T.surface, T.up, 0.06), T.up] }, text: ["30% ou mais", "0%"], calculable: false, orient: "horizontal", left: 8, bottom: 4, itemWidth: 12, itemHeight: 160, textStyle: { color: T.ink2 }, seriesIndex: 0 },
+      geo: { map: reg.nome, roam: true, scaleLimit: { min: 1, max: 40 }, layoutCenter: ["50%", "48%"], layoutSize: "96%", itemStyle: { areaColor: T.grid, borderWidth: 0 }, emphasis: { label: { show: false }, itemStyle: { areaColor: T.ink } }, select: { disabled: true } },
+      series: [{ type: "map", geoIndex: 0, data: Object.entries(dadosMun).filter(([k]) => !k.startsWith("ZZ")).map(([k, l]) => ({ name: k, value: Math.min(30, pc(l[MC["s" + t]], l[MC["v" + t]])) })) },
+        { type: "lines", coordinateSystem: "geo", geoIndex: 0, polyline: true, silent: true, z: 5, lineStyle: { color: T.surface, width: 0.9 }, data: reg.bordas.map((cc) => ({ coords: cc })) }] });
+      c.on("click", (p) => { const l = dadosMun[p.name]; if (l) { Object.assign(est, { uf: l[MC.uf], mun: l[MC.mun], zona: null }); desenharTabela(); sec.querySelector("#sd-trilha").scrollIntoView({ behavior: "smooth", block: "start" }); } });
+      return c; });
+  };
+  sec.querySelector("#sd-turno").addEventListener("click", (e) => { const b = e.target.closest("button"); if (!b) return; b.parentElement.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", x === b)); est.t = b.dataset.t; desenharKPIs(); desenharTabela(); desenharMapa(); });
   desenharKPIs(); desenharTabela();
   carregarMapa().then(() => { if (!document.body.contains(elM)) return; elM.innerHTML = ""; elM.dataset.pronto = "1"; desenharMapa(); }).catch((e) => { elM.innerHTML = `<p class="aviso">Não foi possível carregar o mapa (${esc(e.message)}).</p>`; });
 }
@@ -2711,7 +2833,7 @@ const PAGINAS = [
   { r: "apuracao", nome: "Apuração", desc: "A parcial minuto a minuto e as verificações de alegações", chaves: "apuracao parcial virada contagem animacao verificacao falhas" },
   { r: "perfil", nome: "Perfil", desc: "Quem votou, quem faltou e onde Lula cresceu", chaves: "perfil idade escolaridade abstencao 2022" },
   { r: "auditoria", nome: "Auditoria", desc: "Testes estatísticos e comparação com 2002 a 2022", chaves: "auditoria testes historico benford digito comportamento" },
-  { r: "logs", nome: "Urnas", desc: "O que os logs de todas as urnas registraram no dia", chaves: "urnas logs biometria contingencia troca erro intervalo modelo 17h ja votou eleitor que ja votou duplicado" },
+  { r: "logs", nome: "Urnas", desc: "O que os logs de todas as urnas registraram no dia", chaves: "urnas logs biometria contingencia troca erro intervalo modelo 17h ja votou eleitor que ja votou duplicado digital sem digital biometria" },
   { r: "bu", nome: "Seções", desc: "Boletim de urna e log de qualquer seção", chaves: "secao secoes boletim urna bu zona log" },
 ];
 const ICONES = {
