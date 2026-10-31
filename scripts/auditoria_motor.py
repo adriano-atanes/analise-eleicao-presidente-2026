@@ -75,7 +75,15 @@ def limites(t1, t2):
     gLp, gFp = max(0, gL), max(0, gF)
     cruz_min_FL = max(0, gLp - R) if gF < 0 else 0
     cruz_min_LF = max(0, gFp - R) if gL < 0 else 0
+    # saldo líquido: brancos/nulos e abstenção só liberam votos se diminuíram entre os turnos
+    E = c1["Demais"]
+    bn_liberado = max(0, -((c2["Branco"] - c1["Branco"]) + (c2["Nulo"] - c1["Nulo"])))
+    abst_liberada = max(0, -(c2["Abstenção"] - c1["Abstenção"]))
     return {
+        "votos_eliminados": int(E), "brancos_nulos_liberados": int(bn_liberado), "abstencao_liberada": int(abst_liberada),
+        # parte mínima dos votos dos eliminados que precisa ter ido para Lula, no saldo, sem migração entre finalistas
+        "lula_minimo_dos_eliminados": ((gL - bn_liberado - abst_liberada) / E) if E else None,
+        "lula_ganho_sobre_eliminados": (gL / E) if E else None, "flavio_ganho_sobre_eliminados": (gF / E) if E else None,
         "disponivel_sem_finalistas": int(R),
         "novos_aptos": int(novos),
         "ganho_lula": int(gL), "ganho_flavio": int(gF),

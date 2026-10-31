@@ -70,6 +70,13 @@ class Limites(unittest.TestCase):
         self.assertEqual(lim["disponivel_sem_finalistas"], 897 + 249 + 381 + 3765 + 3)
         self.assertLess(lim["captacao_necessaria_lula"], 0.2)
 
+    def test_saldo_liquido_silva_jardim(self):
+        lim = M.limites(SJ_T1, SJ_T2)
+        self.assertEqual(lim["brancos_nulos_liberados"], 72 + 120)
+        self.assertEqual(lim["abstencao_liberada"], 0)  # a abstenção subiu (+107)
+        self.assertAlmostEqual(lim["lula_minimo_dos_eliminados"], (984 - 192) / 897)  # 88,3%
+        self.assertAlmostEqual(lim["flavio_ganho_sobre_eliminados"], 1 / 897)
+
     def test_frechet(self):
         f = M.frechet([10, 5], [8, 7])
         self.assertEqual(f[0][0], [3, 8])

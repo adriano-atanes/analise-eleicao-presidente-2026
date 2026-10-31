@@ -153,6 +153,7 @@ def compacto(u):
             "metodo": md["metodo"], "ext": md["extremos"], "sims": md["simulacoes"], "capt": l["captacao_necessaria_lula"],
             "cruz": l["migracao_minima_flavio_para_lula"] + l["migracao_minima_lula_para_flavio"],
             "ident_ok": all(r["identidades"].values()), "fin": r["turno2"]["Lula"] + r["turno2"]["Flávio"],
+            "elim": l["votos_eliminados"], "lmin": l["lula_minimo_dos_eliminados"], "fel": l["flavio_ganho_sobre_eliminados"],
             "sem_votacao": r["turno2"]["comparecimento"] > 0 and r["turno2"]["nominais"] + r["turno2"]["Branco"] + r["turno2"]["Nulo"] == 0 and r["turno2"]["Abstenção"] == 0}
 
 
@@ -333,6 +334,11 @@ def main():
             if cache:
                 usados_cache.append(uf)
             print(time.strftime("%H:%M:%S"), uf, "cache" if cache else f"{res['tempo_s']}s", len(res["municipios"]), "mun", len(res["zonas"]), "zonas", flush=True)
+    # reconciliação, limites e cenários são baratos: recalculados sempre (o cache guarda só o Monte Carlo)
+    for r in resultados.values():
+        for u in r["municipios"] + r["zonas"]:
+            t1, t2 = u["contagens"]["turno1"], u["contagens"]["turno2"]
+            u["reconciliacao"], u["limites"], u["cenarios"] = M.reconciliar(t1, t2), M.limites(t1, t2), M.cenarios(t1, t2)
     # passe profundo: 10× simulações (Dirichlet) para Silva Jardim (RJ) e os 20 municípios mais distantes do esperado
     cand = sorted(((uf, m) for uf, r in resultados.items() for m in r["municipios"] if compacto(m)["fin"] >= 300),
                   key=lambda x: -abs(x[1]["monte_carlo"]["modelos"]["dirichlet"]["z"]))[:20]
@@ -412,8 +418,8 @@ def main():
                 "alpha": {"uf": a_uf, "por_uf": alfas}, "calibracao": calib, "qualidade": qualidade, "classes": classes,
                 "contagens": {"ufs": len(uf_lista), "municipios": sum(1 for c in ranking if c["uf"] != "ZZ"), "cidades_exterior": sum(1 for c in ranking if c["uf"] == "ZZ"),
                               "zonas": len(zt), "secoes": int(len(sec))},
-                "ranking_municipios": {"colunas": ["uf", "id", "nome", "aptos", "dL", "dF", "obs", "esp", "dp", "z", "p", "p_lo", "p_hi", "metodo", "ext", "sims", "q", "classe", "capt", "cruz", "fin"],
-                                       "linhas": [[c[k] for k in ["uf", "id", "nome", "aptos", "dL", "dF", "obs", "esp", "dp", "z", "p", "p_lo", "p_hi", "metodo", "ext", "sims", "q", "classe", "capt", "cruz", "fin"]] for c in ranking]}}
+                "ranking_municipios": {"colunas": ["uf", "id", "nome", "aptos", "dL", "dF", "obs", "esp", "dp", "z", "p", "p_lo", "p_hi", "metodo", "ext", "sims", "q", "classe", "capt", "cruz", "fin", "elim", "lmin", "fel"],
+                                       "linhas": [[c[k] for k in ["uf", "id", "nome", "aptos", "dL", "dF", "obs", "esp", "dp", "z", "p", "p_lo", "p_hi", "metodo", "ext", "sims", "q", "classe", "capt", "cruz", "fin", "elim", "lmin", "fel"]] for c in ranking]}}
     for u in list(reg_res.values()) + list(ufs_res.values()) + [brasil]:
         u["localidade"], u["evidencias"] = localidade(u), evidencias(u)
     for uf, r in resultados.items():

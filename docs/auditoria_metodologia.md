@@ -39,6 +39,17 @@ Modelo de transporte com totais de linha (origens do 1º turno) e de coluna (des
 - **Possível sem migração entre finalistas** se e só se ganho⁺(Lula) + ganho⁺(Flávio) ≤ R. Caso contrário, a migração
   mínima entre finalistas é ganho⁺ − R (verificado contra programação linear em `tests/test_auditoria.py`).
 - **Retenção e células da matriz:** limites de Fréchet [max(0, linha + coluna − total), min(linha, coluna)].
+- **Saldo líquido dos eliminados (indicador principal da origem dos votos).** Brancos, nulos e abstenção só fornecem
+  votos, no saldo, se diminuíram entre os turnos.
+
+  ```
+  mínimo dos eleitores dos eliminados que precisa ter ido para Lula =
+      (ganho de Lula − brancos/nulos liberados − abstenção liberada) ÷ votos dos eliminados
+  ```
+
+  A conta supõe que nenhum eleitor de Flávio migrou. Também se calcula ganho de Flávio ÷ votos dos eliminados e a posição
+  do recorte entre os municípios do estado e do país. O total bruto R (que soma todos os faltosos do 1º turno) continua
+  disponível, mas superestima os votos que de fato estavam livres quando a abstenção sobe.
 
 ## 4. Cenários extremos (hipóteses)
 
@@ -76,6 +87,20 @@ abstenção. Destinos: Lula, Flávio e outros (brancos, nulos e abstenção).
 | Dirichlet-Multinomial (principal) | Em cada simulação, a linha da matriz de cada origem é sorteada de Dirichlet(α · p_ref). α é calibrado por método dos momentos para que os desvios padronizados das unidades irmãs (os municípios da mesma UF, as zonas da UF, as seções da UF) tenham variância 1. |
 | Bayesiano hierárquico | Como o Dirichlet, mas com incerteza no hiperparâmetro: α é sorteado da distribuição bootstrap da calibração entre unidades irmãs. |
 | Bootstrap | Empírico: proporção das unidades irmãs com desvio padronizado tão ou mais extremo. |
+
+**Referência contrafactual histórica.** A matriz de referência é estimada com os dados de 2026; ela responde se a
+unidade se comporta como o resto do nível acima, não se esse nível se comporta como em eleições anteriores. Por isso a
+visão Monte Carlo permite trocar a referência: a linha “demais” é refeita com a parcela dos eleitores dos eliminados
+que escolheu o candidato do PT entre os finalistas em 2022 ou 2018 (Brasil, `scripts/13_ideologia_migracao.py`).
+
+| Grupo | Candidatos de 2026 |
+|---|---|
+| Direita | Renan Santos, Ronaldo Caiado, Zema |
+| Centro | Augusto Cury |
+| Outros | metade esquerda, metade direita |
+
+Retenção, brancos, nulos e abstenção continuam vindo da matriz de 2026. A tabela “esperado × observado” mostra os
+votos esperados de cada categoria sob a referência escolhida.
 
 **Execução.**
 
