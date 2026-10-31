@@ -1653,7 +1653,7 @@ function desenharAmpliada(app, LG) {
       ${card("Biometria com dificuldade", p1(X.biometria_4a_tentativa_por_mil / 10, 1), `dos eleitores precisaram da 4ª tentativa de leitura da digital; ${n0(X.biometria_nao_confere)} digitais não conferiram`)}
       ${card("Ano de nascimento conferido", n0(X.ano_nasc_confere), `habilitações manuais com o ano de nascimento conferido; ${n0(X.ano_nasc_diferente)} vezes o ano digitado não conferiu`)}
       ${card("Mesário concentrou habilitações", n0(X.secoes_mesario_30pct), `seções em que um único mesário autorizou 30% ou mais dos eleitores (${n0(X.secoes_mesario_50pct)} com 50% ou mais)`)}
-      ${card("“O eleitor identificado já votou”", n0(X.eleitor_ja_votou), `alertas em ${n0(X.secoes_ja_votou)} seções: a urna recusou habilitar alguém que já tinha votado`)}
+      ${card("“O eleitor identificado já votou”", n0(X.eleitor_ja_votou), `alertas em ${n0(X.secoes_ja_votou)} seções: a urna recusou habilitar alguém que já tinha votado · <a href="#" onclick="document.getElementById('ja-votou').scrollIntoView({behavior:'smooth'});return false">ver o indicador</a>`)}
       ${card("Eleitores impedidos", n0(imp), `${n0(X.eleitor_nao_encontrado)} identificadores sem eleitor correspondente na seção`)}
       ${card("Correções na cabine", p1(X.correcoes_por_mil / 10, 1), `dos eleitores corrigiram o voto na tela de confirmação; ${n0(X.suspenso_sem_votar)} suspensos sem confirmar voto`)}
       ${card("Justificativas de ausência", n0(X.justificativas), "registradas nas urnas por eleitores de outros locais")}
@@ -1713,6 +1713,7 @@ async function visaoLogs(app) {
     <p class="lead">Cada urna eletrônica grava um log com o horário de tudo o que acontece no dia: zerésima, abertura, habilitação de cada eleitor, troca de urna, mensagens de erro e encerramento. Esta página resume os ${n0(T1.secoes_com_log + T2.secoes_com_log)} logs dos dois turnos publicados pelo TSE. Para ver o log de uma seção específica, use a página <a href="#bu">Seções</a>.${LG.ufs_processadas.length < todas ? ` <b>Cobertura parcial: ${LG.ufs_processadas.length} de ${todas} unidades.</b>` : ""}</p></div>
   <a class="atalho" href="#bu"><span class="exp-ic">${icone("bu")}</span><span><b>Procurando uma seção específica?</b><small>Boletim de urna e log de qualquer seção, por estado, zona e seção</small></span><span class="exp-seta" aria-hidden="true">→</span></a>
   <section class="bloco"><div class="bloco-cab"><div><span class="olho">1º × 2º turno · Brasil</span><h2>Os dois turnos lado a lado</h2></div></div><div id="log-comp"></div></section>
+  ${htmlJaVotou()}
   ${htmlAmpliada(LG)}
   ${htmlIntervalos(LG)}
   ${htmlDepois17(LG)}
@@ -1739,6 +1740,7 @@ async function visaoLogs(app) {
     ${lin("Tempo de votação (mediana)", (t) => [t.tempo_votacao_mediano_s == null ? "—" : t.tempo_votacao_mediano_s + " s", null])}
     </tbody></table></div><p class="nota">O 2º turno tem menos cargos (presidente e, em alguns estados, governador), o que explica o voto mais rápido e a fila menor.</p>`;
   desenharLogs(app, LG);
+  desenharJaVotou(app);
   desenharAmpliada(app, LG);
   desenharIntervalos(app, LG);
   desenharDepois17(app, LG);
@@ -1774,6 +1776,126 @@ async function visaoLogs(app) {
   app.querySelector("#seg-mlog").addEventListener("click", (e) => { const b = e.target.closest("button"); if (!b) return; b.parentElement.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", x === b)); turnoM = b.dataset.t; desenhar(); });
   desenhar();
 }
+// ---------- indicador “O eleitor identificado já votou” (página Urnas) ----------
+function htmlJaVotou() {
+  return `<section class="bloco" id="ja-votou"><div class="bloco-cab"><div><span class="olho">Indicador · “O eleitor identificado já votou”</span>
+      <h2>Quantas vezes a urna recusou um eleitor que já tinha votado</h2>
+      <p class="lead">A urna grava essa mensagem quando o mesário digita o título ou o CPF de alguém que já votou naquela seção. A urna não libera o eleitor de novo: nenhum voto a mais é registrado. Erro de digitação, eleitor que volta à mesa e tentativa de votar duas vezes geram a mesma mensagem.</p></div>
+      <div class="seg" role="group" aria-label="Turno" id="jv-turno"><button aria-pressed="false" data-t="1">1º turno</button><button aria-pressed="true" data-t="2">2º turno</button></div></div>
+    <div class="aud-kpis" id="jv-kpis"><p class="carregando">Carregando…</p></div>
+    <div class="grade2" style="margin-top:16px"><div><h3 class="sub-h">Seções por número de alertas</h3><div class="grafico" data-g="jv-faixas" style="height:260px"></div></div>
+      <div><h3 class="sub-h">Seções com mais alertas votaram diferente?</h3><div id="jv-res"></div></div></div>
+    <h3 class="sub-h" style="margin-top:20px">Onde os alertas aconteceram</h3>
+    <nav class="aud-trilha" id="jv-trilha" aria-label="Recorte"></nav>
+    <div id="jv-tab"></div>
+    <h3 class="sub-h" style="margin-top:20px">Seções com mais alertas</h3><div id="jv-top"></div>
+    <h3 class="sub-h" style="margin-top:20px">Mapa · alertas por mil eleitores que votaram</h3>
+    <div class="grafico" data-g="jv-mapa" style="height:520px"><p class="carregando">Carregando mapa…</p></div>
+    <p class="nota">Fonte: logs de 100% das urnas com log publicado pelo TSE, mensagem “O eleitor identificado já votou”, contada no dia da eleição de cada turno. Por mil: alertas ÷ votos registrados no log × 1.000. Clique em uma linha para descer de estado para município, zona e seção; na seção, o link abre o boletim e o log da urna.</p></section>`;
+}
+async function desenharJaVotou(app) {
+  const sec = app.querySelector("#ja-votou"); if (!sec) return;
+  const J = await json("dados/ja_votou.json").catch(() => null);
+  if (!J || !document.body.contains(sec)) { if (J == null) sec.querySelector("#jv-kpis").innerHTML = `<p class="aviso">Dados indisponíveis.</p>`; return; }
+  const porUF = {}, est = { t: "2", uf: null, mun: null, zona: null };
+  const pm = (a, v) => (v ? (1000 * a) / v : 0), fpm = (a, v) => fmtN(pm(a, v), 2);
+  const nomeUF = (u) => (u === "ZZ" ? "Exterior" : D.resumo.ufs[u]?.nome || u);
+  const linkBU = (uf, zona, secao) => `#bu?uf=${uf}&zona=${zona}&secao=${secao}`;
+  const MC = Object.fromEntries(J.municipios.colunas.map((c, i) => [c, i]));
+  const desenharKPIs = () => {
+    const X = J.turnos[est.t], m = X.maior;
+    sec.querySelector("#jv-kpis").innerHTML = `
+      <div class="kpi-destaque"><span class="rot">Alertas no ${est.t}º turno</span><b>${n0(X.alertas)}</b><small>${fpm(X.alertas, X.votos_log)} por mil eleitores que votaram</small></div>
+      <div><span class="rot">Seções com ao menos um alerta</span><b>${n0(X.secoes_com_alerta)}</b><small>${p1((100 * X.secoes_com_alerta) / X.secoes_com_log, 1)} das ${n0(X.secoes_com_log)} seções · média de ${fmtN(X.media_com_alerta, 1)} por seção com alerta</small></div>
+      <div><span class="rot">Seções com 10 ou mais</span><b>${n0(X.secoes_10mais)}</b><small>${n0(X.secoes_50mais)} com 50 ou mais</small></div>
+      <div><span class="rot">Maior número em uma seção</span><b>${n0(m[5])}</b><small><a href="${linkBU(m[0], m[3], m[4])}">${esc(m[2])} (${m[0] === "ZZ" ? "exterior" : m[0]}) · zona ${z4(m[3])} · seção ${z4(m[4])}</a> · ${n0(m[6])} votos no log</small></div>
+      <div><span class="rot">Nos dois turnos</span><b>${n0(J.ambos.alerta_nos_dois)}</b><small>seções com alerta no 1º e no 2º turno · correlação entre turnos ${fmtN(J.ambos.correlacao, 2)}</small></div>`;
+    const el = sec.querySelector('[data-g="jv-faixas"]');
+    trocarGrafico(el, () => novoGrafico(el, { grid: { left: 8, right: 16, top: 16, bottom: 8, containLabel: true },
+      tooltip: { trigger: "axis", formatter: (ps) => `${esc(ps[0].name)} alerta(s): <b>${n0(ps[0].value)}</b> seções` },
+      xAxis: { type: "category", data: J.faixas, ...eixo(), splitLine: { show: false }, axisLabel: { color: T.ink2, fontSize: 10, interval: 0, hideOverlap: false, formatter: (v) => v.replace(" ou mais", "+").replace(" a ", "–") } },
+      yAxis: { type: "log", min: 1, ...eixo(), axisLabel: { color: T.muted, formatter: (v) => mi(v) } },
+      series: [{ type: "bar", barCategoryGap: "20%", data: X.faixas.map((v, i) => ({ value: Math.max(v, 1), itemStyle: { color: i === 0 ? T.grid : i >= 5 ? T.up : T.ink2 } })),
+        label: { show: true, position: "top", color: T.ink2, fontSize: 10, formatter: (p) => n0(X.faixas[p.dataIndex]) } }] }));
+  };
+  // faixas do 2º turno × resultado
+  sec.querySelector("#jv-res").innerHTML = `<div class="tabela-wrap"><table><thead><tr><th>Alertas na seção (2º turno)</th><th class="n">Seções</th><th class="n">Lula · 1º turno</th><th class="n">Lula · 2º turno</th><th class="n">Variação</th></tr></thead><tbody>
+    ${J.faixas_resultado.map((g) => `<tr><td>${esc(g.faixa)}</td><td class="n">${n0(g.secoes)}</td><td class="n">${p1(100 * g.lula1)}</td><td class="n">${p1(100 * g.lula2)}</td><td class="n"><b>${pp(100 * (g.lula2 - g.lula1))}</b></td></tr>`).join("")}</tbody></table></div>
+    <p class="nota">Lula entre os dois finalistas. As seções com mais alertas já davam mais votos a Lula no 1º turno; a variação entre os turnos é parecida em todas as faixas. Os alertas não acompanham um crescimento maior de Lula.</p>`;
+  // navegação Brasil → UF → município → zona → seções
+  const carregarUF = async (uf) => (porUF[uf] ||= await json(`dados/ja_votou/${uf}.json`));
+  const colsNum = () => { const t = est.t; return [
+    { t: "Seções", n: 1, v: (x) => x[`s${t}`], f: (x) => n0(x[`s${t}`]) },
+    { t: "Com alerta", n: 1, v: (x) => x[`sa${t}`], f: (x) => `${n0(x[`sa${t}`])} (${p1((100 * x[`sa${t}`]) / Math.max(1, x[`s${t}`]), 0)})` },
+    { t: `Alertas · ${t}º turno`, n: 1, v: (x) => x[`a${t}`], f: (x) => `<b>${n0(x[`a${t}`])}</b>`, ordemPadrao: 1 },
+    { t: "Por mil votos", n: 1, v: (x) => pm(x[`a${t}`], x[`v${t}`]), f: (x) => fpm(x[`a${t}`], x[`v${t}`]) },
+    { t: `${t === "2" ? "1º" : "2º"} turno`, n: 1, v: (x) => x[`a${t === "2" ? 1 : 2}`], f: (x) => n0(x[`a${t === "2" ? 1 : 2}`]) }]; };
+  const obj = (cols, l) => Object.fromEntries(cols.map((c, i) => [c, l[i]]));
+  const desenharTabela = async () => {
+    const trilha = [["Brasil", { uf: null, mun: null, zona: null }]];
+    if (est.uf) trilha.push([nomeUF(est.uf), { mun: null, zona: null }]);
+    let nomeMun = "";
+    if (est.mun) { nomeMun = J.municipios.linhas.find((l) => l[MC.uf] === est.uf && l[MC.mun] === est.mun)?.[MC.nome] || ""; trilha.push([nomeMun, { zona: null }]); }
+    if (est.zona) trilha.push([`Zona ${z4(est.zona)}`, {}]);
+    const tr = sec.querySelector("#jv-trilha");
+    tr.innerHTML = trilha.map(([t], i) => (i === trilha.length - 1 ? `<b>${esc(t)}</b>` : `<a href="#" data-i="${i}">${esc(t)}</a><span aria-hidden="true">›</span>`)).join("");
+    tr.querySelectorAll("a").forEach((a) => (a.onclick = (e) => { e.preventDefault(); Object.assign(est, trilha[+a.dataset.i][1]); desenharTabela(); }));
+    const el = sec.querySelector("#jv-tab");
+    if (!est.uf) {
+      const ls = Object.entries(J.ufs).map(([u, v]) => ({ id: u, uf: u, ...obj(["a1", "s1", "sa1", "v1", "a2", "s2", "sa2", "v2"], v) }));
+      tabela(el, { porPagina: 30, linhas: ls, aoClicar: (x) => { est.uf = x.uf; desenharTabela(); }, colunas: [{ t: "Estado", v: (x) => nomeUF(x.uf) }, ...colsNum()] });
+    } else if (!est.mun) {
+      const ls = J.municipios.linhas.filter((l) => l[MC.uf] === est.uf).map((l, i) => ({ id: i, ...obj(J.municipios.colunas, l) }));
+      tabela(el, { porPagina: 20, linhas: ls, busca: { id: "jv-busca", placeholder: "Buscar município…", campo: (x) => x.nome }, aoClicar: (x) => { est.mun = x.mun; desenharTabela(); },
+        colunas: [{ t: "Município", v: (x) => x.nome }, ...colsNum()] });
+    } else {
+      el.innerHTML = `<p class="carregando">Carregando…</p>`;
+      const P = await carregarUF(est.uf);
+      if (!est.zona) {
+        const ls = P.zonas.linhas.map((l) => obj(P.zonas.colunas, l)).filter((x) => x.mun === est.mun).map((x, i) => ({ id: i, ...x }));
+        tabela(el, { porPagina: 30, linhas: ls, aoClicar: (x) => { est.zona = x.zona; desenharTabela(); }, colunas: [{ t: "Zona", v: (x) => x.zona, f: (x) => `Zona ${z4(x.zona)}` }, ...colsNum()] });
+      } else {
+        const t = est.t, o = t === "2" ? "1" : "2";
+        const ls = P.secoes.linhas.map((l) => obj(P.secoes.colunas, l)).filter((x) => x.mun === est.mun && x.zona === est.zona).map((x, i) => ({ id: i, ...x }));
+        el.innerHTML = `<div id="jv-sec"></div><p class="nota">Só as seções com ao menos um alerta em algum turno; as demais seções da zona tiveram zero.</p>`;
+        tabela(el.querySelector("#jv-sec"), { porPagina: 30, linhas: ls, colunas: [{ t: "Seção", v: (x) => x.secao, f: (x) => `<a href="${linkBU(est.uf, x.zona, x.secao)}">Seção ${z4(x.secao)}</a>` },
+          { t: `Alertas · ${t}º turno`, n: 1, v: (x) => x[`a${t}`], f: (x) => `<b>${n0(x[`a${t}`])}</b>`, ordemPadrao: 1 }, { t: "Votos no log", n: 1, v: (x) => x[`v${t}`], f: (x) => n0(x[`v${t}`]) },
+          { t: "Por mil votos", n: 1, v: (x) => pm(x[`a${t}`], x[`v${t}`]), f: (x) => fpm(x[`a${t}`], x[`v${t}`]) }, { t: `${o}º turno`, n: 1, v: (x) => x[`a${o}`], f: (x) => n0(x[`a${o}`]) }] });
+      }
+    }
+    desenharTop();
+  };
+  const TC = Object.fromEntries(J.maiores_secoes.colunas.map((c, i) => [c, i]));
+  const desenharTop = () => {
+    const t = est.t, o = t === "2" ? "1" : "2";
+    const ls = J.maiores_secoes.linhas.map((l, i) => ({ id: i, ...obj(J.maiores_secoes.colunas, l) }))
+      .filter((x) => x[`a${t}`] > 0 && (!est.uf || x.uf === est.uf) && (!est.mun || x.mun === est.mun) && (!est.zona || x.zona === est.zona));
+    tabela(sec.querySelector("#jv-top"), { porPagina: 10, linhas: ls, colunas: [
+      { t: "Local", v: (x) => x.nome, f: (x) => `<a href="${linkBU(x.uf, x.zona, x.secao)}">${esc(x.nome)} (${x.uf === "ZZ" ? "exterior" : x.uf}) · ${z4(x.zona)}/${z4(x.secao)}</a><br><span class="nota">${esc(x.local)}</span>` },
+      { t: `Alertas · ${t}º turno`, n: 1, v: (x) => x[`a${t}`], f: (x) => `<b>${n0(x[`a${t}`])}</b>`, ordemPadrao: 1 }, { t: "Votos no log", n: 1, v: (x) => x[`v${t}`], f: (x) => n0(x[`v${t}`]) },
+      { t: `${o}º turno`, n: 1, v: (x) => x[`a${o}`], f: (x) => n0(x[`a${o}`]) }] });
+    if (!ls.length) sec.querySelector("#jv-top").innerHTML = `<p class="nota">Nenhuma seção deste recorte está entre as 300 com mais alertas do país.</p>`;
+  };
+  // mapa
+  const elM = sec.querySelector('[data-g="jv-mapa"]');
+  const dadosMun = Object.fromEntries(J.municipios.linhas.map((l) => [`${l[MC.uf]}-${l[MC.mun]}`, l]));
+  const desenharMapa = () => {
+    if (!elM.dataset.pronto) return;
+    const t = est.t, reg = registrarMalha(null);
+    trocarGrafico(elM, () => { const c = novoGrafico(elM, {
+      tooltip: { trigger: "item", formatter: (p) => { const l = dadosMun[p.name]; if (!l) return ""; return `<b>${esc(l[MC.nome])}</b> · ${l[MC.uf]} · ${t}º turno<br>${n0(l[MC["a" + t]])} alertas em ${n0(l[MC["sa" + t]])} de ${n0(l[MC["s" + t]])} seções<br>${fpm(l[MC["a" + t]], l[MC["v" + t]])} por mil votos`; } },
+      visualMap: { min: 0, max: 3, inRange: { color: [misturar(T.surface, T.up, 0.06), T.up] }, text: ["3 ou mais por mil", "0"], calculable: false, orient: "horizontal", left: 8, bottom: 4, itemWidth: 12, itemHeight: 160, textStyle: { color: T.ink2 }, seriesIndex: 0 },
+      geo: { map: reg.nome, roam: true, scaleLimit: { min: 1, max: 40 }, layoutCenter: ["50%", "48%"], layoutSize: "96%", itemStyle: { areaColor: T.grid, borderWidth: 0 }, emphasis: { label: { show: false }, itemStyle: { areaColor: T.ink } }, select: { disabled: true } },
+      series: [{ type: "map", geoIndex: 0, data: Object.entries(dadosMun).filter(([k]) => !k.startsWith("ZZ")).map(([k, l]) => ({ name: k, value: Math.min(3, pm(l[MC["a" + t]], l[MC["v" + t]])) })) },
+        { type: "lines", coordinateSystem: "geo", geoIndex: 0, polyline: true, silent: true, z: 5, lineStyle: { color: T.surface, width: 0.9 }, data: reg.bordas.map((cc) => ({ coords: cc })) }] });
+      c.on("click", (p) => { const l = dadosMun[p.name]; if (l) { Object.assign(est, { uf: l[MC.uf], mun: l[MC.mun], zona: null }); desenharTabela(); sec.querySelector("#jv-trilha").scrollIntoView({ behavior: "smooth", block: "start" }); } });
+      return c; });
+  };
+  sec.querySelector("#jv-turno").addEventListener("click", (e) => { const b = e.target.closest("button"); if (!b) return; b.parentElement.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", x === b)); est.t = b.dataset.t; desenharKPIs(); desenharTabela(); desenharMapa(); });
+  desenharKPIs(); desenharTabela();
+  carregarMapa().then(() => { if (!document.body.contains(elM)) return; elM.innerHTML = ""; elM.dataset.pronto = "1"; desenharMapa(); }).catch((e) => { elM.innerHTML = `<p class="aviso">Não foi possível carregar o mapa (${esc(e.message)}).</p>`; });
+}
+
 function htmlMetodoLogs() {
   return `<section class="bloco"><div class="bloco-cab"><div><span class="olho">Como foi calculado</span><h2>Fonte e método dos logs</h2></div></div><div class="metodo">
     <p><b>Fonte.</b> Pacotes "Arquivos transmitidos para totalização" do Portal de Dados Abertos do TSE, um por estado e turno, com o boletim, o log, o registro digital do voto e as assinaturas de cada seção (cerca de 220 GB). Os pacotes foram lidos diretamente do servidor do TSE e só os logs foram abertos.</p>
@@ -2589,7 +2711,7 @@ const PAGINAS = [
   { r: "apuracao", nome: "Apuração", desc: "A parcial minuto a minuto e as verificações de alegações", chaves: "apuracao parcial virada contagem animacao verificacao falhas" },
   { r: "perfil", nome: "Perfil", desc: "Quem votou, quem faltou e onde Lula cresceu", chaves: "perfil idade escolaridade abstencao 2022" },
   { r: "auditoria", nome: "Auditoria", desc: "Testes estatísticos e comparação com 2002 a 2022", chaves: "auditoria testes historico benford digito comportamento" },
-  { r: "logs", nome: "Urnas", desc: "O que os logs de todas as urnas registraram no dia", chaves: "urnas logs biometria contingencia troca erro intervalo modelo 17h" },
+  { r: "logs", nome: "Urnas", desc: "O que os logs de todas as urnas registraram no dia", chaves: "urnas logs biometria contingencia troca erro intervalo modelo 17h ja votou eleitor que ja votou duplicado" },
   { r: "bu", nome: "Seções", desc: "Boletim de urna e log de qualquer seção", chaves: "secao secoes boletim urna bu zona log" },
 ];
 const ICONES = {
