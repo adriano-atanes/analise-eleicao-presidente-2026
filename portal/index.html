@@ -2215,7 +2215,6 @@ function audPanorama(el, ctx) {
   const linhas = N.ranking_municipios.linhas.filter((r) => filtroUF(r[ix.uf]));
   const cls = (c) => linhas.filter((r) => r[ix.classe] === c).length;
   const incom = cls("Incomum") + cls("Muito incomum"), q = N.qualidade, cal = N.calibracao, K = N.contagens;
-  const silva = N.ranking_municipios.linhas.find((r) => r[ix.uf] === "RJ" && r[ix.id] === 59110);
   el.innerHTML = `<section class="bloco aud-sec"><div class="aud-kpis">
       <div><span class="rot">Estados</span><b>${n0(st.uf ? 1 : st.reg ? D.resumo.regioes[st.reg].length : K.ufs - 1)}</b><small>${st.uf || st.reg ? "no recorte" : "27 UFs + exterior"}</small></div>
       <div><span class="rot">Municípios</span><b>${n0(linhas.filter((r) => r[ix.uf] !== "ZZ").length)}</b><small>${linhas.some((r) => r[ix.uf] === "ZZ") ? `+ ${n0(linhas.filter((r) => r[ix.uf] === "ZZ").length)} cidades no exterior` : "todos do recorte"}</small></div>
@@ -2225,7 +2224,6 @@ function audPanorama(el, ctx) {
       <div><span class="rot">Qualidade dos dados</span><b>${p1((100 * q.comparecimento_2_confere) / q.secoes, 3)}</b><small>seções com contas fechando · ${n0(q.secoes_sem_votacao_registrada)} sem votação registrada</small></div>
     </div>
     <p class="nota">Calibração do modelo: ${p1(100 * cal.frac_p_abaixo_005, 1)} dos municípios têm probabilidade abaixo de 5% (esperado: 5%) e ${p1(100 * cal.frac_p_abaixo_001, 2)} abaixo de 1% (esperado: 1%). Um modelo bem calibrado produz poucas surpresas, na proporção esperada.</p>
-    ${silva ? `<a class="atalho" href="${audHash({ v: "reconciliacao", reg: "Sudeste", uf: "RJ", mun: 59110 })}"><span class="exp-ic">${icone("auditoria")}</span><span><b>Estudo de caso: Silva Jardim (RJ)</b><small>Flávio +1 voto, Lula +984 e comparecimento −104. De onde vieram os votos? ${probTxt({ p: silva[ix.p], metodo: silva[ix.metodo], simulacoes: silva[ix.sims] })} sob o modelo principal.</small></span><span class="exp-seta" aria-hidden="true">→</span></a>` : ""}
   </section>
   <section class="bloco"><div class="bloco-cab"><div><span class="olho">Mapa · municípios</span><h2>Onde o resultado se afasta do esperado</h2>
       <p class="lead">Cada município comparado com o que a matriz de transferência do seu estado prevê. Clique para investigar.</p></div>
@@ -2635,7 +2633,7 @@ function audMetodo() {
       <li><b>Evento:</b> ${esc(m.evento)}. Probabilidades em “1 em N”; o percentual fica nos detalhes técnicos (JSON).</li>
       <li><b>Referência:</b> a unidade é comparada com a matriz de transferência do nível acima (região e UF → Brasil; município → UF; zona e seção → município), estimada por inferência ecológica com encolhimento hierárquico.</li>
       <li><b>Modelos:</b> multinomial; Dirichlet-Multinomial (principal), com concentração α calibrada para que os desvios das unidades irmãs tenham variância 1; hierárquico (α sorteado da distribuição bootstrap da calibração); bootstrap empírico entre unidades irmãs.</li>
-      <li><b>Simulações:</b> ${n0(m.simulacoes.uf_regiao_municipio)} por região, UF e município; ${n0(m.simulacoes.zona)} por zona; ${n0(m.simulacoes.profundo)} no passe profundo (Silva Jardim e os 20 municípios mais distantes do esperado); semente ${m.seed}. Quando nenhuma simulação é tão extrema, a probabilidade é extrapolada pela aproximação normal e marcada com *; o limite superior de 95% é mostrado.</li>
+      <li><b>Simulações:</b> ${n0(m.simulacoes.uf_regiao_municipio)} por região, UF e município; ${n0(m.simulacoes.zona)} por zona; ${n0(m.simulacoes.profundo)} no passe profundo (os 20 municípios mais distantes do esperado); semente ${m.seed}. Quando nenhuma simulação é tão extrema, a probabilidade é extrapolada pela aproximação normal e marcada com *; o limite superior de 95% é mostrado.</li>
       <li><b>Classificação:</b> FDR de Benjamini–Hochberg entre municípios: muito incomum q &lt; 0,01; incomum q &lt; 0,10; inconclusivo com menos de 300 votos nos finalistas ou sem votação registrada. Classificações não são afirmações de irregularidade.</li>
       <li><b>Mega-Sena:</b> 1 em 50.063.860 (aposta simples); comparação mostrada só quando o evento ocorreu ao menos 10 vezes nas simulações.</li>
       <li><b>Processamento:</b> ${esc(m.processado_em)} · ${fmtN(m.tempo_total_s, 0)} s · motor ${esc(m.versao_motor)} · esquema ${esc(m.schema_version)}. Código: scripts/auditoria_motor.py e scripts/22_auditoria.py; metodologia completa em docs/auditoria_metodologia.md.</li>

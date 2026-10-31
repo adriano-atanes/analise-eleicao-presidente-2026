@@ -104,7 +104,7 @@ votos esperados de cada categoria sob a referência escolhida.
 
 **Execução.**
 
-- Simulações: 100.000 por região, UF e município; 20.000 por zona; 1.000.000 no passe profundo (Silva Jardim e os 20
+- Simulações: 100.000 por região, UF e município; 20.000 por zona; 1.000.000 no passe profundo (os 20
   municípios mais distantes do esperado).
 - Vetorizado com NumPy, paralelo por UF, semente configurável e semente por unidade derivada de SHA-256 (reprodutível
   independentemente da ordem).
@@ -184,7 +184,7 @@ para leitura por agentes em uma fase futura; nenhuma integração com IA foi fei
 
 `python -m unittest discover -s tests` cobre:
 
-- identidades contábeis (Silva Jardim);
+- identidades contábeis;
 - limites em forma fechada contra programação linear (300 tabelas aleatórias);
 - limites de Fréchet;
 - reprodutibilidade com semente;

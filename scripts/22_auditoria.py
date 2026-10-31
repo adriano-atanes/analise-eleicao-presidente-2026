@@ -325,7 +325,6 @@ def main():
         dados["hash"] = hashlib.sha256(json.dumps([mun, dados["P_uf"], zonas[:5], len(zonas), len(secs["mun"])]).encode()).hexdigest()
         ufs_info[uf] = {"nome": u["nome"], "regiao": u["regiao"], "t1": u["t1"][:11], "t2": u["t2"][:6]}
         tarefas.append([uf, dados])
-    # estudo de caso: Silva Jardim (RJ) com 1 milhão de simulações; e os municípios mais distantes do esperado
     params = {"sim": args.sim, "sim_zona": args.sim_zona, "seed": args.seed, "forcar": args.forcar, "profundos": profundos, "versao": VERSAO_MOTOR}
     resultados, usados_cache = {}, []
     with Pool(args.processos) as pool:
@@ -339,10 +338,9 @@ def main():
         for u in r["municipios"] + r["zonas"]:
             t1, t2 = u["contagens"]["turno1"], u["contagens"]["turno2"]
             u["reconciliacao"], u["limites"], u["cenarios"] = M.reconciliar(t1, t2), M.limites(t1, t2), M.cenarios(t1, t2)
-    # passe profundo: 10× simulações (Dirichlet) para Silva Jardim (RJ) e os 20 municípios mais distantes do esperado
+    # passe profundo: 10× simulações (Dirichlet) para os 20 municípios mais distantes do esperado
     cand = sorted(((uf, m) for uf, r in resultados.items() for m in r["municipios"] if compacto(m)["fin"] >= 300),
                   key=lambda x: -abs(x[1]["monte_carlo"]["modelos"]["dirichlet"]["z"]))[:20]
-    cand += [("RJ", m) for m in resultados["RJ"]["municipios"] if m["id"] == 59110 and ("RJ", m) not in cand]
     t_p = time.time()
     for uf, m in cand:
         r = resultados[uf]

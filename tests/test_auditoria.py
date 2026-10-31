@@ -12,7 +12,7 @@ RAIZ = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(RAIZ / "scripts"))
 import auditoria_motor as M  # noqa: E402
 
-SJ_T1 = [4450, 8932, 209, 353, 290, 20, 25, 249, 381, 3765, 18674]  # Silva Jardim (RJ), 1º turno
+SJ_T1 = [4450, 8932, 209, 353, 290, 20, 25, 249, 381, 3765, 18674]  # município de teste (contagens reais do 1º turno)
 SJ_T2 = [5434, 8933, 177, 261, 3872, 18677]
 
 
@@ -191,11 +191,15 @@ class SaidaPublicada(unittest.TestCase):
             self.assertTrue(p is None or 0 < p <= 1)
 
     @unittest.skipUnless(ARQ.exists(), "rode scripts/22_auditoria.py antes")
-    def test_silva_jardim_publicado(self):
-        U = json.loads((RAIZ / "portal" / "dados" / "auditoria" / "uf" / "RJ.json").read_text())
-        m = next(x for x in U["municipios"] if x["id"] == 59110)
-        self.assertEqual(m["reconciliacao"]["variacao"]["Lula"], 984)
-        self.assertTrue(m["monte_carlo"]["profundo"])
+    def test_reconciliacao_e_passe_profundo_publicados(self):
+        profundos = 0
+        for arq in (RAIZ / "portal" / "dados" / "auditoria" / "uf").glob("*.json"):
+            U = json.loads(arq.read_text())
+            for m in U["municipios"]:
+                t1, t2 = m["contagens"]["turno1"], m["contagens"]["turno2"]
+                self.assertEqual(m["reconciliacao"]["variacao"]["Lula"], t2[0] - t1[0])
+                profundos += bool(m["monte_carlo"]["profundo"])
+        self.assertEqual(profundos, 20)  # os 20 municípios mais distantes do esperado
 
 
 if __name__ == "__main__":

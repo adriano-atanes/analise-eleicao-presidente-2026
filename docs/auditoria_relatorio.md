@@ -1,6 +1,6 @@
 # Auditoria — relatório de cobertura e desempenho
 
-Processado em 2026-10-31T11:38:03+00:00 · motor 1.0.0 · esquema 1.0 · semente 2026.
+Processado em 2026-10-31T12:33:17+00:00 · motor 1.0.0 · esquema 1.0 · semente 2026.
 
 ## Cobertura
 
@@ -35,7 +35,7 @@ Processado em 2026-10-31T11:38:03+00:00 · motor 1.0.0 · esquema 1.0 · semente
 
 ## Desempenho
 
-Tempo total: 606.6 s (4 processos).
+Tempo total: 65.3 s (4 processos).
 
 | UF | Municípios | Zonas | Tempo (s) |
 |---|---|---|---|
@@ -71,7 +71,7 @@ Tempo total: 606.6 s (4 processos).
 ## Testes
 
 ```
-Ran 15 tests in 2.050s
+Ran 20 tests in 3.397s
 
 OK
 ```
