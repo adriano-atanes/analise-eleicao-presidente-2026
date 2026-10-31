@@ -92,7 +92,10 @@ proporção no 2º turno (destino j)  =  Σₖ  proporção no 1º turno (origem
 
 ## Auditoria (Fase 1)
 
-A página Auditoria tem quatro visões que compartilham o mesmo recorte geográfico (Brasil → região → estado → município → zona → seção):
-Panorama nacional, Reconciliação e fluxo, Monte Carlo e Simulador de cenários. O processamento pesado roda offline em
-`scripts/22_auditoria.py` (motor em `scripts/auditoria_motor.py`) e é publicado como JSON versionado em `portal/dados/auditoria/`.
+A página Auditoria tem duas visões que compartilham o mesmo recorte geográfico (Brasil → região → estado → município → zona → seção):
+**Panorama nacional** (mapa e rankings de todos os municípios, zonas e seções) e **Resultado do recorte**. O resultado do recorte
+abre com uma ficha pronta e exata, sem simulação: quanto Lula precisou dos votos dos eliminados pelo saldo entre o 1º e o 2º turno
+do próprio recorte, a chance disso (com a comparação com a Mega-Sena) e a posição no país. Depois vêm a reconciliação, os
+cenários e a matriz de fluxo. O processamento roda offline em `scripts/23_transferencia.py` e `scripts/22_auditoria.py`
+(motor em `scripts/auditoria_motor.py`) e é publicado como JSON versionado em `portal/dados/auditoria/`.
 Metodologia completa em [docs/auditoria_metodologia.md](docs/auditoria_metodologia.md).

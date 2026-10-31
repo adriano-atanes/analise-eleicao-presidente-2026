@@ -65,6 +65,9 @@ Modelo de transporte com totais de linha (origens do 1º turno) e de coluna (des
 
 ## 5. Modelos estatísticos e Monte Carlo
 
+> **No portal:** a Auditoria mostra apenas o resultado pronto e exato de cada recorte (seção 5b). O Monte Carlo
+> abaixo continua no processamento offline (`22_auditoria.py`) e no contrato JSON, mas não é exibido nem executado no navegador.
+
 - **Evento avaliado:** parcela de Lula entre os finalistas no 2º turno, S = L₂ / (L₂ + F₂).
 - **Probabilidade reportada:** P(|S_sim − E[S]| ≥ |S_obs − E[S]|), bicaudal, tão ou mais extremo.
 - **Probabilidade do valor exato:** P(L₂ = observado), também calculada para mostrar a diferença. Todo valor exato é
@@ -114,15 +117,16 @@ votos esperados de cada categoria sob a referência escolhida.
 com \*) e o limite superior de 95% de Clopper–Pearson é reportado. Nunca se reporta probabilidade zero. Intervalos de
 95% acompanham todas as estimativas.
 
-**Seções.** Simuladas no navegador (100.000 simulações, semente 2026), com α calibrado entre as seções da UF.
-
 **Calibração (posterior predictive check).** Distribuição dos valores de probabilidade dos municípios. Sob um modelo
 bem especificado ela é aproximadamente uniforme: cerca de 5% abaixo de 0,05 e 1% abaixo de 0,01.
 
 ## 5b. Teste de transferência dos eliminados (1º × 2º turno do próprio recorte)
 
 `scripts/23_transferencia.py`, para todos os estados, municípios, zonas e seções. No portal, o teste é recalculado na
-hora para qualquer recorte.
+hora, de forma exata, para qualquer recorte e aparece no topo da visão “Resultado do recorte” como uma ficha pronta: variação
+de Lula, Flávio e comparecimento; votos dos eliminados; mínimo que precisa ter ido para Lula; chance sob eleitores
+independentes (referência 2022), com a comparação com a Mega-Sena e a posição no país; e chance com a variação real
+(referência do estado).
 
 **Contagens.**
 
