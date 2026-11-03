@@ -17,10 +17,21 @@ T1 = ORIGENS[:-1] + ["Abst", "Aptos"]          # Lula … Nulo, Abst, Aptos
 T2 = DESTINOS + ["Aptos"]                       # Lula, Flávio, Branco, Nulo, Abst, Aptos
 
 
+def _sem_nan(o):
+    """NaN não é JSON válido (cidades do exterior sem eleitores geram matrizes vazias): vira null."""
+    if isinstance(o, float) and o != o:
+        return None
+    if isinstance(o, dict):
+        return {k: _sem_nan(v) for k, v in o.items()}
+    if isinstance(o, (list, tuple)):
+        return [_sem_nan(v) for v in o]
+    return o
+
+
 def salvar(caminho, obj):
     caminho.parent.mkdir(parents=True, exist_ok=True)
     with open(caminho, "w") as f:
-        json.dump(obj, f, ensure_ascii=False, separators=(",", ":"))
+        json.dump(_sem_nan(obj), f, ensure_ascii=False, separators=(",", ":"), allow_nan=False)
     return caminho.stat().st_size
 
 

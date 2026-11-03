@@ -267,6 +267,7 @@ tr.linha-total td { font-weight: 600; border-top: 1px solid var(--axis); }
 .ico-btn:hover { border-color: var(--accent); color: var(--ink); }
 .ico-btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 @media (max-width: 860px) { .ico-btn span { display: none; } .topo-acoes { margin: 0; } }
+@media (max-width: 640px) { #btn-tela { display: none; } }
 .aviso-flutuante { position: fixed; left: 50%; bottom: calc(84px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--surface); padding: 9px 16px; border-radius: 999px; font-size: 14px; z-index: 100; box-shadow: 0 6px 24px rgba(0,0,0,.2); }
 .cmd-btn { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--line); background: var(--bg); border-radius: 8px; padding: 7px 10px; margin-bottom: 6px; color: var(--muted); font-size: 14px; cursor: pointer; width: 280px; flex: none; }
 .cmd-btn:hover { border-color: var(--axis); color: var(--ink-2); }
@@ -390,6 +391,19 @@ section.bloco { scroll-margin-top: calc(var(--topo-h, 96px) + 60px); }
 .bol-mais { width: 100%; border: 0; border-top: 1px solid var(--line); background: var(--surface-2); padding: 12px; font: inherit; cursor: pointer; color: var(--ink); }
 .bol-final { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; align-items: center; margin-top: 12px; font-size: 13.5px; }
 .bol-csv { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 6px 10px; font: inherit; font-size: 13px; cursor: pointer; color: var(--ink); }
+.proj-grade { gap: 14px; align-items: stretch; } .proj-grade > .bloco { margin: 0; }
+.proj-num { display: flex; justify-content: space-between; margin: 8px 0 4px; } .proj-num span { display: block; font-size: 13px; color: var(--ink-2); } .proj-num b { font-family: var(--f-display); font-size: 34px; font-weight: 500; }
+.proj-num div:last-child { text-align: right; }
+.proj-status { display: flex; gap: 8px; align-items: center; font-size: 13.5px; color: var(--ink); margin: 4px 0; }
+.proj-destaque { font-size: 14px; color: var(--ink-2); line-height: 1.5; } .proj-destaque b { color: var(--lula); font-size: 17px; }
+.mud-tab td, .mud-tab th { padding: 6px 6px; font-size: 13.5px; }
+.mapa-chips { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); display: grid; gap: 4px; z-index: 3; }
+.mapa-chips a { display: grid; grid-template-columns: 30px 44px; gap: 4px; font-size: 12.5px; font-weight: 600; text-decoration: none; color: #fff; border-radius: 5px; padding: 3px 8px; font-variant-numeric: tabular-nums; }
+.mapa-cont { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; font-size: 13.5px; margin-bottom: 6px; } .mapa-cont i { display: inline-block; width: 11px; height: 11px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
+.linha-tempo { display: flex; align-items: center; gap: 10px; border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px; margin-top: 8px; background: var(--surface); }
+.linha-tempo input { flex: 1; accent-color: var(--ink); } .linha-tempo b { font-variant-numeric: tabular-nums; min-width: 52px; font-family: var(--f-mono, monospace); }
+.linha-tempo button { border: 1px solid var(--line); background: var(--bg); border-radius: 999px; width: 32px; height: 32px; cursor: pointer; color: var(--ink); }
+@media (max-width: 640px) { .mapa-chips { position: static; transform: none; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); margin-top: 6px; } }
 .ficha h2 { font-size: clamp(20px, 3vw, 28px); line-height: 1.2; }
 .ficha-fatos { margin: 14px 0; }
 .vereditos { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 12px; margin: 14px 0; }
@@ -458,6 +472,7 @@ details.metodo[open] summary { margin-bottom: 10px; }
     <button class="cmd-btn" id="cmd-abrir" type="button" aria-label="Buscar município, estado ou seção"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><span>Buscar município, seção…</span><kbd>Ctrl K</kbd></button>
     <div class="topo-acoes">
       <button class="ico-btn" id="btn-compartilhar" type="button" aria-label="Compartilhar esta página" title="Compartilhar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3M7 8l5-5 5 5M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg><span>Compartilhar</span></button>
+      <button class="ico-btn" id="btn-tela" type="button" aria-label="Tela cheia" title="Tela cheia"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
       <button class="ico-btn" id="btn-tema" type="button" aria-label="Alternar tema claro ou escuro" title="Tema claro ou escuro"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
     </div>
   </div>
@@ -568,7 +583,7 @@ function htmlPlacar(a, rotulo) {
   return `<div class="placar">
     <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center">
       <span class="olho">2º turno · 25/10/2026 · ${esc(rotulo)}</span>
-      <span class="selo" style="--c:var(--${COR[vence]})">${vence === "Lula" ? "Lula venceu" : "Flávio venceu"}</span>
+      <span style="display:inline-flex;gap:10px;align-items:center"><span class="nota">100% apurado</span><span class="selo" style="--c:var(--${COR[vence]})">${vence === "Lula" ? "Lula venceu" : "Flávio venceu"}</span></span>
     </div>
     <div class="placar-nomes">
       <div><strong style="color:var(--lula)">${p1(a.lula2, 2)}</strong><span>Lula (PT) · ${n0(a.t2[0])} votos</span></div>
@@ -877,6 +892,7 @@ function visaoBrasil(app) {
   app.insertAdjacentHTML("beforeend", `<nav class="explorar" aria-label="Explorar a análise">${PAGINAS.filter((p) => p.r).map((p) => `<a href="#${p.r}"><span class="exp-ic">${icone(p.r)}</span><span><b>${p.nome}</b><small>${p.desc}</small></span><span class="exp-seta" aria-hidden="true">→</span></a>`).join("")}</nav>`);
   montarAnalise(app, { rotulo: "Brasil", t1: R.brasil.t1, t2: R.brasil.t2, cand1: R.brasil.cand1, mig: R.migracao.brasil, sens: R.migracao.sensibilidade,
     hist: R.hist_comparecimento.brasil });
+  secaoProjecao(app);
   secaoMapa(app, null);
   // estados
   app.insertAdjacentHTML("beforeend", `
@@ -901,6 +917,100 @@ function visaoBrasil(app) {
   const linhas = Object.entries(R.ufs).map(([uf, u]) => ({ id: uf, uf, nome: u.nome, regiao: u.regiao, a: agregado(u.t1, u.t2), elim: elimParaLula(u.migracao.votos) }));
   tabela(app.querySelector("#tab-ufs"), { linhas, porPagina: 30, aoClicar: (l) => (location.hash = "uf-" + l.uf), colunas: colunasResultado("Estado", (l) => l.nome, true) });
   app.insertAdjacentHTML("beforeend", htmlMetodo());
+}
+
+// ---------- página inicial: projeção durante a apuração e o que mudou desde o 1º turno ----------
+function secaoProjecao(app) {
+  const R = D.resumo, regs = Object.keys(R.regioes).filter((r) => r !== "Exterior");
+  const soma = (ufs, t, i) => ufs.reduce((a, u) => a + (R.ufs[u]?.[t][i] || 0), 0);
+  // vetores: t1 [Lula, Flávio, ..., Branco 7, Nulo 8, Abst 9, Aptos 10]; t2 [Lula, Flávio, Branco, Nulo, Abst, Aptos]
+  const mud = (ufs) => { const ab1 = soma(ufs, "t1", 9) / soma(ufs, "t1", 10), ab2 = soma(ufs, "t2", 4) / soma(ufs, "t2", 5);
+    const l1 = soma(ufs, "t1", 0) / (soma(ufs, "t1", 0) + soma(ufs, "t1", 1)), l2 = soma(ufs, "t2", 0) / (soma(ufs, "t2", 0) + soma(ufs, "t2", 1)); return { abst: 100 * (ab2 - ab1), lula: 100 * (l2 - l1) }; };
+  const todas = Object.keys(R.ufs).filter((u) => u !== "ZZ");
+  const linhas = [["Brasil", mud(todas)], ...regs.map((r) => [r, mud(R.regioes[r])]), ["Exterior", mud(["ZZ"])]];
+  const sig = (r) => ({ Norte: "N", Nordeste: "NE", Sudeste: "SE", Sul: "S", "Centro-Oeste": "CO" }[r] || r);
+  app.insertAdjacentHTML("beforeend", `<section class="grade2 proj-grade" id="projecao">
+    <div class="bloco"><span class="olho">Projeção</span><h2>Como a apuração deve terminar</h2><div id="proj-txt" class="nota"><p class="carregando">Carregando…</p></div>
+      <div class="grafico" data-g="proj" style="height:240px"></div>
+      <p class="nota">Projeção: cada seção ainda não apurada recebe a parcela de Lula que teve no 1º turno mais a variação média das seções já apuradas do mesmo município (ou da UF, ou do país). Linhas finas: faixa de 98%. Linha tracejada: a parcial divulgada, na ordem real de chegada dos boletins.</p></div>
+    <div class="bloco"><span class="olho">Do 1º para o 2º turno</span><h2>O que mudou desde o 1º turno</h2><p class="nota">Em pontos percentuais, com todas as seções.</p>
+      <div class="tabela-wrap"><table class="mud-tab"><thead><tr><th></th>${linhas.map(([r]) => `<th class="n">${r === "Brasil" ? "Brasil" : r === "Exterior" ? "Ext." : sig(r)}</th>`).join("")}</tr></thead><tbody>
+        <tr><td>Abstenção</td>${linhas.map(([, v]) => `<td class="n"><b class="${v.abst <= 0 ? "delta-down" : "delta-up"}">${pp(v.abst, 1).replace(" p.p.", "")}</b></td>`).join("")}</tr>
+        <tr><td>Lula entre os finalistas</td>${linhas.map(([, v]) => `<td class="n"><b style="color:var(${v.lula >= 0 ? "--lula" : "--flavio"})">${pp(v.lula, 1).replace(" p.p.", "")}</b></td>`).join("")}</tr></tbody></table></div>
+      <div class="grafico" data-g="mud" style="height:220px"></div>
+      <p class="nota">Barras: onde Lula cresceu mais, por estado, em pontos da parcela entre os finalistas. <a href="#perfil">Ver onde Lula cresceu no Perfil</a>.</p></div>
+  </section>`);
+  // gráfico de crescimento por UF
+  const el2 = app.querySelector('[data-g="mud"]');
+  const ufs = todas.map((u) => [u, mud([u]).lula]).sort((a, b) => b[1] - a[1]);
+  novoGrafico(el2, { grid: { left: 8, right: 8, top: 10, bottom: 8, containLabel: true }, tooltip: { trigger: "axis", formatter: (p) => `${esc(D.resumo.ufs[p[0].name].nome)}: Lula ${pp(p[0].value, 1)}` },
+    xAxis: { type: "category", data: ufs.map((x) => x[0]), ...eixo(), splitLine: { show: false }, axisLabel: { color: T.ink2, fontSize: 10, interval: 0, rotate: 0 } },
+    yAxis: { type: "value", ...eixo(), axisLabel: { color: T.muted, formatter: (v) => v + " pt" } },
+    series: [{ type: "bar", data: ufs.map((x) => ({ value: +x[1].toFixed(2), itemStyle: { color: x[1] >= 0 ? T.lula : T.flavio } })) }] });
+  json("dados/projecao.json").then((P) => {
+    const el = app.querySelector('[data-g="proj"]'); if (!el || !document.body.contains(el)) return;
+    const m = P.marco, m1 = P.marco_01;
+    const t2 = D.resumo.brasil.t2, fL = (100 * t2[0]) / (t2[0] + t2[1]);
+    app.querySelector("#proj-txt").innerHTML = `<div class="proj-num"><div><span>Lula</span><b style="color:var(--lula)">${p1(fL, 2)}</b></div><div><span>Flávio</span><b style="color:var(--flavio)">${p1(100 - fL, 2)}</b></div></div>
+      <p class="proj-status"><span class="ponto-ok" style="background:var(--lula)"></span> Apuração encerrada · 100% das seções</p>
+      <p class="proj-destaque"><b>${p1(m.pct_secoes, 2)}</b> das seções apuradas bastaram para a projeção ficar a menos de 0,5 ponto do resultado final, às ${m.hora}; com <b>${p1(m1.pct_secoes, 1)}</b>, às ${m1.hora}, ela já indicava ${p1(m1.projecao, 2)} para Lula. O resultado final foi ${p1(fL, 2)}.</p>`;
+    const C = Object.fromEntries(P.colunas.map((c, i) => [c, i])), pts = P.pontos.filter((p) => p[C.pct_secoes] >= 0.1);
+    novoGrafico(el, { grid: { left: 8, right: 12, top: 10, bottom: 24, containLabel: true },
+      tooltip: { trigger: "axis", formatter: (ps) => { const p = pts[ps[0].dataIndex]; return `${p[C.hora]} · ${p1(p[C.pct_secoes], 2)} das seções<br>Projeção: <b>${p1(p[C.projecao], 2)}</b> (98%: ${p1(p[C.lo98], 2)} a ${p1(p[C.hi98], 2)})<br>Parcial: ${p1(p[C.parcial], 2)}`; } },
+      xAxis: { type: "log", min: 0.1, max: 100, name: "seções apuradas (%, escala logarítmica)", nameLocation: "middle", nameGap: 22, nameTextStyle: { color: T.muted }, ...eixo(), axisLabel: { color: T.muted, formatter: (v) => (v < 1 ? fmtN(v, 1) : n0(v)) + "%" } },
+      yAxis: { type: "value", min: 46, max: 56, ...eixo(), axisLabel: { color: T.muted, formatter: (v) => v + "%" } },
+      series: [{ type: "line", symbol: "none", lineStyle: { color: T.lula, width: 1, opacity: 0.45 }, data: pts.map((p) => [p[C.pct_secoes], p[C.lo98]]) },
+        { type: "line", symbol: "none", lineStyle: { color: T.lula, width: 1, opacity: 0.45 }, data: pts.map((p) => [p[C.pct_secoes], p[C.hi98]]) },
+        { type: "line", symbol: "none", lineStyle: { color: T.lula, width: 2 }, data: pts.map((p) => [p[C.pct_secoes], p[C.projecao]]),
+          markLine: { symbol: "none", silent: true, lineStyle: { color: T.muted, type: "dashed" }, label: { formatter: "50%", color: T.muted }, data: [{ yAxis: 50 }] } },
+        { type: "line", symbol: "none", lineStyle: { color: T.ink2, width: 1.2, type: "dashed" }, data: pts.map((p) => [p[C.pct_secoes], p[C.parcial]]) }] });
+  }).catch(() => {});
+}
+
+// ---------- exterior: mapa-múndi, continentes, países e cidades ----------
+async function secaoExterior(app) {
+  app.insertAdjacentHTML("beforeend", `<section class="bloco" id="exterior"><div class="bloco-cab"><div><span class="olho">Votos do exterior</span><h2>Como os brasileiros votaram fora do país</h2>
+      <p class="lead">Cada círculo é uma cidade com seção eleitoral; o tamanho é o eleitorado e a cor, o vencedor do 2º turno. Comparação com o 2º turno de 2022 nas mesmas cidades.</p></div>
+      <div class="seg" role="group" id="ext-cor"><button type="button" aria-pressed="true" data-c="lula2">Resultado 2026</button><button type="button" aria-pressed="false" data-c="dif">Lula 2026 × 2022</button><button type="button" aria-pressed="false" data-c="comp">Comparecimento</button></div></div>
+    <div class="aud-kpis" id="ext-kpis"><p class="carregando">Carregando…</p></div>
+    <div class="grafico" data-g="ext-mapa" style="height:480px;margin-top:12px"></div>
+    <div class="grade2" style="margin-top:14px"><div><h3 class="sub-h">Por continente</h3><div id="ext-cont"></div></div><div><h3 class="sub-h">Por país</h3><div id="ext-pais"></div></div></div>
+    <h3 class="sub-h" style="margin-top:16px">Por cidade</h3><div id="ext-cid"></div>
+    <p class="nota" id="ext-nota"></p></section>`);
+  const [X, W] = await Promise.all([json("dados/exterior.json"), (D.mundo ||= await json("dados/mapa/mundo.json"))]);
+  const sec = app.querySelector("#exterior"); if (!sec || !document.body.contains(sec)) return;
+  const t = X.total;
+  sec.querySelector("#ext-kpis").innerHTML = `
+    <div class="kpi-destaque"><span class="rot">Lula no 2º turno</span><b style="color:var(--lula)">${p1(t.lula2, 2)}</b><small>${n0(t.votos_lula2)} × ${n0(t.votos_flavio2)} votos · 2022: ${p1(t.lula22, 2)}</small></div>
+    <div><span class="rot">Eleitores no exterior</span><b>${n0(t.aptos)}</b><small>${n0(t.paises)} países · ${n0(t.cidades)} cidades · ${n0(t.secoes)} seções</small></div>
+    <div><span class="rot">Comparecimento no 2º turno</span><b>${p1(t.comp2_pct, 1)}</b><small>1º turno: ${p1(t.comp1_pct, 1)} · 2022: ${p1(t.comp22_pct, 1)}</small></div>
+    <div><span class="rot">1º turno</span><b>${p1(t.lula1, 1)} × ${p1(t.flavio1, 1)}</b><small>Lula × Flávio, % dos válidos</small></div>`;
+  sec.querySelector("#ext-nota").textContent = X.nota + " Votar no exterior é obrigatório apenas para quem tem domicílio eleitoral fora do país; a abstenção é alta em todas as eleições.";
+  if (!echarts.getMap("mundo")) echarts.registerMap("mundo", topojson.feature(W, W.objects.countries));
+  const el = sec.querySelector('[data-g="ext-mapa"]');
+  let cor = "lula2";
+  const desenhar = () => trocarGrafico(el, () => {
+    const max = Math.max(...X.cidades.map((c) => c.aptos));
+    const val = (c) => (cor === "lula2" ? c.lula2 : cor === "dif" ? (c.lula22 == null ? null : c.lula2 - c.lula22) : c.comp2_pct);
+    const vm = cor === "lula2" ? { min: 20, max: 80, inRange: { color: [T.flavio, T.mid, T.lula] }, text: ["Lula 80%", "Flávio 80%"] }
+      : cor === "dif" ? { min: -10, max: 10, inRange: { color: [T.flavio, T.mid, T.lula] }, text: ["Lula +10 pt", "−10 pt"] } : { min: 10, max: 70, inRange: { color: [misturar(T.surface, T.accent, 0.15), T.accent] }, text: ["70%", "10%"] };
+    const c = novoGrafico(el, {
+      tooltip: { trigger: "item", formatter: (p) => { if (p.seriesType !== "scatter") return ""; const x = p.data.c; return `<b>${esc(x.cidade)}</b> · ${esc(x.pais)}<br>${n0(x.aptos)} eleitores · comparecimento ${p1(x.comp2_pct, 1)}<br>Lula ${p1(x.lula2, 1)} × Flávio ${p1(100 - x.lula2, 1)}${x.lula22 != null ? `<br>Lula em 2022: ${p1(x.lula22, 1)} (${pp(x.lula2 - x.lula22, 1)})` : ""}`; } },
+      visualMap: { ...vm, calculable: false, orient: "horizontal", left: 8, bottom: 4, itemWidth: 12, itemHeight: 140, textStyle: { color: T.ink2 }, seriesIndex: 0, dimension: 2 },
+      geo: { map: "mundo", roam: true, scaleLimit: { min: 1, max: 20 }, center: [-20, 20], zoom: 1.2, silent: true, itemStyle: { areaColor: T.grid, borderColor: T.surface, borderWidth: 0.5 } },
+      series: [{ type: "scatter", coordinateSystem: "geo", data: X.cidades.filter((x) => val(x) != null).sort((a, b) => b.aptos - a.aptos).map((x) => ({ value: [x.lon, x.lat, val(x)], c: x, symbolSize: 4 + 30 * Math.sqrt(x.aptos / max) })),
+        itemStyle: { opacity: 0.85, borderColor: T.surface, borderWidth: 0.6 } }] });
+    return c; });
+  sec.querySelector("#ext-cor").addEventListener("click", (e) => { const b = e.target.closest("button"); if (!b) return; b.parentElement.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", x === b)); cor = b.dataset.c; desenhar(); });
+  desenhar();
+  const cols = (nome) => [{ t: nome, v: (l) => l[nome === "Continente" ? "continente" : nome === "País" ? "pais" : "cidade"], f: (l) => esc(nome === "Cidade" ? `${l.cidade} · ${l.pais}` : l[nome === "Continente" ? "continente" : "pais"]) },
+    { t: "Eleitores", n: 1, v: (l) => l.aptos, f: (l) => n0(l.aptos), ordemPadrao: 1 }, { t: "Comparec.", n: 1, v: (l) => l.comp2_pct, f: (l) => p1(l.comp2_pct, 0) },
+    { t: "Lula 2º", n: 1, v: (l) => l.lula2, f: (l) => barCel(l.lula2, "lula") }, { t: "Lula 2022", n: 1, v: (l) => l.lula22 ?? -1, f: (l) => (l.lula22 == null ? "—" : p1(l.lula22, 1)) },
+    { t: "Variação", n: 1, v: (l) => (l.lula22 == null ? -99 : l.lula2 - l.lula22), f: (l) => (l.lula22 == null ? "—" : `<span style="color:var(${l.lula2 >= l.lula22 ? "--lula" : "--flavio"})">${pp(l.lula2 - l.lula22, 1)}</span>`) }];
+  tabela(sec.querySelector("#ext-cont"), { porPagina: 10, linhas: X.continentes.map((x, i) => ({ id: i, ...x })), colunas: cols("Continente").filter((c) => c.t !== "Comparec.") });
+  tabela(sec.querySelector("#ext-pais"), { porPagina: 10, linhas: X.paises.map((x, i) => ({ id: i, ...x })), busca: { id: "ext-bp", placeholder: "Buscar país…", campo: (l) => l.pais }, colunas: cols("País").filter((c) => c.t !== "Comparec.") });
+  tabela(sec.querySelector("#ext-cid"), { porPagina: 15, linhas: X.cidades.map((x, i) => ({ id: i, ...x })), busca: { id: "ext-bc", placeholder: "Buscar cidade ou país…", campo: (l) => l.cidade + " " + l.pais },
+    aoClicar: (l) => (location.hash = `mun-ZZ-${l.cod}`), colunas: cols("Cidade") });
 }
 
 function colunasResultado(titulo, nome, comElim) {
@@ -930,6 +1040,7 @@ async function visaoUF(app, uf) {
   app.innerHTML = `<div class="cabeca"><span class="olho">${esc(u.regiao)} · ${n0(u.municipios)} municípios · ${n0(u.secoes)} seções</span>
     <h1>${esc(u.nome)}</h1><p class="lead">${uf === "ZZ" ? "Eleitores brasileiros que votam no exterior, agrupados por cidade." : "Resultado do estado nos dois turnos e a migração estimada com as seções eleitorais do próprio estado."} Clique num município para ver locais de votação e seções.</p></div>`;
   const r2 = u.migracao.r2;
+  if (uf === "ZZ") secaoExterior(app);
   montarAnalise(app, { rotulo: u.nome, t1: u.t1, t2: u.t2, cand1: u.cand1, mig: u.migracao, hist: R.hist_comparecimento[uf],
     migNota: `Estimativa feita com ${n0(u.migracao.secoes)} seções do estado. O modelo explica ${p1(100 * r2["Lula"], 0)} da variação do voto em Lula e ${p1(100 * r2["Flávio"], 0)} do voto em Flávio entre as seções.` });
   if (uf !== "ZZ") secaoMapa(app, uf);
@@ -1115,13 +1226,17 @@ const METRICAS_MUN = {
   atipicas: { rot: "Seções atípicas da auditoria", col: "atipicas", seq: "up", fmt: (v) => n0(v) + " seç" + (v === 1 ? "ão" : "ões"), max: 5 },
 };
 let metricaMapa = "margem2";
+let tempoMapa = null;
 function secaoMapa(app, uf) {
+  tempoMapa = null;
   const nomeLocal = uf ? D.resumo.ufs[uf].nome : "Brasil";
   app.insertAdjacentHTML("beforeend", `<section class="bloco" id="mapa-mun"><div class="bloco-cab"><div><span class="olho">Mapa · ${uf ? n0(D.resumo.ufs[uf].municipios) + " municípios" : "5.570 municípios"}</span>
     <h2>${uf ? "Mapa dos municípios de " + esc(nomeLocal) : "O resultado em cada município"}</h2>
     <p class="lead">Escolha o indicador. Passe o mouse para ver o município e clique para abrir o resultado dele. Use a roda do mouse ou o gesto de pinça para aproximar.</p></div>
     <label class="nota">Indicador <select id="sel-metrica">${Object.entries(METRICAS_MUN).map(([k, m]) => `<option value="${k}" ${k === metricaMapa ? "selected" : ""}>${esc(m.rot)}</option>`).join("")}</select></label></div>
-    <div class="grafico" data-g="mapa-mun" style="height:${uf ? 520 : 620}px"><p class="carregando">Carregando mapa…</p></div>
+    ${uf ? "" : `<div class="mapa-cont" id="mapa-cont"></div>`}
+    <div style="position:relative"><div class="grafico" data-g="mapa-mun" style="height:${uf ? 520 : 620}px"><p class="carregando">Carregando mapa…</p></div>${uf ? "" : `<div class="mapa-chips" id="mapa-chips"></div>`}</div>
+    ${uf ? "" : `<div class="linha-tempo" id="linha-tempo"><button type="button" id="lt-play" aria-label="Reproduzir a apuração no mapa">▶</button><b id="lt-hora">final</b><input type="range" id="lt-range" min="0" max="100" value="100" aria-label="Momento da apuração"><span class="nota" id="lt-txt">Resultado final · 100% apurado</span></div>`}
     <p class="nota" id="mapa-dica"></p>
     <p class="nota">Fronteiras municipais do IBGE (projeto geodata-br). Sete municípios criados depois de 2010 aparecem dentro do município de origem; os resultados deles estão nas tabelas.</p></section>`);
   const el = app.querySelector('[data-g="mapa-mun"]'), sel = app.querySelector("#sel-metrica"), hashAtual = location.hash;
@@ -1134,7 +1249,20 @@ function secaoMapa(app, uf) {
       const chaves = Object.keys(MAPA.ind).filter((k) => !uf ? !k.startsWith("ZZ") : k.startsWith(uf + "-"));
       const dados = chaves.map((k) => ({ name: k, value: ind(k, m.col) })).filter((d) => d.value != null);
       let vm;
-      if (m.div) vm = { min: -m.lim, max: m.lim, inRange: { color: [T[m.div[0]], T.mid, T[m.div[1]]] }, text: [m.ext[1], m.ext[0]] };
+      // linha do tempo da apuração (só no mapa do Brasil): município aparece quando metade das suas seções foi apurada
+      const P = !uf && tempoMapa != null && window._projecao ? window._projecao : null;
+      const dadosT = P ? dados.map((d) => ({ ...d, value: (P.mun_meia[d.name] ?? 1e9) <= tempoMapa ? d.value : null })).filter((d) => d.value != null) : dados;
+      if (m.div && m.col.startsWith("margem")) {
+        // faixas de margem, como num mapa de apuração: até 10, 25, 45 e mais pontos
+        const cL = (t) => misturar(T.surface, T.lula, t), cF = (t) => misturar(T.surface, T.flavio, t);
+        vm = { type: "piecewise", pieces: [{ min: 45, color: cL(1), label: "Lula 45+" }, { min: 25, max: 45, color: cL(0.75), label: "25–45" }, { min: 10, max: 25, color: cL(0.5), label: "10–25" }, { min: 0, max: 10, color: cL(0.28), label: "até 10" },
+          { min: -10, max: 0, color: cF(0.28), label: "até 10" }, { min: -25, max: -10, color: cF(0.5), label: "10–25" }, { min: -45, max: -25, color: cF(0.75), label: "25–45" }, { max: -45, color: cF(1), label: "Flávio 45+" }], itemGap: 4, itemWidth: 14, itemHeight: 10 };
+        if (!uf) {
+          const lula = dados.filter((d) => d.value > 0).length, fla = dados.filter((d) => d.value < 0).length;
+          const cont = app.querySelector("#mapa-cont");
+          if (cont) cont.innerHTML = `<span><i style="background:var(--lula)"></i><b>PT ${n0(lula)}</b></span><span><i style="background:var(--flavio)"></i><b>PL ${n0(fla)}</b> municípios</span><span class="nota">${m.col === "margem2" ? "2º turno" : "1º turno"} · cor mais forte = margem maior (até 10 · 25 · 45 · mais pontos)</span>`;
+        }
+      } else if (m.div) vm = { min: -m.lim, max: m.lim, inRange: { color: [T[m.div[0]], T.mid, T[m.div[1]]] }, text: [m.ext[1], m.ext[0]] };
       else {
         const vs = dados.map((d) => d.value).sort((a, b) => a - b);
         const lo = m.max ? 0 : vs[Math.floor(vs.length * 0.02)], hi = m.max || vs[Math.floor(vs.length * 0.98)];
@@ -1145,12 +1273,12 @@ function secaoMapa(app, uf) {
         tooltip: { trigger: "item", formatter: (p) => { const k = p.name, nomeM = D.resumo.indice_municipios.find((x) => `${x[0]}-${x[1]}` === k)?.[2] || k;
           const v = ind(k, m.col); if (v == null) return esc(nomeM);
           return `<b>${esc(nomeM)}</b> · ${k.slice(0, 2)}<br>${esc(m.rot)}: <b>${m.fmt(v)}</b><br>Lula no 2º turno: ${p1(ind(k, "lula2"))} · ${n0(ind(k, "aptos"))} eleitores`; } },
-        visualMap: { ...vm, calculable: false, orient: "horizontal", left: 8, bottom: 4, itemWidth: 12, itemHeight: 160, textStyle: { color: T.ink2 }, seriesIndex: 0 },
+        visualMap: vm.type === "piecewise" ? { ...vm, orient: "horizontal", left: 8, bottom: 4, textStyle: { color: T.ink2, fontSize: 11 }, seriesIndex: 0 } : { ...vm, calculable: false, orient: "horizontal", left: 8, bottom: 4, itemWidth: 12, itemHeight: 160, textStyle: { color: T.ink2 }, seriesIndex: 0 },
         geo: { map: reg.nome, roam: true, scaleLimit: { min: 1, max: 40 }, layoutCenter: ["50%", "48%"], layoutSize: "96%",
           itemStyle: { areaColor: T.grid, borderColor: uf ? T.surface : "transparent", borderWidth: uf ? 0.4 : 0 },
           emphasis: { label: { show: false }, itemStyle: { areaColor: T.ink, borderColor: T.ink } }, select: { disabled: true } },
         series: [
-          { type: "map", geoIndex: 0, data: dados },
+          { type: "map", geoIndex: 0, data: dadosT },
           ...(reg.bordas.length ? [{ type: "lines", coordinateSystem: "geo", geoIndex: 0, polyline: true, silent: true, z: 5,
             lineStyle: { color: T.surface, width: 0.9, opacity: 0.9 }, data: reg.bordas.map((c) => ({ coords: c })) }] : []),
         ],
@@ -1160,6 +1288,32 @@ function secaoMapa(app, uf) {
     });
     sel.addEventListener("change", () => { metricaMapa = sel.value; desenhar(); });
     desenhar();
+    if (!uf) {
+      // estados pequenos e exterior, com o vencedor e a parcela (como nos mapas de apuração)
+      const chips = app.querySelector("#mapa-chips"), R = D.resumo;
+      const pct = (u) => { const t = R.ufs[u].t2; const l = (100 * t[0]) / (t[0] + t[1]); return l >= 50 ? ["lula", l] : ["flavio", 100 - l]; };
+      chips.innerHTML = ["RN", "PB", "PE", "AL", "SE", "ES", "RJ", "DF", "ZZ"].map((u) => { const [c, v] = pct(u); return `<a href="#uf-${u}" style="background:var(--${c})" title="${esc(R.ufs[u].nome)}"><span>${u === "ZZ" ? "🌐" : u}</span><span style="text-align:right">${n0(v)}%</span></a>`; }).join("");
+      // linha do tempo
+      const rg = app.querySelector("#lt-range"), hr = app.querySelector("#lt-hora"), tx = app.querySelector("#lt-txt"), bt = app.querySelector("#lt-play");
+      let anim = null;
+      json("dados/projecao.json").then((P) => {
+        window._projecao = P;
+        const [h0, m0] = P.inicio.split(":").map(Number), C = Object.fromEntries(P.colunas.map((c, i) => [c, i]));
+        const relogio = (min) => { const t = h0 * 60 + m0 + min; return `${String(Math.floor(t / 60) % 24).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`; };
+        const aplicar = () => {
+          const v = +rg.value;
+          if (v >= 100) { tempoMapa = null; hr.textContent = "final"; tx.textContent = "Resultado final · 100% apurado"; }
+          else { tempoMapa = Math.round((v / 100) * P.minutos); const hora = relogio(tempoMapa); hr.textContent = hora;
+            const pt = P.pontos.filter((p) => p[C.hora] <= hora).pop(); tx.innerHTML = pt ? `${p1(pt[C.pct_secoes], 1)} das seções · parcial: <b style="color:var(--lula)">Lula ${p1(pt[C.parcial], 2)}</b>` : "antes do primeiro boletim"; }
+          if (!METRICAS_MUN[metricaMapa].col.startsWith("margem")) { metricaMapa = "margem2"; sel.value = "margem2"; }
+          desenhar();
+        };
+        rg.addEventListener("input", aplicar);
+        bt.addEventListener("click", () => { if (anim) { clearInterval(anim); anim = null; bt.textContent = "▶"; return; }
+          if (+rg.value >= 100) rg.value = 0; bt.textContent = "❚❚";
+          anim = setInterval(() => { if (!document.body.contains(rg)) { clearInterval(anim); return; } rg.value = Math.min(100, +rg.value + 1); aplicar(); if (+rg.value >= 100) { clearInterval(anim); anim = null; bt.textContent = "▶"; } }, 120); });
+      }).catch(() => { app.querySelector("#linha-tempo")?.remove(); });
+    }
   }).catch((e) => { el.innerHTML = `<p class="aviso">Não foi possível carregar o mapa (${esc(e.message)}).</p>`; });
 }
 
@@ -3080,6 +3234,7 @@ async function rotear() {
   const app = document.getElementById("app"); const h = location.hash.slice(1);
   try {
     let m;
+    if (h === "exterior" || h === "presidente-zz") { location.replace("#uf-ZZ"); return; }
     if ((m = h.match(/^uf-([A-Z]{2})$/))) { trilha([["Brasil", ""], [D.resumo.ufs[m[1]]?.nome || m[1], h]]); await visaoUF(app, m[1]); }
     else if ((m = h.match(/^mun-([A-Z]{2})-(\d+)$/))) {
       const nome = D.resumo.indice_municipios.find((x) => x[0] === m[1] && x[1] === +m[2])?.[2] || m[2];
@@ -3207,6 +3362,9 @@ function montarSumario(app) {
     if (navigator.share) { try { await navigator.share({ title: `${titulo} · Presidente 2026`, text: `${titulo}: resultados, auditoria e logs das urnas, seção por seção.`, url }); return; } catch (e) { if (e.name === "AbortError") return; } }
     try { await navigator.clipboard.writeText(url); avisar("Link copiado"); } catch { prompt("Copie o link:", url); }
   });
+  const btTela = document.getElementById("btn-tela");
+  if (!document.fullscreenEnabled) btTela.hidden = true;
+  btTela.addEventListener("click", () => (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen()).catch(() => {}));
   const temaAtual = () => document.documentElement.dataset.theme || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
   try { const t = localStorage.getItem("tema"); if (t === "dark" || t === "light") document.documentElement.dataset.theme = t; } catch {}
   document.getElementById("btn-tema").addEventListener("click", () => {

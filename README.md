@@ -39,6 +39,8 @@ python 22_auditoria.py              # Auditoria: reconciliação, limites, cená
 python 24_ja_votou.py               # Indicador “O eleitor identificado já votou” (logs) por turno, UF, município, zona e seção
 python 25_sem_digital.py            # Indicador de votos sem digital (logs): por turno, UF, município, zona e seção, com esperado pelo município
 python 26_boletins.py               # Auditoria dos boletins: seções atípicas (vs. vizinhas e 1º turno), ocorrências, falhas, testes, perguntas e impacto no resultado
+python 27_projecao.py               # Projeção durante a apuração (modelo de variação por seção) e hora em que cada município teve metade das seções apuradas
+python 28_exterior.py               # Votos do exterior por cidade, país e continente (2026 e 2022); coordenadas em dados/referencia/cidades_exterior.csv
                                    #   (opções: --sim 100000 --sim-zona 20000 --seed 2026 --forcar; cache em dados/processados/auditoria_cache)
 python 23_transferencia.py          # teste de transferência dos eliminados (1º × 2º turno de cada UF, município, zona e seção) → portal/dados/auditoria/transferencia.json
 python -m unittest discover -s tests   # testes do motor da Auditoria (scripts/auditoria_motor.py)

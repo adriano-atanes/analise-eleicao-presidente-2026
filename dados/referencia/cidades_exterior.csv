@@ -1,0 +1,187 @@
+cidade;pais;continente;lat;lon
+LISBOA;Portugal;Europa;38.72;-9.14
+BOSTON;Estados Unidos;América do Norte;42.36;-71.06
+PORTO;Portugal;Europa;41.15;-8.61
+NAGÓIA;Japão;Ásia;35.18;136.91
+MIAMI;Estados Unidos;América do Norte;25.76;-80.19
+NOVA YORK;Estados Unidos;América do Norte;40.71;-74.01
+LONDRES;Reino Unido;Europa;51.51;-0.13
+TÓQUIO;Japão;Ásia;35.68;139.69
+PARIS;França;Europa;48.86;2.35
+ORLANDO;Estados Unidos;América do Norte;28.54;-81.38
+MILÃO;Itália;Europa;45.46;9.19
+MADRI;Espanha;Europa;40.42;-3.70
+TORONTO;Canadá;América do Norte;43.65;-79.38
+LOS ANGELES;Estados Unidos;América do Norte;34.05;-118.24
+WASHINGTON;Estados Unidos;América do Norte;38.91;-77.04
+BARCELONA;Espanha;Europa;41.39;2.17
+DUBLIN;Irlanda;Europa;53.35;-6.26
+HOUSTON;Estados Unidos;América do Norte;29.76;-95.37
+ATLANTA;Estados Unidos;América do Norte;33.75;-84.39
+SÃO FRANCISCO;Estados Unidos;América do Norte;37.77;-122.42
+ZURIQUE;Suíça;Europa;47.38;8.54
+BERLIM;Alemanha;Europa;52.52;13.40
+ROMA;Itália;Europa;41.90;12.50
+SYDNEY;Austrália;Oceania;-33.87;151.21
+HAMAMATSU;Japão;Ásia;34.71;137.73
+MUNIQUE;Alemanha;Europa;48.14;11.58
+FRANKFURT;Alemanha;Europa;50.11;8.68
+AMSTERDÃ;Países Baixos;Europa;52.37;4.90
+CHICAGO;Estados Unidos;América do Norte;41.88;-87.63
+VANCOUVER;Canadá;América do Norte;49.28;-123.12
+GENEBRA;Suíça;Europa;46.20;6.14
+BUENOS AIRES;Argentina;América do Sul;-34.60;-58.38
+MONTREAL;Canadá;América do Norte;45.50;-73.57
+BRUXELAS;Bélgica;Europa;50.85;4.35
+HARTFORD;Estados Unidos;América do Norte;41.77;-72.68
+BEIRUTE;Líbano;Ásia;33.89;35.50
+FARO;Portugal;Europa;37.02;-7.93
+CAMBERRA;Austrália;Oceania;-35.28;149.13
+CIUDAD DEL ESTE;Paraguai;América do Sul;-25.51;-54.61
+ESTOCOLMO;Suécia;Europa;59.33;18.07
+EDIMBURGO;Reino Unido;Europa;55.95;-3.19
+MEXICO;México;América do Norte;19.43;-99.13
+SANTIAGO;Chile;América do Sul;-33.45;-70.67
+TEL AVIV;Israel;Ásia;32.09;34.78
+VIENA;Áustria;Europa;48.21;16.37
+WELLINGTON;Nova Zelândia;Oceania;-41.29;174.78
+CAIENA;Guiana Francesa;América do Sul;4.94;-52.33
+ABU DHABI;Emirados Árabes Unidos;Ásia;24.45;54.38
+COPENHAGUE;Dinamarca;Europa;55.68;12.57
+SANTA CRUZ DE LA SIERRA;Bolívia;América do Sul;-17.78;-63.18
+MARSELHA;França;Europa;43.30;5.37
+MONTEVIDÉU;Uruguai;América do Sul;-34.90;-56.16
+OTTAWA;Canadá;América do Norte;45.42;-75.70
+ASSUNÇÃO;Paraguai;América do Sul;-25.26;-57.58
+OSLO;Noruega;Europa;59.91;10.75
+RAMALLAH;Palestina;Ásia;31.90;35.20
+LIMA;Peru;América do Sul;-12.05;-77.04
+BOGOTÁ;Colômbia;América do Sul;4.71;-74.07
+AMÃ;Jordânia;Ásia;31.95;35.93
+PARAMARIBO;Suriname;América do Sul;5.85;-55.20
+PANAMA;Panamá;América Central e Caribe;8.98;-79.52
+HELSINQUE;Finlândia;Europa;60.17;24.94
+ATENAS;Grécia;Europa;37.98;23.73
+CARACAS;Venezuela;América do Sul;10.48;-66.90
+QUITO;Equador;América do Sul;-0.18;-78.47
+CÓRDOBA;Argentina;América do Sul;-31.42;-64.18
+SALTO DEL GUAIRÁ;Paraguai;América do Sul;-24.06;-54.31
+SINGAPURA;Singapura;Ásia;1.35;103.82
+BUDAPESTE;Hungria;Europa;47.50;19.04
+DAMASCO;Síria;Ásia;33.51;36.29
+DOHA;Catar;Ásia;25.29;51.53
+VARSÓVIA;Polônia;Europa;52.23;21.01
+XANGAI;China;Ásia;31.23;121.47
+LUANDA;Angola;África;-8.84;13.23
+SÃO JOSÉ;Costa Rica;América Central e Caribe;9.93;-84.08
+PRAGA;República Tcheca;Europa;50.08;14.44
+HONG KONG;China;Ásia;22.32;114.17
+PRETÓRIA;África do Sul;África;-25.75;28.19
+PEDRO JUAN CABALLERO;Paraguai;América do Sul;-22.55;-55.73
+TAIPÉ;Taiwan;Ásia;25.03;121.57
+ARTIGAS;Uruguai;América do Sul;-30.40;-56.47
+MAPUTO;Moçambique;África;-25.97;32.57
+SEUL;Coreia do Sul;Ásia;37.57;126.98
+CANTÃO;China;Ásia;23.13;113.26
+LA PAZ;Bolívia;América do Sul;-16.49;-68.12
+SÃO DOMINGOS;República Dominicana;América Central e Caribe;18.49;-69.93
+COCHABAMBA;Bolívia;América do Sul;-17.39;-66.16
+CIDADE DO CABO;África do Sul;África;-33.92;18.42
+PEQUIM;China;Ásia;39.90;116.41
+ISTAMBUL;Turquia;Europa;41.01;28.98
+TALIN;Estônia;Europa;59.44;24.75
+RIADE;Arábia Saudita;Ásia;24.71;46.68
+BANGKOK;Tailândia;Ásia;13.76;100.50
+GUATEMALA;Guatemala;América Central e Caribe;14.63;-90.51
+ENCARNACIÓN;Paraguai;América do Sul;-27.33;-55.87
+MOSCOU;Rússia;Europa;55.76;37.62
+MENDOZA;Argentina;América do Sul;-32.89;-68.84
+MANILA;Filipinas;Ásia;14.60;120.98
+CAIRO;Egito;África;30.04;31.24
+GEORGETOWN;Guiana;América do Sul;6.80;-58.16
+JACARTA;Indonésia;Ásia;-6.21;106.85
+KUALA LUMPUR;Malásia;Ásia;3.14;101.69
+LIUBLIANA;Eslovênia;Europa;46.06;14.51
+SÃO SALVADOR;El Salvador;América Central e Caribe;13.69;-89.22
+TEGUCIGALPA;Honduras;América Central e Caribe;14.07;-87.19
+PRAIA;Cabo Verde;África;14.93;-23.51
+NOVA DELHI;Índia;Ásia;28.61;77.21
+KUAITE;Kuwait;Ásia;29.38;47.99
+NICOSIA;Chipre;Europa;35.19;33.38
+ZAGREB;Croácia;Europa;45.81;15.98
+MANÁGUA;Nicarágua;América Central e Caribe;12.11;-86.24
+DACAR;Senegal;África;14.72;-17.47
+BRATISLAVA;Eslováquia;Europa;48.15;17.11
+BUCARESTE;Romênia;Europa;44.43;26.10
+RABAT;Marrocos;África;34.02;-6.84
+BELGRADO;Sérvia;Europa;44.79;20.45
+NAIRÓBI;Quênia;África;-1.29;36.82
+KINGSTON-JAMAICA;Jamaica;América Central e Caribe;18.02;-76.80
+SÓFIA;Bulgária;Europa;42.70;23.32
+MASCATE;Omã;Ásia;23.59;58.41
+HAVANA;Cuba;América Central e Caribe;23.11;-82.37
+ABIDJÃ;Costa do Marfim;África;5.36;-4.01
+DÍLI;Timor-Leste;Ásia;-8.56;125.57
+PORT OF SPAIN;Trinidad e Tobago;América Central e Caribe;10.65;-61.52
+BISSAU;Guiné-Bissau;África;11.86;-15.60
+LAGOS;Nigéria;África;6.52;3.38
+HANÓI;Vietnã;Ásia;21.03;105.85
+CONCEPCIÓN;Chile;América do Sul;-36.83;-73.05
+ANCARA;Turquia;Ásia;39.93;32.86
+CIUDAD GUAYANA;Venezuela;América do Sul;8.30;-62.72
+NASSAU;Bahamas;América Central e Caribe;25.05;-77.35
+BAREIN;Bahrein;Ásia;26.23;50.59
+KIEV;Ucrânia;Europa;50.45;30.52
+PUERTO IGUAZÚ;Argentina;América do Sul;-25.60;-54.58
+RIO BRANCO;Uruguai;América do Sul;-32.60;-53.38
+MUMBAI;Índia;Ásia;19.08;72.88
+ARGEL;Argélia;África;36.75;3.06
+TUNIS;Tunísia;África;36.81;10.18
+TEERÃ;Irã;Ásia;35.69;51.39
+ACCRA;Gana;África;5.60;-0.19
+PASO LOS LIBRES;Argentina;América do Sul;-29.71;-57.09
+WINDHOEK;Namíbia;África;-22.56;17.08
+DAR ES SALAAM;Tanzânia;África;-6.79;39.21
+PORTO PRÍNCIPE;Haiti;América Central e Caribe;18.59;-72.31
+KATMANDU;Nepal;Ásia;27.72;85.32
+TRÍPOLI;Líbia;África;32.89;13.19
+TBILISI;Geórgia;Ásia;41.72;44.79
+KINSHASA;República Democrática do Congo;África;-4.44;15.27
+CHUY;Uruguai;América do Sul;-33.70;-53.46
+LUSACA;Zâmbia;África;-15.39;28.32
+BRIDGETOWN;Barbados;América Central e Caribe;13.10;-59.62
+RIVERA;Uruguai;América do Sul;-30.90;-55.55
+ISLAMABADE;Paquistão;Ásia;33.68;73.05
+LIBREVILLE;Gabão;África;0.42;9.47
+SÃO TOMÉ;São Tomé e Príncipe;África;0.34;6.73
+IQUITOS;Peru;América do Sul;-3.75;-73.25
+IAUNDÊ;Camarões;África;3.87;11.52
+ASTANA;Cazaquistão;Ásia;51.17;71.45
+BELMOPAN;Belize;América Central e Caribe;17.25;-88.76
+IEREVAN;Armênia;Ásia;40.18;44.51
+COLOMBO;Sri Lanka;Ásia;6.93;79.86
+SARAJEVO;Bósnia e Herzegovina;Europa;43.86;18.41
+BAGDÁ;Iraque;Ásia;33.31;44.37
+ST GEORGES DE LOYAPOCK;Guiana Francesa;América do Sul;3.89;-51.80
+GABORONE;Botsuana;África;-24.63;25.92
+TIRANA;Albânia;Europa;41.33;19.82
+PUERTO QUIJARRO;Bolívia;América do Sul;-17.78;-57.77
+COTONOU;Benin;África;6.37;2.42
+LOMÉ;Togo;África;6.13;1.22
+HARARE;Zimbábue;África;-17.83;31.05
+CASTRIES;Santa Lúcia;América Central e Caribe;14.01;-60.99
+LILONGUE;Malawi;África;-13.96;33.79
+YANGON;Mianmar;Ásia;16.84;96.17
+UAGADUGU;Burkina Faso;África;12.37;-1.52
+MALABO;Guiné Equatorial;África;3.75;8.78
+BAMAKO;Mali;África;12.64;-8.00
+CONACRI;Guiné;África;9.64;-13.58
+BAKU;Azerbaijão;Ásia;40.41;49.87
+ADIS ABEBA;Etiópia;África;9.03;38.74
+ABUJA;Nigéria;África;9.08;7.40
+BRAZZAVILLE;República do Congo;África;-4.27;15.28
+DACCA;Bangladesh;Ásia;23.81;90.41
+COBIJA;Bolívia;América do Sul;-11.03;-68.77
+SAINT JOHNS;Antígua e Barbuda;América Central e Caribe;17.12;-61.85
+SANTA ELENA DE UAIRÉN;Venezuela;América do Sul;4.60;-61.11
+PYONGYANG;Coreia do Norte;Ásia;39.04;125.76
