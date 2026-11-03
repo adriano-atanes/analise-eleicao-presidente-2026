@@ -379,6 +379,17 @@ section.bloco { scroll-margin-top: calc(var(--topo-h, 96px) + 60px); }
 .bol-txt { font-size: 14px; line-height: 1.55; color: var(--ink-2); margin: 14px 0; }
 .bol-tab { width: 100%; border-collapse: collapse; font-size: 14px; } .bol-tab th { font-weight: 400; color: var(--muted); text-align: left; padding: 6px 0; } .bol-tab td { padding: 9px 0; border-top: 1px solid var(--line); } .bol-tab .n { text-align: right; }
 .bol-tse { display: flex; justify-content: space-between; border-top: 1px solid var(--line); margin-top: 12px; padding-top: 10px; font-size: 13.5px; color: var(--ink-2); } .bol-tse span:first-child { color: var(--ok, #1f8a4c); }
+.bol-selo { display: inline-block; font-size: 12px; font-weight: 600; border-radius: 999px; padding: 1px 9px; margin-left: 6px; vertical-align: 2px; font-family: var(--f-body, inherit); }
+.bol-selo-ok { background: color-mix(in srgb, var(--ok) 14%, transparent); color: color-mix(in srgb, var(--ok) 75%, var(--ink)); }
+.bol-selo-at { background: color-mix(in srgb, var(--cury, #c98500) 18%, transparent); color: color-mix(in srgb, var(--cury, #c98500) 80%, var(--ink)); }
+.bol-q-item summary .bol-selo { margin: 4px 0 0; }
+.bol-teste b { font-family: inherit; font-size: 15px; }
+.bol-teste { grid-template-columns: 1fr; }
+.bol-resumo { padding: 12px 14px; font-size: 14px; border-bottom: 1px solid var(--line); } .bol-resumo b { font-size: 18px; }
+.bol-grupo-t { margin: 0; padding: 12px 14px 4px; font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); font-weight: 600; }
+.bol-mais { width: 100%; border: 0; border-top: 1px solid var(--line); background: var(--surface-2); padding: 12px; font: inherit; cursor: pointer; color: var(--ink); }
+.bol-final { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; align-items: center; margin-top: 12px; font-size: 13.5px; }
+.bol-csv { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 6px 10px; font: inherit; font-size: 13px; cursor: pointer; color: var(--ink); }
 .ficha h2 { font-size: clamp(20px, 3vw, 28px); line-height: 1.2; }
 .ficha-fatos { margin: 14px 0; }
 .vereditos { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 12px; margin: 14px 0; }
@@ -2505,8 +2516,9 @@ function centroidesMun() {
 const BOL_ABAS = [["falhas", "Falhas"], ["atipicas", "Atípicas"], ["ocorrencias", "Ocorrências"], ["testes", "Testes"], ["perguntas", "Perguntas"]];
 async function audBoletins(el, ctx) {
   const B = (AUD.bol ||= await json("dados/boletins.json"));
-  const st = ctx.st, est = { aba: "atipicas", tipo: null };
-  const fmtVal = (v, f) => (v == null ? "—" : f === "pct" ? p1(100 * v, 0) : f === "pp" ? pp(100 * v, 0) : f === "min" ? `${n0(v)} min` : n0(v));
+  const st = ctx.st, est = { aba: "atipicas", tipo: null, lim: 100 };
+  const fmtVal = (v, f) => (v == null ? "—" : f === "pct" ? p1(100 * v, 0) : f === "lula" ? `Lula ${p1(100 * v, 0)}` : f === "pp" ? pp(100 * v, 0) : f === "min" ? `${n0(v)} min` : n0(v));
+  const rotViz = (v, f) => (f === "lula" ? `esperado ${p1(100 * v, 0)}` : `vizinhas ${fmtVal(v, f)}`);
   const ufOk = (u) => !st.uf || u === st.uf, munOk = (u, m) => ufOk(u) && (!st.mun || m === st.mun);
   const contaUF = (t) => (st.uf ? t.ufs[st.uf] || 0 : t.secoes);
   const ajuda = (txt) => `<span class="bol-q" tabindex="0" role="note" aria-label="${esc(txt)}" data-dica="${esc(txt)}">?</span>`;
@@ -2537,9 +2549,14 @@ async function audBoletins(el, ctx) {
   const linkSec = (l) => `#bu?uf=${l[0]}&zona=${l[3]}&secao=${l[4]}`;
   const desenharLista = () => {
     const box = el.querySelector("#bol-lista");
-    if (est.aba === "falhas") { box.innerHTML = `<div class="bol-vazio"><b>${n0(B.falhas.secoes)} falhas</b><p class="nota">${esc(B.falhas.regra)}</p></div>`; return; }
-    if (est.aba === "testes") { box.innerHTML = B.testes.map((t) => `<div class="bol-item"><span class="bol-ok ${t.ok ? "" : "bol-at"}">${t.ok ? "✓" : "!"}</span><div><b>${esc(t.nome)}</b><small>${esc(t.texto)}</small></div></div>`).join(""); return; }
-    if (est.aba === "perguntas") { box.innerHTML = B.perguntas.map((q, i) => `<details class="bol-item bol-q-item"${i === 0 ? " open" : ""}><summary><b>${esc(q.p)}</b></summary><p>${esc(q.r)}</p></details>`).join(""); return; }
+    if (est.aba === "falhas") { box.innerHTML = `<div class="bol-vazio"><span class="bol-ok">✓</span> <b>${B.falhas.secoes ? n0(B.falhas.secoes) + " falhas" : "Nenhuma falha"}</b><p class="nota">Somas conferem nos ${n0(B.secoes_lidas)} boletins: votos = comparecimento e comparecimento ≤ eleitorado em todas as seções, e a soma bate com o total oficial do TSE em ${B.bate_tse.ufs} de ${B.bate_tse.total} unidades. As assinaturas digitais e a cadeia de votos (RDV) de cada urna não foram verificadas nesta auditoria.</p></div>`; return; }
+    const selo = (t, ok) => `<span class="bol-selo ${ok ? "bol-selo-ok" : "bol-selo-at"}">${esc(t)}</span>`;
+    if (est.aba === "testes") {
+      const G = [["historico", "Comparados a 2022 e 2018", "Mesma medida, por cidade, nos 2º turnos de 2022 e 2018. “Dentro” quer dizer que 2026 não ficou acima dos dois."], ["acaso", "Comparados ao acaso", ""], ["arquivos", "Os boletins de cada urna", ""]];
+      box.innerHTML = `<div class="bol-resumo"><b>${B.testes_historico.dentro} de ${B.testes_historico.total}</b> testes por cidade dentro de 2022 e 2018</div>` + G.map(([g, t, sub]) => `<h4 class="bol-grupo-t">${t}</h4>${sub ? `<p class="nota" style="padding:0 14px">${sub}</p>` : ""}` + B.testes.filter((x) => x.grupo === g).map((x) => `<div class="bol-item bol-teste"><div><b>${esc(x.nome)}</b> ${selo(x.status, x.ok)}<small>${esc(x.texto)}</small></div></div>`).join("")).join("");
+      return;
+    }
+    if (est.aba === "perguntas") { box.innerHTML = `<h4 class="bol-grupo-t">O que circula sobre o 2º turno, com a resposta dos boletins</h4>` + B.perguntas.map((q, i) => `<details class="bol-item bol-q-item"${i === 0 ? " open" : ""}><summary><b>${esc(q.p)}</b><br>${selo(q.selo, !/^Acima/.test(q.selo))}</summary><p>${esc(q.r)}</p></details>`).join(""); return; }
     const itens = itensLista(), T = tiposAtivos();
     if (!itens.length) { box.innerHTML = `<p class="nota" style="padding:12px">Nenhuma seção listada neste recorte.</p>`; return; }
     // agrupa 3 ou mais seções do mesmo tipo no mesmo município, quando não há município filtrado
@@ -2555,13 +2572,16 @@ async function audBoletins(el, ctx) {
     const norm = (i) => dist(i) / (maxT[i.k] || 1);
     const peso = (x) => (x.grupo ? Math.max(...x.grupo.map(norm)) + 0.001 * x.grupo.length : norm(x.it));
     linhas.sort((a, b) => peso(b) - peso(a));
-    box.innerHTML = linhas.slice(0, 120).map((x) => {
+    box.innerHTML = linhas.slice(0, est.lim).map((x) => {
       if (x.grupo) { const it = x.grupo[0], t = T[it.k], mx = x.grupo.reduce((m, i) => Math.max(m, i.l[5] ?? 0), -Infinity);
         return `<button type="button" class="bol-item bol-grupo" data-uf="${it.l[0]}" data-mun="${it.l[1]}"><span class="bol-barras" aria-hidden="true"><i></i><i></i><i></i><i></i></span><div><b>${n0(x.grupo.length)} seções <span>${esc(t.rotulo)}</span></b><small>${esc(it.l[2])}, ${it.l[0] === "ZZ" ? "exterior" : it.l[0]} ›</small></div><em>${t.formato === "n" || it.f == null ? "" : `até ${fmtVal(mx, it.f)}`}</em></button>`; }
       const it = x.it, t = T[it.k], l = it.l;
-      const v = it.k === "prorrogada" ? `${n0(l[5])} votos` : fmtVal(l[5], it.f);
-      return `<a class="bol-item" href="${linkSec(l)}"><span class="bol-barras" aria-hidden="true"><i></i><i></i><i></i><i></i></span><div><b>${v} <span>${esc(t.rotulo)}</span></b><small>${esc(l[2])}, ${l[0] === "ZZ" ? "exterior" : l[0]} · zona ${z4(l[3])}, seção ${z4(l[4])}</small></div><em>${l[6] != null ? `vizinhas ${fmtVal(l[6], it.f)}` : ""}</em></a>`;
-    }).join("") + (linhas.length > 120 ? `<p class="nota" style="padding:10px">Mostrando 120 de ${n0(linhas.length)}; filtre por estado ou município.</p>` : "");
+      const pr = it.k === "prorrogada";
+      const v = pr ? (l[6] || "—") : l[5] == null ? "" : fmtVal(l[5], it.f);
+      const dir = pr ? `${n0(l[5])} votos depois das 17h` : l[6] != null ? rotViz(l[6], it.f) : "";
+      return `<a class="bol-item" href="${linkSec(l)}"><span class="bol-barras" aria-hidden="true"><i></i><i></i><i></i><i></i></span><div><b>${v} <span>${esc(t.rotulo)}</span></b><small>${esc(l[2])}, ${l[0] === "ZZ" ? "exterior" : l[0]} · zona ${z4(l[3])}, seção ${z4(l[4])}</small></div><em>${dir}</em></a>`;
+    }).join("") + (linhas.length > est.lim ? `<button type="button" class="bol-mais" id="bol-mais">Mais ${n0(Math.min(100, linhas.length - est.lim))} <span class="nota">· ${n0(linhas.length - est.lim)} restantes</span></button>` : "");
+    box.querySelector("#bol-mais")?.addEventListener("click", () => { est.lim += 100; desenharLista(); });
     box.querySelectorAll(".bol-grupo").forEach((b) => (b.onclick = () => audIr({ uf: b.dataset.uf, reg: D.resumo.ufs[b.dataset.uf]?.regiao, mun: +b.dataset.mun, zona: null, secao: null })));
   };
   const desenharUFs = () => {
@@ -2587,7 +2607,21 @@ async function audBoletins(el, ctx) {
       ${barra(s17, s17 >= 0 ? "--lula" : "--flavio")}<div class="bol-lin"><span>Votos depois das 17h ${ajuda("Votos de eleitores que estavam na fila às 17h, contados pelo horário de cada voto no log da urna. O voto é secreto: o saldo aplica a cada seção a divisão Lula × Flávio da própria seção.")}</span><b>${n0(v17)} votos</b></div>
       <p class="bol-txt">Sem as seções atípicas, ${vNome(sem)} ${Math.sign(sem) === Math.sign(margem) ? "venceria" : "passaria a vencer"}${onde} por ${n0(Math.abs(sem))} votos; sem os votos depois das 17h, por cerca de ${n0(Math.abs(sem17))}.</p>
       ${tab}
-      <div class="bol-tse"><span>✓ Bate com o TSE</span><span>${B.bate_tse.ufs === B.bate_tse.total ? "27 estados e o exterior" : `${B.bate_tse.ufs} de ${B.bate_tse.total}`}</span></div>`;
+      <div class="bol-tse"><span>✓ Bate com o TSE</span><span>${B.bate_tse.ufs === B.bate_tse.total ? "27 estados e o exterior" : `${B.bate_tse.ufs} de ${B.bate_tse.total}`}</span></div>
+      <div class="bol-final"><span><b style="color:var(--lula)">Lula ${p1((100 * B.lula) / (B.lula + B.flavio), 2)}</b> · <b style="color:var(--flavio)">Flávio ${p1((100 * B.flavio) / (B.lula + B.flavio), 2)}</b> nos boletins lidos</span>
+        <button type="button" class="bol-csv" id="bol-csv">Baixar esta lista (CSV)</button></div>`;
+    el.querySelector("#bol-csv").onclick = baixarCSV;
+  };
+  // CSV da lista em exibição (atípicas ou ocorrências do recorte; testes e perguntas na própria aba)
+  const baixarCSV = () => {
+    const q = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+    let linhas;
+    if (est.aba === "testes") linhas = [["grupo", "teste", "status", "texto"], ...B.testes.map((t) => [t.grupo, t.nome, t.status, t.texto])];
+    else if (est.aba === "perguntas") linhas = [["pergunta", "selo", "resposta"], ...B.perguntas.map((p) => [p.p, p.selo, p.r])];
+    else { const T = tiposAtivos() || B.atipicas.tipos; linhas = [["tipo", "uf", "codigo_municipio", "municipio", "zona", "secao", "valor", "vizinhas_ou_esperado", "saldo_lula_menos_flavio", "votos_finalistas"],
+      ...itensLista().map((i) => [T[i.k]?.rotulo || i.k, ...i.l])]; }
+    const blob = new Blob(["\ufeff" + linhas.map((r) => r.map(q).join(";")).join("\n")], { type: "text/csv;charset=utf-8" });
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `auditoria-boletins-${est.aba}${est.tipo ? "-" + est.tipo : ""}${st.uf ? "-" + st.uf : ""}.csv`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   };
   // mapa de pontos por município
   const elM = el.querySelector('[data-g="bol-mapa"]');
@@ -2608,7 +2642,7 @@ async function audBoletins(el, ctx) {
       c.on("click", (p) => { if (p.seriesType === "scatter") { const [u, m] = p.name.split("-"); audIr({ uf: u, reg: D.resumo.ufs[u]?.regiao, mun: +m, zona: null, secao: null }); } });
       return c; });
   };
-  const desenharTudo = () => { desenharChips(); desenharLista(); desenharUFs(); desenharImpacto(); desenharMapa();
+  const desenharTudo = () => { est.lim = 100; desenharChips(); desenharLista(); desenharUFs(); desenharImpacto(); desenharMapa();
     el.querySelectorAll(".bol-abas button").forEach((b) => b.setAttribute("aria-selected", b.dataset.a === est.aba)); };
   el.querySelectorAll(".bol-abas button").forEach((b) => (b.onclick = () => { est.aba = b.dataset.a; est.tipo = null; desenharTudo(); }));
   el.querySelector("#bol-perg").onclick = () => { est.aba = "perguntas"; est.tipo = null; desenharTudo(); el.querySelector(".bol-esq").scrollIntoView({ behavior: "smooth", block: "start" }); };
