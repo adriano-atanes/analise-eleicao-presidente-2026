@@ -38,6 +38,7 @@ python 21_boletins.py               # boletim de urna: votos dos demais candidat
 python 22_auditoria.py              # Auditoria: reconciliação, limites, cenários e Monte Carlo de todas as UFs, municípios e zonas
 python 24_ja_votou.py               # Indicador “O eleitor identificado já votou” (logs) por turno, UF, município, zona e seção
 python 25_sem_digital.py            # Indicador de votos sem digital (logs): por turno, UF, município, zona e seção, com esperado pelo município
+python 26_boletins.py               # Auditoria dos boletins: seções atípicas (vs. vizinhas e 1º turno), ocorrências, falhas, testes, perguntas e impacto no resultado
                                    #   (opções: --sim 100000 --sim-zona 20000 --seed 2026 --forcar; cache em dados/processados/auditoria_cache)
 python 23_transferencia.py          # teste de transferência dos eliminados (1º × 2º turno de cada UF, município, zona e seção) → portal/dados/auditoria/transferencia.json
 python -m unittest discover -s tests   # testes do motor da Auditoria (scripts/auditoria_motor.py)
@@ -93,6 +94,12 @@ proporção no 2º turno (destino j)  =  Σₖ  proporção no 1º turno (origem
 - **Incerteza:** bootstrap das seções (intervalo de 90%), que mede só a variação amostral. A premissa do modelo é a maior fonte de incerteza; por isso o portal também mostra a estimativa feita com zonas eleitorais. Onde as duas divergem, leia o valor como uma faixa.
 
 ## Auditoria (Fase 1)
+
+A primeira aba, **Boletins**, confere os 499.248 boletins do 2º turno: falhas contábeis, seções atípicas (comparadas com as
+vizinhas do mesmo local de votação e com o próprio 1º turno, por regras explícitas mostradas no “?”), ocorrências previstas em
+lei, testes estatísticos e perguntas que circulam. Mostra o saldo Lula − Flávio em cada grupo, o resultado sem as seções
+atípicas e sem os votos depois das 17h, e confere os totais com o arquivo oficial do TSE por município e zona
+(`scripts/26_boletins.py` → `portal/dados/boletins.json`).
 
 A página Auditoria tem duas visões que compartilham o mesmo recorte geográfico (Brasil → região → estado → município → zona → seção):
 **Panorama nacional** (mapa e rankings de todos os municípios, zonas e seções) e **Resultado do recorte**. O resultado do recorte

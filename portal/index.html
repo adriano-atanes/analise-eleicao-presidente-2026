@@ -262,6 +262,12 @@ tr.linha-total td { font-weight: 600; border-top: 1px solid var(--axis); }
 .menu a:hover::after { background: var(--line); }
 .menu a[aria-current="page"] { color: var(--ink); }
 .menu a[aria-current="page"]::after { background: var(--accent); }
+.topo-acoes { display: flex; gap: 6px; margin-bottom: 6px; flex: none; }
+.ico-btn { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--bg); border-radius: 8px; padding: 7px 9px; color: var(--ink-2); font: inherit; font-size: 14px; cursor: pointer; }
+.ico-btn:hover { border-color: var(--accent); color: var(--ink); }
+.ico-btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+@media (max-width: 860px) { .ico-btn span { display: none; } .topo-acoes { margin: 0; } }
+.aviso-flutuante { position: fixed; left: 50%; bottom: calc(84px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--surface); padding: 9px 16px; border-radius: 999px; font-size: 14px; z-index: 100; box-shadow: 0 6px 24px rgba(0,0,0,.2); }
 .cmd-btn { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--line); background: var(--bg); border-radius: 8px; padding: 7px 10px; margin-bottom: 6px; color: var(--muted); font-size: 14px; cursor: pointer; width: 280px; flex: none; }
 .cmd-btn:hover { border-color: var(--axis); color: var(--ink-2); }
 .cmd-btn span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -308,7 +314,10 @@ section.bloco { scroll-margin-top: calc(var(--topo-h, 96px) + 60px); }
 @media (max-width: 860px) {
   .menu { display: none; }
   .topo-in { padding-block: 10px; }
-  .cmd-btn { width: auto; flex: 1 1 auto; margin: 0; }
+  .cmd-btn { width: auto; flex: 1 1 auto; margin: 0; min-width: 0; overflow: hidden; }
+  .cmd-btn span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  .topo-in { gap: 8px 10px; }
+  .marca { flex: none; }
   .cmd-btn kbd { display: none; }
   .tabbar { display: grid; grid-template-columns: repeat(6, 1fr); position: fixed; left: 0; right: 0; bottom: 0; z-index: 7; background: var(--surface); border-top: 1px solid var(--line); padding: 4px 4px calc(4px + env(safe-area-inset-bottom, 0px)); }
   .tabbar a { display: grid; justify-items: center; gap: 2px; padding: 6px 0 4px; font-size: 10.5px; color: var(--muted); text-decoration: none; border-radius: 8px; }
@@ -319,6 +328,57 @@ section.bloco { scroll-margin-top: calc(var(--topo-h, 96px) + 60px); }
 /* auditoria */
 .grafico.aud-mapa { height: 560px; }
 @media (max-width: 640px) { .grafico.aud-mapa { height: 440px; } }
+.bol-cab { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; align-items: flex-start; margin-bottom: 12px; }
+.bol-cab h2 { margin: 0; font-family: var(--f-serif, Georgia, serif); font-weight: 500; }
+.bol-status { display: flex; gap: 10px; align-items: center; font-size: 13.5px; flex-wrap: wrap; }
+.ponto-ok { width: 9px; height: 9px; border-radius: 50%; background: var(--ok, #1f8a4c); display: inline-block; }
+.bol-como summary { cursor: pointer; border: 1px solid var(--line); border-radius: 999px; padding: 4px 12px; list-style: none; }
+.bol-como[open] > div { position: absolute; right: 16px; z-index: 20; max-width: 420px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; box-shadow: 0 8px 30px rgba(0,0,0,.15); font-size: 13.5px; line-height: 1.5; }
+.bol-grade { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr) minmax(0, 1fr); gap: 14px; align-items: start; }
+@media (max-width: 1100px) { .bol-grade { grid-template-columns: 1fr; } }
+.bol-esq, .bol-dir { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+.bol-dir { padding: 14px; }
+.bol-abas { display: grid; grid-template-columns: repeat(5, 1fr); border-bottom: 1px solid var(--line); }
+.bol-abas button { background: none; border: 0; border-bottom: 2px solid transparent; padding: 12px 4px 8px; cursor: pointer; display: grid; gap: 2px; text-align: left; color: var(--ink-2); font: inherit; }
+.bol-abas button b { font-family: var(--f-display); font-size: 22px; color: var(--ink); line-height: 1; }
+.bol-abas button span { font-size: 12.5px; }
+.bol-abas button[aria-selected="true"] { border-bottom-color: var(--ink); color: var(--ink); }
+.bol-abas button:first-child b { color: var(--ok, #1f8a4c); }
+.bol-chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 12px 12px 0; }
+.bol-chip { border: 1px solid var(--line); background: var(--surface-2); border-radius: 8px; padding: 6px 10px; font: inherit; font-size: 13.5px; cursor: pointer; display: inline-flex; gap: 6px; align-items: center; color: var(--ink); }
+.bol-chip[aria-pressed="true"] { border-color: var(--ink); background: var(--surface); }
+.bol-q { position: relative; display: inline-grid; place-items: center; width: 17px; height: 17px; border-radius: 50%; border: 1px solid var(--muted); color: var(--muted); font-size: 11px; cursor: help; flex: none; }
+.bol-q:hover::after, .bol-q:focus::after, .bol-q.aberta::after { content: attr(data-dica); position: absolute; left: 50%; top: 22px; transform: translateX(-50%); width: min(260px, 70vw); background: var(--ink); color: var(--surface); padding: 8px 10px; border-radius: 8px; font-size: 12.5px; line-height: 1.4; z-index: 30; white-space: normal; text-align: left; font-weight: 400; }
+#bol-sub { padding: 8px 12px 4px; margin: 0; }
+.bol-lista { max-height: 560px; overflow-y: auto; border-top: 1px solid var(--line); }
+.bol-item { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; padding: 12px 14px; border-bottom: 1px solid var(--line); text-decoration: none; color: var(--ink); background: none; border-left: 0; border-right: 0; border-top: 0; width: 100%; text-align: left; font: inherit; cursor: pointer; }
+.bol-item:hover { background: var(--surface-2); }
+.bol-item b { font-family: var(--f-display); font-size: 20px; font-weight: 700; }
+.bol-item b span { font-family: var(--f-body, inherit); font-size: 14px; font-weight: 500; margin-left: 4px; }
+.bol-item small { display: block; color: var(--ink-2); font-size: 13px; margin-top: 2px; }
+.bol-item em { font-style: normal; font-size: 12.5px; color: var(--muted); white-space: nowrap; }
+.bol-barras { display: inline-flex; gap: 2px; align-items: flex-end; height: 18px; }
+.bol-barras i { width: 4px; background: var(--cury, #c98500); border-radius: 1px; }
+.bol-barras i:nth-child(1) { height: 6px; } .bol-barras i:nth-child(2) { height: 10px; } .bol-barras i:nth-child(3) { height: 14px; } .bol-barras i:nth-child(4) { height: 18px; }
+.bol-ok { width: 22px; height: 22px; border-radius: 50%; display: inline-grid; place-items: center; background: color-mix(in srgb, var(--ok, #1f8a4c) 15%, transparent); color: var(--ok, #1f8a4c); font-weight: 700; }
+.bol-ok.bol-at { background: color-mix(in srgb, var(--up) 15%, transparent); color: var(--up); }
+.bol-item.bol-q-item { display: block; cursor: default; }
+.bol-q-item summary { cursor: pointer; } .bol-q-item summary b { font-family: inherit; font-size: 15px; }
+.bol-q-item p { margin: 8px 0 0; font-size: 14px; line-height: 1.5; color: var(--ink-2); }
+.bol-vazio { padding: 20px 14px; } .bol-vazio b { font-size: 22px; color: var(--ok, #1f8a4c); }
+.bol-ufs { display: grid; grid-template-columns: repeat(auto-fill, minmax(58px, 1fr)); gap: 6px; margin-top: 8px; }
+.bol-ufs button { border: 1px solid var(--line); border-bottom: 2px solid var(--ok, #1f8a4c); background: var(--surface); border-radius: 6px; padding: 5px 2px; display: grid; font: inherit; cursor: pointer; color: var(--ink); }
+.bol-ufs button b { font-size: 13px; } .bol-ufs button span { font-size: 12.5px; color: var(--cury, #c98500); font-variant-numeric: tabular-nums; }
+.bol-ufs button[aria-pressed="true"] { background: var(--ink); color: var(--surface); }
+.bol-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; vertical-align: middle; }
+.bol-perg { width: 100%; display: grid; grid-template-columns: 1fr auto; text-align: left; gap: 2px 10px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; cursor: pointer; font: inherit; color: var(--ink); margin-bottom: 14px; }
+.bol-perg b { font-size: 16px; } .bol-perg span:nth-child(2) { color: var(--ink-2); font-size: 13.5px; grid-column: 1; } .bol-perg span:last-child { grid-row: 1 / 3; grid-column: 2; align-self: center; font-size: 20px; }
+.bol-h { font-family: var(--f-serif, Georgia, serif); font-weight: 500; font-size: 26px; margin: 4px 0 0; }
+.bol-barra { height: 8px; background: var(--grid); border-radius: 4px; overflow: hidden; margin-top: 12px; } .bol-barra i { display: block; height: 100%; min-width: 3px; }
+.bol-lin { display: flex; justify-content: space-between; gap: 8px; font-size: 14.5px; margin-top: 6px; align-items: center; }
+.bol-txt { font-size: 14px; line-height: 1.55; color: var(--ink-2); margin: 14px 0; }
+.bol-tab { width: 100%; border-collapse: collapse; font-size: 14px; } .bol-tab th { font-weight: 400; color: var(--muted); text-align: left; padding: 6px 0; } .bol-tab td { padding: 9px 0; border-top: 1px solid var(--line); } .bol-tab .n { text-align: right; }
+.bol-tse { display: flex; justify-content: space-between; border-top: 1px solid var(--line); margin-top: 12px; padding-top: 10px; font-size: 13.5px; color: var(--ink-2); } .bol-tse span:first-child { color: var(--ok, #1f8a4c); }
 .ficha h2 { font-size: clamp(20px, 3vw, 28px); line-height: 1.2; }
 .ficha-fatos { margin: 14px 0; }
 .vereditos { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 12px; margin: 14px 0; }
@@ -385,6 +445,10 @@ details.metodo[open] summary { margin-bottom: 10px; }
     <a class="marca" href="#">Presidente<span>/</span>2026</a>
     <nav class="menu" id="menu" aria-label="Seções do portal"></nav>
     <button class="cmd-btn" id="cmd-abrir" type="button" aria-label="Buscar município, estado ou seção"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><span>Buscar município, seção…</span><kbd>Ctrl K</kbd></button>
+    <div class="topo-acoes">
+      <button class="ico-btn" id="btn-compartilhar" type="button" aria-label="Compartilhar esta página" title="Compartilhar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3M7 8l5-5 5 5M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg><span>Compartilhar</span></button>
+      <button class="ico-btn" id="btn-tema" type="button" aria-label="Alternar tema claro ou escuro" title="Tema claro ou escuro"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+    </div>
   </div>
   <div class="subtopo"><nav class="trilha" id="trilha" aria-label="Você está em"></nav></div>
 </header>
@@ -2136,7 +2200,7 @@ function desenharEleitorado(sec, V) {
 // ---------- auditoria: panorama nacional e resultado pronto de cada recorte (cálculo exato, sem simulação) ----------
 // Os cálculos pesados vêm de scripts/22_auditoria.py (dados/auditoria/*); reconciliação, limites e cenários são
 // recalculados aqui com as mesmas fórmulas para qualquer recorte; o teste de transferência é exato (Binomial e Beta-Binomial).
-const AUD_VISOES = [["panorama", "Panorama nacional"], ["reconciliacao", "Resultado do recorte"]];
+const AUD_VISOES = [["boletins", "Boletins"], ["panorama", "Transferência de votos"], ["reconciliacao", "Resultado do recorte"]];
 const AUD_ORIG = ["Lula", "Flávio", "Demais", "Brancos", "Nulos", "Abstenção"];
 const AUD_DEST = ["Lula", "Flávio", "Brancos", "Nulos", "Abstenção"];
 const CLASSES = { "Compatível com o modelo": "ok", Incomum: "atencao", "Muito incomum": "grave", Inconclusivo: "neutro", "Matematicamente inviável sob restrições explícitas": "grave", "Requer migração entre finalistas": "grave" };
@@ -2158,7 +2222,7 @@ const classeTag = (c) => `<span class="tag-classe tag-${CLASSES[c] || "neutro"}"
 function audEstado() {
   const q = new URLSearchParams(location.hash.split("?")[1] || "");
   const g = (k) => q.get(k) || null;
-  return { v: ({ montecarlo: "reconciliacao", simulador: "reconciliacao" })[g("v")] || g("v") || "panorama", reg: g("reg"), uf: g("uf"), mun: g("mun") ? +g("mun") : null, zona: g("zona") ? +g("zona") : null, secao: g("secao") ? +g("secao") : null };
+  return { v: ({ montecarlo: "reconciliacao", simulador: "reconciliacao" })[g("v")] || g("v") || "boletins", reg: g("reg"), uf: g("uf"), mun: g("mun") ? +g("mun") : null, zona: g("zona") ? +g("zona") : null, secao: g("secao") ? +g("secao") : null };
 }
 function audHash(st) {
   const q = new URLSearchParams();
@@ -2395,7 +2459,7 @@ async function visaoAuditoria(app) {
   const regAtual = st.reg || ctx.reg || "";
   app.innerHTML = `<div class="cabeca"><span class="olho">Auditoria · investigação matemática e estatística</span>
       <h1>${esc(ctx.rotulo)}</h1>
-      <p class="lead">Resultado pronto de cada recorte: quanto Lula precisou dos votos dos candidatos eliminados, pelo saldo entre o 1º e o 2º turno do próprio recorte, e qual a chance disso. Cálculo exato com 100% dos votos, sem simulação. Probabilidades valem sob as premissas indicadas e não são, isoladamente, evidência de irregularidade.</p></div>
+      <p class="lead">Boletins de urna, logs e resultados de 2026 conferidos seção por seção: falhas, seções atípicas, ocorrências previstas em lei e a transferência dos votos entre os turnos. Cálculos exatos com 100% dos registros. Atípico não quer dizer irregular: quer dizer que vale olhar aquela urna.</p></div>
     <div class="aud-barra">
       <nav class="aud-trilha" aria-label="Recorte">${ctx.partes.map(([t, p], i) => i === ctx.partes.length - 1 ? `<b>${esc(t)}</b>` : `<a href="${audHash({ ...st, ...p })}">${esc(t)}</a><span aria-hidden="true">›</span>`).join("")}</nav>
       <form class="aud-filtros" id="aud-filtros">
@@ -2417,9 +2481,141 @@ async function visaoAuditoria(app) {
   f.querySelector("#af-secao").onchange = (e) => audIr({ secao: e.target.value || null });
   for (const id of ["af-mun", "af-zona", "af-secao"]) { const s = f.querySelector("#" + id); if (s.options.length <= 1) s.disabled = true; }
   const corpo = app.querySelector("#aud-corpo");
-  const views = { panorama: audPanorama, reconciliacao: audReconciliacao, montecarlo: audReconciliacao, simulador: audReconciliacao };
+  const views = { boletins: audBoletins, panorama: audPanorama, reconciliacao: audReconciliacao, montecarlo: audReconciliacao, simulador: audReconciliacao };
   await (views[st.v] || audPanorama)(corpo, ctx);
   corpo.insertAdjacentHTML("beforeend", audMetodo());
+}
+
+// ---- visão: auditoria dos boletins (seções atípicas, ocorrências, falhas, testes e perguntas)
+let CENTROIDES = null;
+function centroidesMun() {
+  if (CENTROIDES) return CENTROIDES;
+  CENTROIDES = {};
+  const fc = topojson.feature(MAPA.topo, MAPA.topo.objects.municipios);
+  for (const f of fc.features) {
+    const polys = f.geometry.type === "Polygon" ? [f.geometry.coordinates] : f.geometry.coordinates;
+    let melhor = null, area = -1;
+    for (const p of polys) { const r = p[0]; let a = 0; for (let i = 0, j = r.length - 1; i < r.length; j = i++) a += (r[j][0] + r[i][0]) * (r[j][1] - r[i][1]); a = Math.abs(a); if (a > area) { area = a; melhor = r; } }
+    if (!melhor) continue;
+    let x = 0, y = 0; for (const c of melhor) { x += c[0]; y += c[1]; }
+    CENTROIDES[`${f.properties.uf}-${f.properties.tse}`] = [x / melhor.length, y / melhor.length];
+  }
+  return CENTROIDES;
+}
+const BOL_ABAS = [["falhas", "Falhas"], ["atipicas", "Atípicas"], ["ocorrencias", "Ocorrências"], ["testes", "Testes"], ["perguntas", "Perguntas"]];
+async function audBoletins(el, ctx) {
+  const B = (AUD.bol ||= await json("dados/boletins.json"));
+  const st = ctx.st, est = { aba: "atipicas", tipo: null };
+  const fmtVal = (v, f) => (v == null ? "—" : f === "pct" ? p1(100 * v, 0) : f === "pp" ? pp(100 * v, 0) : f === "min" ? `${n0(v)} min` : n0(v));
+  const ufOk = (u) => !st.uf || u === st.uf, munOk = (u, m) => ufOk(u) && (!st.mun || m === st.mun);
+  const contaUF = (t) => (st.uf ? t.ufs[st.uf] || 0 : t.secoes);
+  const ajuda = (txt) => `<span class="bol-q" tabindex="0" role="note" aria-label="${esc(txt)}" data-dica="${esc(txt)}">?</span>`;
+  const saldoTxt = (v) => `<span style="color:var(${v >= 0 ? "--lula" : "--flavio"})">${v >= 0 ? "Lula" : "Flávio"} ${sinal(Math.abs(v)).replace("−", "+")}</span>`;
+  el.innerHTML = `<section class="bol">
+    <div class="bol-cab"><div><h2>Auditoria dos boletins · 2º turno</h2><p class="nota">${n0(B.secoes_lidas)} boletins de urna lidos · seções comparadas com as vizinhas do mesmo local de votação e com o próprio 1º turno</p></div>
+      <div class="bol-status"><span class="ponto-ok"></span>Todos os boletins lidos <details class="bol-como"><summary>Como ler</summary><div><p><b>Falhas</b>: contas que não fecham no boletim. <b>Atípicas</b>: seções longe das vizinhas ou do próprio 1º turno, por regras explícitas (toque no “?”). <b>Ocorrências</b>: situações previstas em lei, como urna trocada ou votação prorrogada. <b>Testes</b>: verificações estatísticas do conjunto. <b>Perguntas</b>: dúvidas que circulam, respondidas com os dados.</p><p>Saldo = votos de Lula − votos de Flávio nas seções do grupo. Atípica não quer dizer irregular: quer dizer que vale olhar o boletim e o log daquela urna.</p></div></details></div></div>
+    <div class="bol-grade">
+      <div class="bol-esq"><div class="bol-abas" role="tablist">${BOL_ABAS.map(([k, t]) => `<button role="tab" data-a="${k}" aria-selected="${k === est.aba}"><b>${n0(k === "falhas" ? B.falhas.secoes : k === "atipicas" ? B.atipicas.secoes : k === "ocorrencias" ? B.ocorrencias.secoes : k === "testes" ? B.testes.length : B.perguntas.length)}</b><span>${t}</span></button>`).join("")}</div>
+        <div id="bol-chips" class="bol-chips"></div><p class="nota" id="bol-sub"></p><div id="bol-lista" class="bol-lista"></div></div>
+      <div class="bol-centro"><div class="grafico" data-g="bol-mapa" style="height:460px"><p class="carregando">Carregando mapa…</p></div><p class="nota" id="bol-leg"></p><div class="bol-ufs" id="bol-ufs"></div></div>
+      <div class="bol-dir"><button type="button" class="bol-perg" id="bol-perg"><b>${B.perguntas.length} perguntas que circulam</b><span>respondidas com os boletins e os logs das urnas</span><span aria-hidden="true">›</span></button>
+        <div id="bol-imp"></div></div>
+    </div></section>`;
+  const tiposAtivos = () => (est.aba === "atipicas" ? B.atipicas.tipos : est.aba === "ocorrencias" ? B.ocorrencias.tipos : null);
+  const itensLista = () => {
+    const T = tiposAtivos(); if (!T) return [];
+    const ks = est.tipo ? [est.tipo] : Object.keys(T);
+    return ks.flatMap((k) => T[k].lista.filter((l) => munOk(l[0], l[1])).map((l) => ({ k, l, f: T[k].formato })));
+  };
+  const desenharChips = () => {
+    const T = tiposAtivos(), c = el.querySelector("#bol-chips"), sub = el.querySelector("#bol-sub");
+    if (!T) { c.innerHTML = ""; sub.textContent = ""; return; }
+    c.innerHTML = Object.entries(T).map(([k, t]) => `<button type="button" class="bol-chip" data-k="${k}" aria-pressed="${est.tipo === k}">${esc(t.rotulo)} ${ajuda(t.regra)} <b>${n0(contaUF(t))}</b></button>`).join("");
+    sub.textContent = est.aba === "atipicas" ? "Seções longe das vizinhas ou do próprio 1º turno" : "Previstas em lei, como urna trocada ou votação prorrogada";
+    c.querySelectorAll(".bol-chip").forEach((b) => (b.onclick = (e) => { if (e.target.closest(".bol-q")) return; est.tipo = est.tipo === b.dataset.k ? null : b.dataset.k; desenharTudo(); }));
+  };
+  const linkSec = (l) => `#bu?uf=${l[0]}&zona=${l[3]}&secao=${l[4]}`;
+  const desenharLista = () => {
+    const box = el.querySelector("#bol-lista");
+    if (est.aba === "falhas") { box.innerHTML = `<div class="bol-vazio"><b>${n0(B.falhas.secoes)} falhas</b><p class="nota">${esc(B.falhas.regra)}</p></div>`; return; }
+    if (est.aba === "testes") { box.innerHTML = B.testes.map((t) => `<div class="bol-item"><span class="bol-ok ${t.ok ? "" : "bol-at"}">${t.ok ? "✓" : "!"}</span><div><b>${esc(t.nome)}</b><small>${esc(t.texto)}</small></div></div>`).join(""); return; }
+    if (est.aba === "perguntas") { box.innerHTML = B.perguntas.map((q, i) => `<details class="bol-item bol-q-item"${i === 0 ? " open" : ""}><summary><b>${esc(q.p)}</b></summary><p>${esc(q.r)}</p></details>`).join(""); return; }
+    const itens = itensLista(), T = tiposAtivos();
+    if (!itens.length) { box.innerHTML = `<p class="nota" style="padding:12px">Nenhuma seção listada neste recorte.</p>`; return; }
+    // agrupa 3 ou mais seções do mesmo tipo no mesmo município, quando não há município filtrado
+    const grupos = new Map();
+    for (const it of itens) { const g = `${it.k}|${it.l[0]}|${it.l[1]}`; if (!grupos.has(g)) grupos.set(g, []); grupos.get(g).push(it); }
+    const linhas = [];
+    for (const arr of grupos.values()) {
+      if (arr.length >= 3 && !st.mun) linhas.push({ grupo: arr }); else arr.forEach((it) => linhas.push({ it }));
+    }
+    // cada tipo tem sua escala: a distância é normalizada pela maior do tipo (as listas já vêm ordenadas por distância)
+    const dist = (i) => Math.abs((i.l[5] ?? 0) - (i.l[6] ?? 0)), maxT = {};
+    for (const i of itens) maxT[i.k] = Math.max(maxT[i.k] || 0, dist(i));
+    const norm = (i) => dist(i) / (maxT[i.k] || 1);
+    const peso = (x) => (x.grupo ? Math.max(...x.grupo.map(norm)) + 0.001 * x.grupo.length : norm(x.it));
+    linhas.sort((a, b) => peso(b) - peso(a));
+    box.innerHTML = linhas.slice(0, 120).map((x) => {
+      if (x.grupo) { const it = x.grupo[0], t = T[it.k], mx = x.grupo.reduce((m, i) => Math.max(m, i.l[5] ?? 0), -Infinity);
+        return `<button type="button" class="bol-item bol-grupo" data-uf="${it.l[0]}" data-mun="${it.l[1]}"><span class="bol-barras" aria-hidden="true"><i></i><i></i><i></i><i></i></span><div><b>${n0(x.grupo.length)} seções <span>${esc(t.rotulo)}</span></b><small>${esc(it.l[2])}, ${it.l[0] === "ZZ" ? "exterior" : it.l[0]} ›</small></div><em>${t.formato === "n" || it.f == null ? "" : `até ${fmtVal(mx, it.f)}`}</em></button>`; }
+      const it = x.it, t = T[it.k], l = it.l;
+      const v = it.k === "prorrogada" ? `${n0(l[5])} votos` : fmtVal(l[5], it.f);
+      return `<a class="bol-item" href="${linkSec(l)}"><span class="bol-barras" aria-hidden="true"><i></i><i></i><i></i><i></i></span><div><b>${v} <span>${esc(t.rotulo)}</span></b><small>${esc(l[2])}, ${l[0] === "ZZ" ? "exterior" : l[0]} · zona ${z4(l[3])}, seção ${z4(l[4])}</small></div><em>${l[6] != null ? `vizinhas ${fmtVal(l[6], it.f)}` : ""}</em></a>`;
+    }).join("") + (linhas.length > 120 ? `<p class="nota" style="padding:10px">Mostrando 120 de ${n0(linhas.length)}; filtre por estado ou município.</p>` : "");
+    box.querySelectorAll(".bol-grupo").forEach((b) => (b.onclick = () => audIr({ uf: b.dataset.uf, reg: D.resumo.ufs[b.dataset.uf]?.regiao, mun: +b.dataset.mun, zona: null, secao: null })));
+  };
+  const desenharUFs = () => {
+    const box = el.querySelector("#bol-ufs");
+    const fonte = est.aba === "ocorrencias" ? B.ocorrencias : B.atipicas, T = tiposAtivos();
+    const cont = est.tipo && T ? T[est.tipo].ufs : fonte.ufs;
+    const ufs = Object.keys(D.resumo.ufs).filter((u) => u !== "ZZ").sort().concat(["ZZ"]);
+    box.innerHTML = ufs.map((u) => `<button type="button" data-uf="${u}" aria-pressed="${st.uf === u}"><b>${u === "ZZ" ? "EX" : u}</b><span>${n0(cont[u] || 0)}</span></button>`).join("");
+    box.querySelectorAll("button").forEach((b) => (b.onclick = () => audIr(st.uf === b.dataset.uf ? { uf: null, reg: null, mun: null, zona: null, secao: null } : { uf: b.dataset.uf, reg: D.resumo.ufs[b.dataset.uf]?.regiao, mun: null, zona: null, secao: null })));
+  };
+  const desenharImpacto = () => {
+    const A = B.atipicas, T = tiposAtivos(), U = st.uf ? B.por_uf[st.uf] : null;
+    const margem = U ? U.margem : B.margem, saldoA = U ? A.saldo_ufs[st.uf] || 0 : A.saldo, nA = U ? A.ufs[st.uf] || 0 : A.secoes, valA = U ? A.validos_ufs[st.uf] || 0 : A.validos;
+    const v17 = U ? U.depois_17h : B.depois_17h.votos, s17 = U ? U.saldo_17h : B.depois_17h.saldo_estimado, lidas = U ? U.secoes : B.secoes_lidas;
+    const venc = margem >= 0 ? "Lula" : "Flávio", corV = margem >= 0 ? "--lula" : "--flavio";
+    const barra = (v, cor) => `<div class="bol-barra"><i style="width:${Math.min(100, (100 * Math.abs(v)) / Math.max(1, Math.abs(margem))).toFixed(2)}%;background:var(${cor})"></i></div>`;
+    const sem = margem - saldoA, sem17 = margem - s17, onde = U ? (st.uf === "ZZ" ? " no exterior" : ` no estado (${st.uf})`) : "";
+    const tab = T ? `<table class="bol-tab"><thead><tr><th>Tipo</th><th class="n">Seções</th><th class="n">Saldo</th></tr></thead><tbody>${Object.entries(T).map(([k, t]) => `<tr><td>${esc(t.rotulo)} ${ajuda(t.regra)}</td><td class="n">${n0(contaUF(t))}</td><td class="n">${t.saldo_ufs || !U ? saldoTxt(U ? t.saldo_ufs?.[st.uf] || 0 : t.saldo) : "—"}</td></tr>`).join("")}</tbody></table>` : "";
+    const vNome = (v) => `<span style="color:var(${v >= 0 ? "--lula" : "--flavio"})">${v >= 0 ? "Lula" : "Flávio"}</span>`;
+    el.querySelector("#bol-imp").innerHTML = `<h3 class="bol-h">${n0(nA)} seções atípicas${onde}</h3><p class="nota">${n0(valA)} votos válidos nelas, de ${n0(lidas)} seções lidas</p>
+      ${barra(margem, corV)}<div class="bol-lin"><span>${vNome(margem)} venceu${onde} por</span><b>${n0(Math.abs(margem))} votos</b></div>
+      ${barra(saldoA, saldoA >= 0 ? "--lula" : "--flavio")}<div class="bol-lin"><span>Saldo nas seções atípicas</span><b>${saldoTxt(saldoA)}</b></div>
+      ${barra(s17, s17 >= 0 ? "--lula" : "--flavio")}<div class="bol-lin"><span>Votos depois das 17h ${ajuda("Votos de eleitores que estavam na fila às 17h, contados pelo horário de cada voto no log da urna. O voto é secreto: o saldo aplica a cada seção a divisão Lula × Flávio da própria seção.")}</span><b>${n0(v17)} votos</b></div>
+      <p class="bol-txt">Sem as seções atípicas, ${vNome(sem)} ${Math.sign(sem) === Math.sign(margem) ? "venceria" : "passaria a vencer"}${onde} por ${n0(Math.abs(sem))} votos; sem os votos depois das 17h, por cerca de ${n0(Math.abs(sem17))}.</p>
+      ${tab}
+      <div class="bol-tse"><span>✓ Bate com o TSE</span><span>${B.bate_tse.ufs === B.bate_tse.total ? "27 estados e o exterior" : `${B.bate_tse.ufs} de ${B.bate_tse.total}`}</span></div>`;
+  };
+  // mapa de pontos por município
+  const elM = el.querySelector('[data-g="bol-mapa"]');
+  const desenharMapa = () => {
+    if (!elM.dataset.pronto) return;
+    const C = centroidesMun(), TT = tiposAtivos();
+    const cont = new Map();
+    for (const it of itensLista()) { const k = `${it.l[0]}-${it.l[1]}`; const c = cont.get(k) || { n: 0, nome: it.l[2] }; c.n++; cont.set(k, c); }
+    const pts = [...cont].filter(([k]) => C[k]).map(([k, c]) => ({ name: k, value: [...C[k], c.n], nome: c.nome }));
+    const reg = registrarMalha(st.uf && st.uf !== "ZZ" ? st.uf : null);
+    const cor = est.aba === "ocorrencias" ? T.ink2 : T.cury;
+    el.querySelector("#bol-leg").innerHTML = TT && pts.length ? `<span class="bol-dot" style="background:${cor}"></span> ${est.aba === "ocorrencias" ? "seções com ocorrência" : "seções atípicas"} por município (tamanho = número de seções listadas)` : "";
+    trocarGrafico(elM, () => { const c = novoGrafico(elM, {
+      tooltip: { trigger: "item", formatter: (p) => (p.seriesType === "scatter" ? `<b>${esc(p.data.nome)}</b> · ${p.name.slice(0, 2)}<br>${n0(p.data.value[2])} seções` : "") },
+      geo: { map: reg.nome, roam: true, scaleLimit: { min: 1, max: 40 }, layoutCenter: ["50%", "50%"], layoutSize: "98%", silent: true, itemStyle: { areaColor: T.grid, borderColor: T.grid, borderWidth: 0 } },
+      series: [{ type: "lines", coordinateSystem: "geo", polyline: true, silent: true, z: 2, lineStyle: { color: T.surface, width: 0.9 }, data: reg.bordas.map((cc) => ({ coords: cc })) },
+        { type: "scatter", coordinateSystem: "geo", z: 5, data: pts, symbolSize: (v) => Math.min(30, 5 + 3.2 * Math.sqrt(v[2])), itemStyle: { color: cor, opacity: 0.85, borderColor: T.surface, borderWidth: 0.6 } }] });
+      c.on("click", (p) => { if (p.seriesType === "scatter") { const [u, m] = p.name.split("-"); audIr({ uf: u, reg: D.resumo.ufs[u]?.regiao, mun: +m, zona: null, secao: null }); } });
+      return c; });
+  };
+  const desenharTudo = () => { desenharChips(); desenharLista(); desenharUFs(); desenharImpacto(); desenharMapa();
+    el.querySelectorAll(".bol-abas button").forEach((b) => b.setAttribute("aria-selected", b.dataset.a === est.aba)); };
+  el.querySelectorAll(".bol-abas button").forEach((b) => (b.onclick = () => { est.aba = b.dataset.a; est.tipo = null; desenharTudo(); }));
+  el.querySelector("#bol-perg").onclick = () => { est.aba = "perguntas"; est.tipo = null; desenharTudo(); el.querySelector(".bol-esq").scrollIntoView({ behavior: "smooth", block: "start" }); };
+  // “?”: dica ao tocar (celular) ou passar o mouse
+  el.addEventListener("click", (e) => { const q = e.target.closest(".bol-q"); el.querySelectorAll(".bol-q.aberta").forEach((x) => x !== q && x.classList.remove("aberta")); if (q) { e.preventDefault(); e.stopPropagation(); q.classList.toggle("aberta"); } });
+  desenharTudo();
+  carregarMapa().then(() => { if (!document.body.contains(elM)) return; elM.innerHTML = ""; elM.dataset.pronto = "1"; desenharMapa(); }).catch((e) => { elM.innerHTML = `<p class="aviso">Não foi possível carregar o mapa (${esc(e.message)}).</p>`; });
 }
 
 // ---- visão 1: panorama nacional (teste de transferência, cálculo exato)
@@ -2969,6 +3165,21 @@ function montarSumario(app) {
   lista.addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) ir(itens[+b.dataset.k]); });
   dlg.addEventListener("click", (e) => { if (e.target === dlg) fechar(); });
   document.getElementById("cmd-abrir").addEventListener("click", abrir);
+  // compartilhar a página atual (com o recorte no endereço) e alternar o tema
+  const avisar = (txt) => { const a = document.createElement("div"); a.className = "aviso-flutuante"; a.setAttribute("role", "status"); a.textContent = txt; document.body.appendChild(a); setTimeout(() => a.remove(), 2200); };
+  document.getElementById("btn-compartilhar").addEventListener("click", async () => {
+    const titulo = document.querySelector("#app h1")?.textContent?.trim() || "Eleição Presidencial 2026";
+    const url = location.href;
+    if (navigator.share) { try { await navigator.share({ title: `${titulo} · Presidente 2026`, text: `${titulo}: resultados, auditoria e logs das urnas, seção por seção.`, url }); return; } catch (e) { if (e.name === "AbortError") return; } }
+    try { await navigator.clipboard.writeText(url); avisar("Link copiado"); } catch { prompt("Copie o link:", url); }
+  });
+  const temaAtual = () => document.documentElement.dataset.theme || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+  try { const t = localStorage.getItem("tema"); if (t === "dark" || t === "light") document.documentElement.dataset.theme = t; } catch {}
+  document.getElementById("btn-tema").addEventListener("click", () => {
+    const novo = temaAtual() === "dark" ? "light" : "dark";
+    document.documentElement.dataset.theme = novo;
+    try { localStorage.setItem("tema", novo); } catch {}
+  });
   document.addEventListener("keydown", (e) => {
     const emCampo = /INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName || "");
     if ((e.key === "k" && (e.ctrlKey || e.metaKey)) || (e.key === "/" && !emCampo)) { e.preventDefault(); dlg.open ? fechar() : abrir(); }
